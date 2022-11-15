@@ -1,0 +1,44 @@
+﻿@page "/mainframe"
+@attribute [Authorize(Roles = "SuperAdmin")]
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject UserManager<Usuario> UserManager
+    <div class="container-fluid">
+        <RadzenCard>
+            <h3>Super Admin Main Frame</h3>
+        </RadzenCard>
+        <RadzenCard>
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label>Fecha de Vencimiento</label>
+                        <div>
+                            <RadzenDatePicker @bind-Value="Empresa.FechaVencimientoServicio" />
+
+                        </div>
+                        <RadzenButton Text="Desbloquear" Click="ActualizarFechaVencimiento" />
+
+                    </div>
+                </div>
+                <div class="col-lg-6"></div>
+            </div>
+        </RadzenCard>
+    </div>
+    @code {
+        public Empresa Empresa { get; set; } = new Empresa();
+
+        protected override async Task OnInitializedAsync()
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            Empresa = await DbContext.Empresa.FirstOrDefaultAsync();
+
+        }
+
+        public async Task ActualizarFechaVencimiento()
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+            DbContext.Update(Empresa);
+            await DbContext.SaveChangesAsync();
+        }
+    }

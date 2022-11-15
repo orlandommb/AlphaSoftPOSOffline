@@ -1,0 +1,294 @@
+﻿@page "/compras"
+@attribute [Authorize(Roles = "Admin,SuperAdmin,Enc. Compras")]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de Compras</h5>
+        <MudSpacer />
+        <MudTooltip Text="Nueva Compra">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="Nuevo" />
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="padding:5px; border-radius: 20px; font-size:small">
+    <div class="row">
+        <div class="col-sm-3">
+            <div class="form-group">
+                <MudDateRangePicker Label="Desde - Hasta" Editable="true" @bind-DateRange="@Fecha" />
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <RadzenLabel Text="Suplidor:" />
+                <div>
+                    <RadzenDropDown AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="Radzen.StringFilterOperator.Contains"
+                                    Data="@Suplidores"
+                                    TValue="int?"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="@SuplidorSeleccionadoId"
+                                    Style="width:auto" />
+                </div>
+            </div>  
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <RadzenLabel Text="Tipo:" />
+                <div>
+                    <RadzenDropDown AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="Radzen.StringFilterOperator.Contains"
+                                    TValue="int?"
+                                    Data=@TipoFacturas
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="@TipoFacturaSeleccionadaId"
+                                    Style="width:auto" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <RadzenLabel Text="Nulo:" />
+                <div>
+                    <RadzenCheckBox @bind-Value="Nulo" Name="Activo" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <RadzenLabel Text="Facturado:" />
+                <div>
+                    <RadzenCheckBox @bind-Value="Facturado" Name="Facturado" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <div>Buscar</div>
+                <div>
+                    <MudTooltip Text="Buscar">
+                        <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarCompras"/>
+                    </MudTooltip>   
+                </div>
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="middle-box">
+                <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard Style="width:100%; width:fit-content()">
+        <div class="table-responsive-md w-auto" style="width:100%; overflow:scroll">
+            <table class="table table-sm" style="width:100%">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Suplidor</th>
+                        <th scope="col">Fecha de Factura</th>
+                        <th scope="col">Fecha de Recepcion</th>
+                        <th scope="col">NCF</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Sub-Total</th>
+                        <th scope="col">Descuento</th>
+                        <th scope="col">Impuesto</th>
+                        <th scope="col">Total</th>
+                        <th scope="col">Pago</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Compras)
+                    {
+                        <tr>
+                            <th scope="row">@item.NoFactura</th>
+                            <td>@item.Suplidor.Nombre</td>
+                            <td>@String.Format("{0:d}", item.FechaHoraFactura)</td>
+                            <td>@String.Format("{0:d}", item.FechaHoraRecepcion)</td>
+                            <td>@item.NCF</td>
+                            <td>@item.TipoFactura.Nombre</td>
+                            <td>@String.Format("{0:C2}", item.SubTotal)</td>
+                            <td>@String.Format("{0:C2}", item.Descuento)</td>
+                            <td>@String.Format("{0:C2}", item.Impuesto)</td>
+                            <td>@String.Format("{0:C2}", item.Total)</td>
+                            <td>@item.PagoStatus</td>
+                            <td>
+                                <RadzenButton Icon="preview" Click="@(() => BtnVistaPreviaClick(item.Id))"></RadzenButton>
+                                <AuthorizeView Roles="SuperAdmin,Admin,Enc.Compras">
+                                    <RadzenButton Icon="delete" Click="@(async () => await BtnAnularClick(item))"></RadzenButton>
+                                </AuthorizeView>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<Compra> Compras = new List<Compra>();
+    private List<Sucursal> Sucursales = new List<Sucursal>();
+    private List<Suplidor> Suplidores = new List<Suplidor>();
+    private List<TipoFactura> TipoFacturas = new List<TipoFactura>();
+    private bool IsBusy { get; set; }
+
+    private DateRange Fecha = new DateRange(DateTime.Now.AddDays(-1), DateTime.Now);
+
+
+    private bool Nulo { get; set; } = false;
+    private bool Facturado { get; set; } = true;
+
+    private int? SucursalSeleccionadaId { get; set; }
+    private int? SuplidorSeleccionadoId { get; set; }
+    private int? TipoFacturaSeleccionadaId { get; set; }
+    private string NumeroFactura { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarSuplidores();
+            await CargarTipoFacuras();
+            await CargarCompras();
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarCompras()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Compras = await DbContext.Compras
+            .Include(p => p.CompraDetalles)
+            .Include(p => p.TipoFactura)
+            .Include(p => p.Usuario)
+            .Include(p => p.Suplidor)
+            .Include(p => p.Almacen)
+            .Where(
+            p => p.EmpresaId == Empresa.Id && 
+                        p.SucursalId == Sucursal.Id && 
+                        p.FechaHoraFactura >= Fecha.Start &&
+                        p.FechaHoraFactura <= Fecha.End &&
+                        p.Nulo == Nulo &&
+                        (SuplidorSeleccionadoId == null || p.SuplidorId == SuplidorSeleccionadoId) &&
+                        (NumeroFactura == null || p.NoFactura.Contains(NumeroFactura)) &&
+                        (TipoFacturaSeleccionadaId == null || p.TipoFacturaId == TipoFacturaSeleccionadaId)
+                        ).ToListAsync();
+
+        IsBusy = false;
+
+    }
+
+    public async Task CargarTipoFacuras()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext.TipoFacturas.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarSuplidores()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Suplidores = await DbContext.Suplidores
+        .Where(s=>s.EmpresaId == Empresa.Id && 
+                  s.SucursalId == Sucursal.Id && 
+                  s.Activo == true)
+        .ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    @*public async Task CargarSucursales()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext..ToListAsync();
+
+
+        IsBusy = false;
+    }*@
+
+private void Nuevo()
+{
+    NavManager.NavigateTo("/compras/crear");
+}
+
+public void BtnVistaPreviaClick(int Id)
+{
+    NavManager.NavigateTo("/compras/vista/" + Id);
+}
+
+public async Task BtnAnularClick(Compra CompraAnular)
+{
+    if (!await JSRuntime.Confirmar($"Esta seguro que desea Anular la Compra Numero '{CompraAnular.NoFactura}' del Suplidor '{CompraAnular.Suplidor.Nombre}'?"))
+        return;
+
+    IsBusy = true;
+
+    using var DbContext = DbContextFactory.CreateDbContext();
+
+    var compra = await DbContext.Compras.FindAsync();
+
+    compra.Nulo = true;
+
+    DbContext.Update(compra);
+    await DbContext.SaveChangesAsync();
+
+    IsBusy = false;
+
+
+}
+}

@@ -1,0 +1,337 @@
+﻿@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+
+<!-- Modal -->
+<MudOverlay Visible="true" DarkBackground="true">
+<div class="modal fade show" id="exampleModal2" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Orden</h5>
+                <button type="button" class="close" @onclick="OnCancel">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="Venta">
+                    <div class="row">
+                        <div class="col-sm-6">
+
+                            <div class="form-group">
+                                <RadzenLabel Text="Tipo:" />
+                                <div>
+                                    <RadzenDropDown TValue="int"
+                                                    Data=@TipoFacturas
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="@Venta.TipoFacturaId" 
+                                                    Change="OnChangeTipoFactura"
+                                                    />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <RadzenLabel Text="Tipos de Ordenes:" />
+                                <div>
+                                    <RadzenDropDown TValue="int?"
+                                                    Data=@TipoOrdenes
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="@Venta.TipoOrdenId"
+                                                    Change="OnChangeTipoOrden" />
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <div>Cliente:</div>
+                                <div>
+                                    <RadzenDropDown Data="@Clientes"
+                                                    AllowFiltering="true"
+                                                    AllowClear="true"
+                                                    @bind-Value="Venta.ClienteId"
+                                                    TValue="int?"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    Change="OnChangeCliente"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>Nombre Cliente:</div>
+                                <div>
+                                    <RadzenTextBox @bind-Value="Venta.NombreCliente" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (Venta.TipoOrdenId == 1)
+                    {
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <RadzenLabel Text="Tel./Celular:" />
+                                    <div>
+                                        <RadzenTextBox @bind-Value="Venta.CelularCliente" />
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <RadzenLabel Text="Sector:" />
+                                    <div>
+                                        <RadzenDropDown AllowClear="true"
+                                                        AllowFiltering="true"
+                                                        FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                        FilterOperator="Radzen.StringFilterOperator.Contains"
+                                                        TValue="int?"
+                                                        Data=@Sectores
+                                                        TextProperty="Nombre"
+                                                        ValueProperty="Id"
+                                                        @bind-Value="@Venta.SectorId"
+                                                        Change="OnChangeSector" />
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <div class="form-group">
+
+                                    <div>Delivery:</div>
+                                    <div>
+                                        <RadzenNumeric TValue="decimal" ShowUpDown="false" @bind-Value="Venta.Delivery" Format="0.00" />
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="form-group">
+                                    <div>Direccion:</div>
+                                    <div>
+                                        <RadzenTextArea class="form-control" Style="width:fit-content" Cols="60" @bind-Value="Venta.DireccionCliente" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (Venta.TipoOrdenId == 2)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="form-group">
+                                    <RadzenLabel Text="Tel./Celular:" />
+                                    <div>
+                                        <RadzenTextBox @bind-Value="Venta.CelularCliente" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </EditForm>
+            </div>
+            <div class="modal-footer">
+                <RadzenButton class="btn btn-primary" Click="OnConfirm">Confirmar Datos</RadzenButton>
+            </div>
+        </div>
+    </div>
+</div>
+</MudOverlay>
+
+@code {
+
+    [Parameter] public Venta Venta { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<TipoOrden> TipoOrdenes { get; set; } = new List<TipoOrden>();
+    private List<TipoFactura> TipoFacturas { get; set; } = new List<TipoFactura>();
+    private List<Sector> Sectores { get; set; } = new List<Sector>();
+    private List<Cliente> Clientes { get; set; } = new List<Cliente>();
+    public bool IsBusy { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarEmpresa();
+        await CargarSectores();
+        await CargarTipoOrdenes();
+        await CargarTipoFacturas();
+        
+
+        Venta.TipoFacturaId = 2;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarClientes();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+
+    public async Task CargarClientes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Clientes = await DbContext.Clientes.Where(c=>c.EmpresaId == Empresa.Id).OrderBy(e => e.Nombre).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+
+    }
+
+    public async Task CargarTipoOrdenes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoOrdenes = await DbContext.TipoOrdenes.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarTipoFacturas()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext.TipoFacturas.ToListAsync();
+
+        IsBusy = false;
+    }
+
+    public async Task CargarSectores()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Sectores = await DbContext.Sectores.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task OnChangeTipoOrden()
+    {
+
+        if (Venta.TipoOrdenId != 1)
+        {
+            Venta.Delivery = 0.0m;
+        }
+        else
+        {
+            if (Venta.SectorId != null)
+            {
+                using var DbContext = DbContextFactory.CreateDbContext();
+
+                var SectorFromDb = await DbContext.Sectores.FirstOrDefaultAsync(s => s.Id == Venta.SectorId);
+                Venta.Delivery = SectorFromDb.MontoDelivery;
+            }
+            else
+            {
+                Venta.Delivery = Empresa.MontoMinimoDelivery;
+            }
+        }
+
+    }
+    
+    public async void OnChangeTipoFactura()
+    {
+
+        if (Venta.TipoFacturaId == 1)
+        {
+            Venta.MontoDevuelta = 0;
+
+            if(Venta.ClienteId != null)
+            {
+                var ClienteSelected = Clientes.SingleOrDefault(c => c.Id == Venta.ClienteId);
+                
+                if(!ClienteSelected.CreditoAbierto)
+                {
+                    Venta.TipoFacturaId = 2;
+                    await IMessage.Alert("Cliente tiene el credito cerrado solo se puede facturar al Contado");
+                }
+            }
+        }
+
+    }
+
+    public async Task OnChangeSector()
+    {
+        IsBusy = true;
+
+
+        if (Venta.TipoOrdenId == 1)
+        {
+            if (Venta.SectorId != null)
+            {
+                using var DbContext = DbContextFactory.CreateDbContext();
+
+                var SectorFromDb = await DbContext.Sectores.FirstOrDefaultAsync(s => s.Id == Venta.SectorId);
+                Venta.Delivery = SectorFromDb.MontoDelivery;
+            }
+            else
+            {
+                Venta.Delivery = Empresa.MontoMinimoDelivery;
+            }
+        }
+
+        IsBusy = false;
+
+    }
+
+    private async void OnChangeCliente()
+    {
+        var ClienteSelected = Clientes.SingleOrDefault(c => c.Id == Venta.ClienteId);
+        if (Venta.ClienteId != null)
+        {
+            Venta.NombreCliente = ClienteSelected.Nombre + " " + ClienteSelected.Apellido;
+            Venta.DireccionCliente = ClienteSelected.Direccion;
+            Venta.CelularCliente = string.IsNullOrWhiteSpace(ClienteSelected.Telefono) ? ClienteSelected.WhatsApp : ClienteSelected.Telefono;
+        
+            if(Venta.TipoFacturaId == 1 && !ClienteSelected.CreditoAbierto)
+            {
+                Venta.TipoFacturaId = 2;
+                await IMessage.Alert("Cliente tiene el credito cerrado solo se puede facturar al Contado");
+            }
+        }
+        else
+        {
+            Venta.NombreCliente = string.Empty;
+        }
+    }
+
+
+}

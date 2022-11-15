@@ -1,0 +1,86 @@
+@page "/login"
+@layout AuthLayout
+@inject ApplicationDbContext DbContext
+@inject UserManager<Usuario> UserManager
+@inject SignInManager<Usuario> SignInManager
+@inject RoleManager<Rol> RoleManager
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime   
+
+@if (IsBusy)
+{
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <h1>POS Pedido y Facturacion</h1>
+    <div class="row" style="align-content: center;min-width: 250px">
+        <div class="col-md-12">
+            <h2>Login to your account</h2>
+            <EditForm Model="@UserInfo" OnValidSubmit="@LoginMethod">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <RadzenCard>
+                    <div class="form-group">
+                        <label>Usuario:</label>
+                        <div>
+                            <InputText Class="form-control" @bind-Value="@UserInfo.UserName" />
+                            <ValidationMessage For="@(() => UserInfo.UserName)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Contrasena:</label>
+                        <div>
+                            <InputText Class="form-control" type="password" @bind-Value="@UserInfo.Password"></InputText>
+                            <ValidationMessage For="@(() => UserInfo.Password)" />
+                        </div>
+                    </div>
+
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary"
+                                  ButtonType="Radzen.ButtonType.Submit"
+                                  Style="background-color:red; color:white; border-radius:15px"
+                                  Text="Acceder" />
+
+                </RadzenCard>
+            </EditForm>
+        </div>
+    </div>
+}
+@code {
+    public UserInfo UserInfo { get; set; } = new UserInfo();
+    private bool IsBusy { get; set; } = false;
+    public async Task LoginMethod()
+    {
+        IsBusy = true;
+
+        var Response = await UserManager.FindByNameAsync(UserInfo.UserName);
+
+        if (Response == null)
+        {
+            await IMessage.Error("Usuario incorrecto");
+        }
+        else
+        {
+
+            var result = await SignInManager.PasswordSignInAsync(Response, UserInfo.Password, false, false);
+            
+            if(result.Succeeded)
+            {
+                NavManager.NavigateTo("/");
+            }
+            else
+            {
+
+                await IMessage.Alert(result.ToString());
+            }
+        }
+
+        IsBusy = false;
+    }
+}

@@ -1,0 +1,258 @@
+﻿@page "/suplidores/vista/{Id:int?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+@inject NavigationManager NavManager
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+
+
+<RadzenCard>
+    <h3>Vista Suplidor</h3>
+</RadzenCard>
+<RadzenCard>
+    <MudTabs Color="Color.Info">
+        <MudTabPanel Text="Datos del Suplidor">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div>Nombre:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.Nombre</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div>Razon Social:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.RazonSocial</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div>Cedula:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.Cedula</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div>RNC:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.RNC</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div>Condiciones:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.Condiciones Dias</label>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div>Activo:</div>
+                    <div>
+                        @if(Suplidor.Activo)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Error"/>
+                            }
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div>Balance Pendiente:</div>
+                    <div>
+                        <label class="form-control">@Balance.ToString("C2")</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div>Telefono:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.Telefono</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div>Email:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.Email</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div>WhatsApp:</div>
+                    <div>
+                        <label class="form-control">@Suplidor.WhatsApp</label>
+                    </div>
+                </div>
+
+                
+            </div>
+            <AuthorizeView Roles="SuperAdmin,Admin">
+                <RadzenButton Text="Editar" ButtonType="Radzen.ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="BtnEditarClick" />
+            </AuthorizeView>
+            </div>
+            </MudTabPanel>
+            <MudTabPanel Text="Historial de Transacciones">
+                <div class="table-responsive-sm" style="overflow: scroll;height:400px">
+                <table class="table table-sm" style="position:relative">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">No.Factura</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Tipo</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Almacen</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Fecha</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Usuario</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @foreach (var cxpbal in Balances.OrderBy(cxpb => cxpb.Compra.FechaHoraFactura).ToList())
+                        {
+                            <tr style="background-color: lightblue;">
+                                <th scope="row">@cxpbal.Compra.NoFactura</th>
+                                <th scope="row">@cxpbal.Compra.TipoCompra.Nombre</th>
+                                <th scope="row">@cxpbal.Compra.Almacen.Nombre</th>
+                                <th scope="row">@cxpbal.Compra.FechaHoraFactura.ToString("d")</th>
+                                <th scope="row">@cxpbal.Compra.Usuario.UserName</th>
+                                <th scope="row">@cxpbal.Compra.Total.ToString("C2")</th>
+                            </tr>
+                            <tr>
+                            <td colspan="6">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                        </tr>
+                                        @foreach (var mov in Movimientos.Where(cxptd => cxptd.CompraId ==
+                                           cxpbal.CompraId).OrderBy(cxptd => cxptd.CXPTransaccion.Fecha).ToList())
+                                            {
+                                                switch (mov.CXPTransaccion.CXPTransaccionTipoId)
+                                                {
+                                                    case 1:
+                                                        <tr>
+                                                            <td></td>
+                                                            <th scope="row">NC</th>
+                                                            <td>@mov.CXPTransaccion.Fecha.ToString("d")</td>
+                                                            <td>@mov.CXPTransaccion.Usuario.UserName</td>
+                                                            <td>@("+ " + mov.MontoAAplicar.ToString("C2"))</td>
+                                                            <td>@mov.BalanceDespues.ToString("C2")</td>
+                                                        </tr>
+                                                        break;
+                                                    case 2:
+                                                        <tr>
+                                                            <td></td>
+                                                            <th scope="row">ND</th>
+                                                            <td>@mov.CXPTransaccion.Fecha.ToString("d")</td>
+                                                            <td>@mov.CXPTransaccion.Usuario.UserName</td>
+                                                            <td>@("- " + mov.MontoAAplicar.ToString("C2"))</td>
+                                                            <td>@mov.BalanceDespues.ToString("C2")</td>
+                                                        </tr>
+                                                        break;
+                                                    case 3:
+                                                        <tr>
+                                                            <td></td>
+                                                            <th scope="row">RP</th>
+                                                            <td>@mov.CXPTransaccion.Fecha.ToString("d")</td>
+                                                            <td>@mov.CXPTransaccion.Usuario.UserName</td>
+                                                            <td>@("- " + mov.MontoAAplicar.ToString("C2"))</td>
+                                                            <td>@mov.BalanceDespues.ToString("C2")</td>
+                                                        </tr>
+                                                        break;
+                                                }
+
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            </MudTabPanel>
+    </MudTabs>
+</RadzenCard>
+
+
+@code
+{
+    [Parameter]
+    public int? Id { get; set; }
+
+    public Suplidor Suplidor { get; set; } = new Suplidor();
+    public decimal Balance { get; set; }
+    public List<CXPCompraBalance> Balances { get; set; } = new List<CXPCompraBalance>();
+    public List<CXPTransaccionDetalle> Movimientos { get; set; } = new List<CXPTransaccionDetalle>();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (Id != null)
+        {
+            await CargarSuplidor(Id);
+        }
+
+    }
+
+    private async Task CargarSuplidor(int? Id)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Suplidor = await DbContext.Suplidores.SingleOrDefaultAsync(p => p.Id == Id);
+        await CargarBalance(Suplidor.Id);
+    }
+
+
+    private async Task CargarBalance(int Id)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Balances = await DbContext.CXPCompraBalances
+        .Include(cxpc => cxpc.Compra)
+        .ThenInclude(v => v.Suplidor)
+        .Include(cxpc => cxpc.Compra)
+        .ThenInclude(v => v.TipoFactura)
+        .Include(cxpc => cxpc.Compra)
+        .ThenInclude(v => v.Usuario)
+        .Include(cxpc => cxpc.Compra)
+        .ThenInclude(v => v.Almacen)
+        .Include(cxpc => cxpc.Compra)
+        .ThenInclude(v => v.TipoCompra)
+        .Where(cxpc =>
+        cxpc.Compra.TipoFacturaId == 1 &&
+        cxpc.Compra.SuplidorId == Id)
+        .ToListAsync();
+
+        Balance = Balances.Sum(b => b.Balance);
+
+        await CargarMovimientos();
+    }
+
+    private async Task CargarMovimientos()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        foreach (var cxpcompra in Balances)
+        {
+            var movs = await DbContext.CXPTransaccionDetalles
+            .Include(cxptd => cxptd.CXPTransaccion)
+            .ThenInclude(cxpt => cxpt.Usuario)
+            .Where(cxptd => cxptd.CompraId == cxpcompra.CompraId).ToListAsync();
+
+            Movimientos.AddRange(movs);
+        }
+    }
+    public void BtnEditarClick()
+    {
+        NavManager.NavigateTo("/suplidores/crear/" + Id);
+    }
+
+}

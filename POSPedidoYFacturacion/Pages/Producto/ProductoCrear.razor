@@ -1,0 +1,352 @@
+﻿@page "/productos/crear/{Id:int?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+@inject ProtectedLocalStorage LocalStorage
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+
+<RadzenCard>
+    <RadzenCard>
+        <h3>Registro de Productos</h3>
+    </RadzenCard>
+    <RadzenCard>
+        <EditForm Model="Producto" OnValidSubmit="CrearProducto">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <div>Codigo:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Producto.Codigo" />
+                            <ValidationMessage For="@(() => Producto.Codigo)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Nombre:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Producto.Nombre" />
+                            <ValidationMessage For="@(() => Producto.Nombre)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Activo:</div>
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="Producto.Activo" />
+                            <ValidationMessage For="@(() => Producto.Activo)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Maneja Existencias?:</div>
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="Producto.ManejaExistencia" />
+                            <ValidationMessage For="@(() => Producto.ManejaExistencia)" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <MudSelect Label="Categoria" 
+                                    Margin="Margin.Dense"
+                                    Dense="true"
+                                    Variant="Variant.Outlined"
+                                    T="int"
+                                    Value="@Producto.CategoriaId"
+                                    ValueChanged="@(async args => await CargarSubCategorias(args))"
+                                    AnchorOrigin="Origin.BottomCenter"
+                                    TransformOrigin="Origin.TopCenter"
+                                    Text="Seleccione una Categoria">
+                                    @foreach (var item in Categorias)
+                                    {
+                                        <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
+                                    }
+                        </MudSelect>
+                    </div>
+                    <div class="form-group">
+                        <MudSelect Label="Sub-Categoria" 
+                                    Margin="Margin.Dense"
+                                    Dense="true"
+                                    Variant="Variant.Outlined"
+                                    T="int" 
+                                    AnchorOrigin="Origin.BottomCenter"
+                                    TransformOrigin="Origin.TopCenter"
+                                    @bind-Value="@Producto.SubCategoriaId"
+                                    Text="Seleccione una Sub - Categoria">
+                                    @foreach (var item in SubCategorias)
+                                    {
+                                        <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
+                                    }
+                        </MudSelect>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Costo:</div>
+                        <div>
+                            <RadzenNumeric class="form-control" @bind-Value="Producto.Costo" Format="0.00" />
+                            <ValidationMessage For="@(() => Producto.Costo)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Precio:</div>
+                        <div>
+                            <RadzenNumeric class="form-control" @bind-Value="Producto.Precio" Format="0.00" />
+                            <ValidationMessage For="@(() => Producto.Precio)" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <MudSelect Label="Tipo de Impuesto" 
+                                    Margin="Margin.Dense"
+                                    Dense="true"
+                                    Variant="Variant.Outlined"
+                                    T="int"
+                                    Value="Producto.ImpuestoTipoId"
+                                    ValueChanged="@(async args => await CargarImpuestos(args))"
+                                    AnchorOrigin="Origin.BottomCenter"
+                                    TransformOrigin="Origin.TopCenter"
+                                    Text="Seleccione un Tipo de Impuesto">
+                                    @foreach (var item in ImpuestoTipos)
+                                    {
+                                        <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
+                                    }
+                        </MudSelect>
+                    </div>
+                    @if(Producto.ImpuestoTipoId == 2 || Producto.ImpuestoTipoId == 3)
+                    {
+                        <div class="form-group">
+                            <MudSelect Label="Impuesto" 
+                                        Margin="Margin.Dense"
+                                        Dense="true"
+                                        Variant="Variant.Outlined"
+                                        Clearable="true"
+                                        T="int?" 
+                                        AnchorOrigin="Origin.BottomCenter"
+                                        TransformOrigin="Origin.TopCenter"
+                                        @bind-Value="Producto.ImpuestoId">
+                                        @foreach (var item in Impuestos)
+                                        {
+                                            <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
+                                        }
+                            </MudSelect>
+                        </div>
+                    }
+                </div>
+            </div>
+            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success"/>
+        </EditForm>
+    </RadzenCard>
+</RadzenCard>
+
+@code
+{
+    [Parameter]
+    public int? Id { get; set; }
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public Producto Producto { get; set; } = new Producto();
+    public List<Categoria> Categorias { get; set; } = new List<Categoria>();
+    public List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+
+    public List<ImpuestoTipo> ImpuestoTipos { get; set; } = new List<ImpuestoTipo>();
+    public List<Impuesto> Impuestos { get; set; } = new List<Impuesto>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarCategorias();
+            await CargarImpuestoTipos();
+            if (Id != null)
+            {
+                await CargarProducto(Id);
+                await CargarImpuestos(Producto.ImpuestoTipoId);
+            }
+            else
+            {
+                Producto.ImpuestoTipoId = 1;
+            }
+
+            StateHasChanged();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarProducto(int? Id)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        var item = await DbContext.Productos.Include(p => p.Categoria).Include(p => p.SubCategoria).SingleOrDefaultAsync(p => p.Id == Id);
+        await CargarSubCategorias(item.CategoriaId);
+        Producto = item;
+        StateHasChanged();
+    }
+
+    private async Task CargarCategorias()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Categorias = await DbContext.Categorias.Where(c=>c.EmpresaId == Empresa.Id).ToListAsync();
+        StateHasChanged();
+
+    }
+
+    private async Task CargarSubCategorias(int? Id)
+    {
+        if(Id == null)
+        {
+            SubCategorias = new List<SubCategoria>();
+            return;
+        }
+
+        Producto.CategoriaId = (int)Id;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        SubCategorias = await DbContext.SubCategorias
+            .Include(s => s.Categoria)
+            .Where(s => s.CategoriaId == Id)
+            .ToListAsync();
+        StateHasChanged();
+    }
+
+    private async Task CargarImpuestoTipos()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        ImpuestoTipos = await DbContext.ImpuestoTipos.ToListAsync();
+        StateHasChanged();
+    }
+    
+    private async Task CargarImpuestos(int Id)
+    {
+        
+        Producto.ImpuestoTipoId = Id;
+        
+        if (Id != 1)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+            Impuestos = await DbContext.Impuestos.ToListAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            Impuestos = new List<Impuesto>();
+            StateHasChanged();
+        }
+    }
+
+    private async Task CrearProducto()
+    {
+
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        if(Producto.ImpuestoTipoId == 1)
+        {
+            if(Producto.ImpuestoId != null)
+            {
+                await IMessage.Alert("El impuesto no puede ser seleccionado si el tipo de impuesto es Exento!");
+                return;
+            }
+        }
+
+        if(Producto.ImpuestoTipoId != 1)
+        {
+            if(Producto.ImpuestoId == null)
+            {
+                await IMessage.Alert("Debe seleccionar un Impuesto si el Tipo de Impuesto es diferente a Exento!");
+                return;
+            }
+        }
+        
+
+
+        if (Producto.Id == 0)
+        {
+            var ItemNombre = await DbContext.Productos.SingleOrDefaultAsync(p => p.Nombre == Producto.Nombre);
+
+            if (ItemNombre != null)
+            {
+                await IMessage.Alert("Ya hay un producto con este nombre!");
+                return;
+            }
+
+            var ItemCodigo = await DbContext.Productos.SingleOrDefaultAsync(p => p.Codigo == Producto.Codigo);
+
+            if (ItemCodigo != null)
+            {
+                await IMessage.Alert("Ya hay un producto con este codigo!");
+                return;
+            }
+
+            if (Producto.CategoriaId == 0)
+            {
+                await IMessage.Alert("Debe seleccionar una Categoria!");
+                return;
+            }
+
+            if (Producto.SubCategoriaId == 0)
+            {
+                await IMessage.Alert("Debe seleccionar una Sub-Categoria!");
+                return;
+            }
+            Producto.EmpresaId = Empresa.Id;
+            Producto.SucursalId = Sucursal.Id;
+
+            await DbContext.AddAsync(Producto);
+            await DbContext.SaveChangesAsync();
+
+            await IMessage.Success("Registro exitoso!");
+            
+            Producto = new Producto();
+
+
+        }
+        else
+        {
+            var Item = await DbContext.Productos.SingleOrDefaultAsync(p => p.Id == Producto.Id);
+
+            if (Item != null)
+            {
+                Item.Codigo = Producto.Codigo;
+                Item.Nombre = Producto.Nombre;
+                Item.CategoriaId = Producto.CategoriaId;
+                Item.SubCategoriaId = Producto.SubCategoriaId;
+                Item.Activo = Producto.Activo;
+                Item.ManejaExistencia = Producto.ManejaExistencia;
+                Item.ImpuestoTipoId = Producto.ImpuestoTipoId;
+                Item.ImpuestoId = Producto.ImpuestoId;
+                Item.Costo = Producto.Costo;
+                Item.Precio = Producto.Precio;
+
+                DbContext.Update(Item);
+                await DbContext.SaveChangesAsync();
+
+                await IMessage.Success("Modificacion exitosa!");
+
+                Producto = new Producto();
+            }
+        }
+
+        Producto.ImpuestoTipoId = 1;
+
+    }
+
+}

@@ -1,0 +1,560 @@
+@page "/registrodeorden/{returnURL?}"
+@page "/registrodeorden/{Id:int?}/{returnURL?}"
+@page "/registrodeorden/Mesa/{MesaId:int?}/{returnURL?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin,Cajero/a")]
+
+@layout MainLayout
+
+@inject NavigationManager NavManager
+@inject EstadoOrden EstadoOrden
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject UserManager<Usuario> UserManager
+@inject AuthenticationStateProvider AuthStateProv
+@inject IJSRuntime JSRuntime
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard Style="height:fit-content(); min-height:600px; padding:5px; font-size:small">
+    <EditForm Model="Orden">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="row">
+            <div class="col-lg-9">
+                <RadzenCard Style="padding: 5px; font-size:small">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="row" style="height:60px">
+                                <div class="col-sm-3">
+                                    <div class="form-group">
+                                        <div>Nombre:</div>
+                                        <div>
+                                            <RadzenTextBox class="form-control" 
+                                                            Style="font-size:small" @bind-Value="Nombre" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+
+                                    <div class="form-group">
+                                        <RadzenLabel Text="Categoria:" />
+                                        <div>
+                                            <RadzenDropDown class="form-control"
+                                                            Style="font-size:small"
+                                                            AllowClear="true"
+                                                            AllowFiltering="true"
+                                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                            FilterOperator="Radzen.StringFilterOperator.Contains"
+                                                            Data="@Categorias"
+                                                            TValue="int?"
+                                                            TextProperty="Nombre"
+                                                            ValueProperty="Id"
+                                                            @bind-Value="@CategoriaSeleccionadaId"
+                                                            Change="@(async () => await CargarSubCategorias(CategoriaSeleccionadaId))" />
+
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="col-sm-3">
+
+                                    <div class="form-group">
+                                        <RadzenLabel Text="Sub-Categoria:" />
+                                        <div>
+                                            <RadzenDropDown class="form-control"
+                                                            Style="font-size:small"
+                                                            AllowClear="true"
+                                                            AllowFiltering="true"
+                                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                            FilterOperator="Radzen.StringFilterOperator.Contains"
+                                                            TValue="int?"
+                                                            Data=@SubCategorias
+                                                            TextProperty="Nombre"
+                                                            ValueProperty="Id"
+                                                            @bind-Value="@SubCategoriaSeleccionadaId" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-1">
+
+                                    <div class="form-group">
+                                        <div></div>
+                                        <div>
+                                            <RadzenButton Style="margin-top:18px" Icon="search" Click="CargarProductos" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-1">
+
+                                    <div class="form-group">
+                                        <div></div>
+                                        <div>
+                                            <RadzenButton Style="margin-top:18px" Icon="clear" ButtonStyle="ButtonStyle.Danger" Click="BtnNuevaOrden" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </RadzenCard>
+                <RadzenCard Style="height: 450px; overflow:scroll">
+                    <ul class="pizza-cards scrollable">
+                        @foreach (var item in Productos)
+                        {
+                            if (Productos != null)
+                            {
+                                <li style="background-image: url('@item.ImageString')" @onclick="(()=>EstadoOrden.SeleccionarProducto(item))">
+                                    <div class="pizza-info">
+                                        <span class="title">@item.Nombre</span>
+                                        <span class="price">@item.Precio.ToString("C2")</span>
+                                    </div>
+                                </li>
+                            }
+                        }
+
+                    </ul>
+                </RadzenCard>
+            </div>
+            <div class="col-lg-3">
+                <RadzenCard Style="padding: 5px">
+                    <RadzenCard Style="padding: 5px">
+                        <div class="row">
+                            <div class="col"><h5>Total:</h5></div>
+                            <div class="col"></div>
+                            <div class="col">@Orden.OrdenDetalles.Sum(o => o.Importe).ToString("C2")</div>
+                        </div>
+                    </RadzenCard>
+                    <RadzenCard Style="height: 450px; overflow: scroll; padding: 1px">
+                        @foreach (var item in Orden.OrdenDetalles)
+                        {
+
+                            <RadzenCard class="orden" Style="padding:5px;height:80px" @onclick="(()=>EstadoOrden.SeleccionarDetalle(item))">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="row" style="font-size:small">
+                                            <div class="col-lg-12">
+                                                <b>@item.NombreProducto</b>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="font-size:small">
+                                            <div class="col-lg-4">
+                                                <div style="margin-top:1px">Cant.:</div>
+                                                <b>@item.Cantidad</b>
+                                            </div>
+                                            <div class="col-lg-4">
+                                                <div style="margin-top:1px">Precio:</div>
+                                                <b>@item.Precio.ToString("C2")</b>
+                                            </div>
+                                            <div class="col-lg-4">
+                                                <div style="margin-top:1px">Importe:</div>
+                                                <b>@item.Importe.ToString("C2")</b>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </RadzenCard>
+                        }
+                    </RadzenCard>
+                    <RadzenButton Icon="check_circle" Style="background-color:seagreen" Click="EstadoOrden.AbrirModalOrden" />
+                </RadzenCard>
+            </div>
+        </div>
+    </EditForm>
+</RadzenCard>
+
+@if (EstadoOrden.ShowModalAgregarDetalle)
+{
+    <AgregarDetalleAOrdenDialog Detalle="EstadoOrden.Detalle"
+                                OnConfirm="EstadoOrden.AgregarOrden"
+                                OnCancel="EstadoOrden.CerrarModalOrdenDetalle"
+                                OnDelete="EstadoOrden.RemoverProductodeOrden" />
+}
+
+@if (EstadoOrden.ShowModalOrden)
+{
+    <RegistrarDatosOrdenDialog Orden="EstadoOrden.Orden"
+                               OnConfirm="RegistrarOrden"
+                               OnCancel="EstadoOrden.CerrarModalOrden" />
+}
+
+@code{
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    Orden Orden => EstadoOrden.Orden;
+
+    private bool IsBusy { get; set; } = false;
+
+    [Parameter]
+    public int? Id { get; set; }
+    [Parameter]
+    public int? MesaId { get; set; }
+    [Parameter]
+    public string returnURL { get; set; }
+    private List<Producto> Productos { get; set; } = new List<Producto>();
+    private List<Categoria> Categorias { get; set; } = new List<Categoria>();
+    private List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+    private int? CategoriaSeleccionadaId { get; set; }
+    private int? SubCategoriaSeleccionadaId { get; set; }
+
+    private string Nombre { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+
+        if (Id != null)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            var OrdenModificar = await DbContext.Ordenes
+                .Include(o => o.TipoOrden)
+                .Include(o => o.Sector)
+                .Include(o => o.Usuario)
+                .Include(o => o.OrdenDetalles)
+                .ThenInclude(od => od.Producto)
+                .SingleOrDefaultAsync(o => o.Id == Id);
+
+            EstadoOrden.CargarOrden(OrdenModificar);
+        }
+
+        if (MesaId != null)
+        {
+            EstadoOrden.Orden.MesaId = MesaId;
+
+            Orden.TipoOrdenId = 3;
+        }
+
+        if (MesaId == null && Id == null)
+        {
+            Orden.TipoOrdenId = 1;
+
+        }
+
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarCategorias();
+            await CargarProductos();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            Orden.TipoOrdenId = Empresa.TipoOrdenPredeterminada;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarProductos()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Productos = await DbContext.Productos
+        .Include(p => p.Categoria)
+        .Include(p => p.SubCategoria)
+        .Where(p => p.Activo == true &&
+            p.EmpresaId == Empresa.Id &&
+            (Nombre == null || p.Nombre.Contains(Nombre)) &&
+           (CategoriaSeleccionadaId == null || p.CategoriaId == CategoriaSeleccionadaId) &&
+           (SubCategoriaSeleccionadaId == null || p.SubCategoriaId == SubCategoriaSeleccionadaId))
+        .ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarCategorias()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Categorias = await DbContext.Categorias.Where(c=>c.EmpresaId == Empresa.Id).ToListAsync();
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+
+    public async Task CargarSubCategorias(int? Id)
+    {
+        if (Id == null)
+        {
+            return;
+        }
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        SubCategorias = await DbContext.SubCategorias
+        .Where(p => p.CategoriaId == Id)
+        .ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+
+
+    private void RemoverProductodeOrden(OrdenDetalle Item)
+    {
+        var OrdenDetalle = EstadoOrden.Orden.OrdenDetalles.Find(od => od.ProductoId == Item.ProductoId);
+        if (OrdenDetalle != null)
+        {
+            EstadoOrden.Orden.OrdenDetalles.Remove(OrdenDetalle);
+        }
+    }
+
+    private void BtnNuevaOrden()
+    {
+            EstadoOrden.NuevaOrden();
+
+            if (!string.IsNullOrEmpty(returnURL))
+            {
+                NavManager.NavigateTo(returnURL);
+            }
+    }
+
+    public async Task RegistrarOrden()
+    {
+
+        if (Orden.TipoOrdenId == 0)
+        {
+            await IMessage.Alert("Debe seleccionar el tipo de orden!");
+            return;
+        }
+
+        if (Orden.OrdenDetalles.Count <= 0)
+        {
+            await IMessage.Alert("No se puede guardar una orden sin productos!");
+            return;
+        }
+
+        if (Orden.TipoOrdenId != 1)
+        {
+            Orden.MontoDelivery = 0;
+        }
+
+
+
+        try
+        {
+            IsBusy = true;
+
+
+            using var DbContext = DbContextFactory.CreateDbContext();
+            
+
+            var OrdenNueva = new Orden();
+            if (Orden.Id == 0)
+            {
+                if (Orden.MesaId != null)
+                {
+                    var ordenpendienteEnMesa = await DbContext.Ordenes.SingleOrDefaultAsync(o => o.Nulo == false && o.Facturado == false && o.MesaId == Orden.MesaId);
+                    if (ordenpendienteEnMesa != null)
+                    {
+                        await IMessage.Alert($"Esta mesa esta ocupada por el cliente {ordenpendienteEnMesa.NombreCliente} con la Orden #{ordenpendienteEnMesa.Id} espere a que el cliente termine de Consumir o Anule la Orden segun sea necesario!");
+                        return;
+                    }
+
+                }
+                var AState = await AuthStateProv.GetAuthenticationStateAsync();
+                var User = AState.User;
+                var Usuario = await UserManager.FindByNameAsync(User.Identity.Name);
+
+                Orden.EmpresaId = Empresa.Id;
+                Orden.SucursalId = Sucursal.Id;
+                Orden.FechaPedido = DateTime.Now;
+                Orden.Usuario = null;
+                Orden.TipoOrden = null;
+                Orden.Sector = null;
+                Orden.UsuarioId = Usuario.Id;
+                Orden.SubTotal = Orden.OrdenDetalles.Sum(od => od.Precio * od.Cantidad);
+                Orden.Descuento = Orden.OrdenDetalles.Sum(od => od.Descuento);
+                Orden.Total = Orden.OrdenDetalles.Sum(od => od.Importe) + Orden.MontoDelivery;
+
+                OrdenNueva = Orden;
+
+                foreach (var item in OrdenNueva.OrdenDetalles)
+                {
+                    item.Producto = null;
+                }
+
+                await DbContext.AddAsync(OrdenNueva);
+                await DbContext.SaveChangesAsync();
+
+                await IMessage.Success("Registro Exitoso!");
+
+                var result = await JSRuntime.Confirmar("Desea imprimir esta orden?");
+                if (result)
+                {
+                    await JSRuntime.AbrirNuevaPagina($"imprimirorden/{OrdenNueva.Id}");
+                }
+
+            
+            }
+            else
+            {
+                var OrdenFromDb = await DbContext.Ordenes
+                    .Include(o => o.TipoOrden)
+                    .Include(o => o.Sector)
+                    .Include(o => o.OrdenDetalles)
+                    .SingleOrDefaultAsync(o => o.Id == Orden.Id);
+
+                OrdenFromDb.TipoOrdenId = Orden.TipoOrdenId;
+                OrdenFromDb.NombreCliente = Orden.NombreCliente;
+                OrdenFromDb.DireccionCliente = Orden.DireccionCliente;
+                OrdenFromDb.MontoDelivery = Orden.MontoDelivery;
+                OrdenFromDb.SubTotal = Orden.OrdenDetalles.Sum(od => od.Precio * od.Cantidad);
+                OrdenFromDb.Descuento = Orden.OrdenDetalles.Sum(od => od.Descuento);
+                OrdenFromDb.Total = Orden.OrdenDetalles.Sum(od => od.Importe) + Orden.MontoDelivery;
+
+                DbContext.Update(OrdenFromDb);
+
+                //
+                //Procesos de Detalle de la Transaccion
+                //
+
+                @*//Consultamos el detalle antiguo de la compra.
+                    var DetalleAntiguo = await DbContext.VentaDetalles.Where(fcd => fcd.VentaId == Ven.Id, null, "FacturaCompra", "Productos");*@
+
+                //Creamos una lista de detalles removidos para agregar los detalles que se hayan removido.
+                var DetallesRemovidos = new List<OrdenDetalle>();
+
+                //por cada detalle en la lista de detalles antiguos
+                foreach (var item in OrdenFromDb.OrdenDetalles)
+                {
+                    //Consultamos en la lista de detalles nuevos donde el producto sea igual al producto del detalle antiguo.
+                    var Exists = Orden.OrdenDetalles.Where(od => od.ProductoId == item.ProductoId && od.Id == item.Id).SingleOrDefault();
+
+                    //Si no existe el detalle antiguo en el detalle de al compra nueva.
+                    if (Exists == null)
+                    {
+                        //Agregamos el detalle antiguo a lista de DetalleRemovidos.
+                        DetallesRemovidos.Add(item);
+                    }
+                }
+
+                //Si hay mas de 0 objetos en la lista de detalles removidos.
+                if (DetallesRemovidos.Count > 0)
+                {
+                    @*//Por cada objeto en la lista de detalles removidos
+                        foreach (var item in DetallesRemovidos)
+                        {
+                            //Consultamos la existencia del producto, donde el almacen sea igual al almacen de la compra.
+                            var EPxA = await _IExistenciaProductosPorAlmacenRepository.GetAsync(epa => epa.ProductosId == item.ProductosId && epa.AlmacenId == FC.AlmacenId);
+                            //Restamos la cantidad del detalle removido y la asignamos a la cantidad de la existencia consultada.
+                            EPxA.Cantidad -= item.Cantidad;
+                            //Actualizamos la Existencia consultada en la base de datos.
+                            await _IExistenciaProductosPorAlmacenRepository.UpdateAsync(EPxA);
+                        }*@
+
+                    //Borramos todos los detalles removidos en la lista de detalles removidos de la Base de Datos.
+                    DbContext.OrdenDetalles.RemoveRange(DetallesRemovidos);
+
+                }
+
+
+
+                //Por cada detalle en el detalle de la compra nueva.
+                foreach (var item in Orden.OrdenDetalles)
+                {
+                    //Asignamos los nuevos datos al detalle para que entity framework no arroje excepciones.
+                    item.OrdenId = OrdenFromDb.Id;
+                    item.Orden = await DbContext.Ordenes.SingleOrDefaultAsync(o => o.Id == OrdenFromDb.Id);
+                    item.Producto = await DbContext.Productos.SingleOrDefaultAsync(o => o.Id == item.ProductoId);
+
+                    //Si el detalle nuevo no existe en la base de datos.
+                    if (item.Id == 0)
+                    {
+                        //lo insertamos.
+                        await DbContext.AddAsync(item);
+                    }
+                    else
+                    {
+                        //Consultamos el detalle de la lista de Detalles Antiguos, donde el producto y la compra sean igual al detalle de la compra enviada.
+                        var detalle = OrdenFromDb.OrdenDetalles.Where(od => od.ProductoId == item.ProductoId && od.OrdenId == item.OrdenId).SingleOrDefault();
+
+                        //Asignamos los datos a actualizar al detalle consultado
+                        detalle.NombreProducto = item.NombreProducto;
+                        detalle.Cantidad = item.Cantidad;
+                        detalle.Descuento = item.Descuento;
+                        detalle.Precio = item.Precio;
+                        detalle.Importe = item.Importe;
+
+                        //actualizamos los datos en la base de datos.
+                        DbContext.Update(detalle);
+                    }
+
+                }
+
+                await DbContext.SaveChangesAsync();
+                
+                EstadoOrden.CerrarModalOrden();
+                EstadoOrden.NuevaOrden();
+
+                await IMessage.Success("Modificacion Exitosa!");
+
+                //var result = await IMessage.Confirm("Desea imprimir esta orden?", "Si", "No");
+                var result = await JSRuntime.Confirmar("Desea imprimir esta orden?");
+                if (result)
+                {
+                    await JSRuntime.AbrirNuevaPagina($"imprimirorden/{OrdenFromDb.Id}");
+                }
+
+            }
+
+            IsBusy = false;
+        }
+        catch (Exception ex)
+        {
+
+            if (ex.InnerException == null)
+            {
+                await IMessage.Error(ex.Message);
+            }
+            else
+            {
+                await IMessage.Error(ex.InnerException.Message);
+            }
+        }
+        finally
+        {
+                EstadoOrden.NuevaOrden();
+                EstadoOrden.CerrarModalOrden();
+
+                if(string.IsNullOrEmpty(returnURL))
+                {
+                    NavManager.NavigateTo("/ordenes");
+                }
+                else
+                {
+                    NavManager.NavigateTo(returnURL);
+                }
+        }
+
+        
+
+    }
+
+}

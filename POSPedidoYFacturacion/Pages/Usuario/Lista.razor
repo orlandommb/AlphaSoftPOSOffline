@@ -1,0 +1,133 @@
+﻿@page "/usuarios"
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+@inject IJSRuntime JSRuntime
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ApplicationDbContext DbContext
+@inject UserManager<Usuario> UserManager
+@inject SignInManager<Usuario> SignInManager
+@inject RoleManager<Rol> RoleManager
+    @inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard>
+    <h3>Lista de Usuarios</h3>
+</RadzenCard>
+
+<RadzenCard>
+    <div class="row">
+        <div class="col-2">
+            <RadzenButton Text="Nuevo" ButtonStyle="Radzen.ButtonStyle.Primary" Click="NuevoUsuario"></RadzenButton>
+        </div>
+        <div class="col-8">
+        </div>
+        <div class="col-2">
+        </div>
+    </div>
+</RadzenCard>
+<div class="container">
+    <div class="row">
+        @if (IsBusy)
+        {
+            <div class="middle-box">
+                <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+            </div>
+        }
+        else
+        {
+
+            <RadzenDataList WrapItems="true" AllowPaging="true" PageSize="10" Data="@Usuarios" TItem="Usuario">
+                <Template Context="Usuario">
+                    <RadzenCard Style="width:300px;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <RadzenImage Path="AlphaSoftLogo.png" Style="width:130px;height:130px" />
+
+                            </div>
+                            <div class="col-md-6">
+                                <div style="margin-top:10px">Usuario:</div>
+                                <b>@Usuario.UserName</b>
+                                <div style="margin-top:10px">Celular:</div>
+                                <b>@Usuario.PhoneNumber</b>
+                                <b><RadzenButton Icon="preview" Click="@(()=>EditarUsuario(Usuario.Id))" /></b>
+                            </div>
+                        </div>
+
+                    </RadzenCard>
+                </Template>
+            </RadzenDataList>
+        }
+    </div>
+</div>
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+
+    private List<Usuario> Usuarios = new List<Usuario>();
+    private bool IsBusy { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarUsuarios();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarUsuarios()
+    {
+        IsBusy = true;
+
+        Usuarios = await UserManager.Users.Where(u=>u.EmpresaId == Empresa.Id).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task<IList<string>> CargarRoles(Usuario usuario)
+    {
+        var Response = await UserManager.GetRolesAsync(usuario);
+
+        if (Response == null)
+        {
+            await IMessage.Error("No hay roles creados!");
+            return new List<string>();
+        }
+        else
+        {
+            return Response;
+        }
+        
+    }
+
+    private void NuevoUsuario()
+    {
+        NavManager.NavigateTo("/usuarios/crear");
+    }
+
+    private void EditarUsuario(string Id)
+    {
+        NavManager.NavigateTo($"/usuarios/crear/{Id}");
+    }
+}
+

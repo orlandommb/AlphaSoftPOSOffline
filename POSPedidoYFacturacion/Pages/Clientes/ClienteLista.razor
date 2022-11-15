@@ -1,0 +1,255 @@
+﻿@page "/clientes"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de Clientes</h5>
+        <MudSpacer />
+        <MudTooltip Text="Nuevo Cliente">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="Nuevo" />
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="padding:5px; font-size:small">
+    <div class="row">
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <RadzenLabel Text="Cedula:" />
+                    <div>
+                        <select class="form-control" @bind="TipoId" @bind:event="onchange" >
+                            <option value="">Seleccione un valor</option>
+                            <option value="CED">Cedula</option>
+                            <option value="RNC">RNC</option>
+                            <option value="PAS">Pasaporte</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <RadzenLabel Text="No. ID:" />
+                    <div>
+                        <RadzenTextBox class="form-control" @bind-Value="@NoId" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <RadzenLabel Text="Nombre:" />
+                    <div>
+                        <RadzenTextBox class="form-control" @bind-Value="@Nombre" />
+                    </div>
+                </div>
+                @*<div class="form-group">
+                        <RadzenLabel Text="Tipo:" />
+                        <div>
+                            <RadzenDropDown AllowClear="true"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                            FilterOperator="Radzen.StringFilterOperator.Contains"
+                                            TValue="int?"
+                                            Data=@TipoFacturas
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            @bind-Value="@TipoFacturaSeleccionadaId"
+                                            Style="width:auto" />
+                        </div>
+                    </div>*@
+            </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <RadzenLabel Text="Activo:" />
+                <div>
+                    <RadzenCheckBox @bind-Value="Activo" Name="Activo" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Buscar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarClientes"/>
+                </MudTooltip>               
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard Style="width:100%; width:fit-content()">
+        <div class="table-responsive-sm w-auto" style="width:100%; height:400px; overflow:scroll">
+            <table class="table table-sm" style="width:100%">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Apellido</th>
+                        <th scope="col">Tipo ID</th>
+                        <th scope="col">No. Id</th>
+                        <th scope="col">Credito</th>
+                        <th scope="col">Limite de Credito</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Clientes)
+                    {
+                        <tr>
+                            <th scope="row">@item.Id</th>
+                            <td>@item.Nombre</td>
+                            <td>@item.Apellido</td>
+                            <td>@item.TipoIdentificacion</td>
+                            <td>@item.NoIdentificacion</td>
+                            <td>
+                                @if(item.CreditoAbierto)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Error"/>
+                                }
+                            </td>
+                            <td>@item.LimiteCredito</td>
+                            <td>
+                                <MudButtonGroup Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small">
+                                    <MudIconButton Icon="@Icons.Material.Outlined.Preview" OnClick="()=>BtnVistaPreviaClick(item.Id)">Vista</MudIconButton>
+                                    <MudIconButton Icon="@Icons.Material.Outlined.Payment" OnClick="()=>MenuNotaCredito(item.Id)">NC</MudIconButton>
+                                    <MudIconButton Icon="@Icons.Material.Outlined.CommentBank" OnClick="()=>MenuNotaDebito(item.Id)">ND</MudIconButton>
+                                </MudButtonGroup>
+
+                                @*<RadzenProfileMenu Style="padding:0px;margin:0px">
+                                    <Template>
+                                        <MudChip Color="Color.Info">Opciones</MudChip>
+                                    </Template>
+                                    <ChildContent>
+                                        <RadzenProfileMenuItem Text="Vista" Path="@($"/clientes/vista/{item.Id}")"></RadzenProfileMenuItem>
+                                        <RadzenProfileMenuItem Text="Nota de Credito" Path="@($"/cxcregistrarnc/param/cliente/{item.Id}")"></RadzenProfileMenuItem>
+                                        <RadzenProfileMenuItem Text="Nota de Debito" Path="@($"/cxcregistrarnd/param/cliente/{item.Id}")"></RadzenProfileMenuItem>
+                                    </ChildContent>
+                                </RadzenProfileMenu>*@
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<Sucursal> Sucursales = new List<Sucursal>();
+    private List<Cliente> Clientes = new List<Cliente>();
+    private List<TipoFactura> TipoFacturas = new List<TipoFactura>();
+    private bool IsBusy { get; set; }
+
+
+    private bool Activo { get; set; } = true;
+
+    private int? SucursalSeleccionadaId { get; set; }
+    private string TipoId { get; set; }
+    private string NoId { get; set; }
+    private string Nombre { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarClientes();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarTipoFacuras()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext.TipoFacturas.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarClientes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Clientes = await DbContext.Clientes.Where(
+            p => p.EmpresaId == Empresa.Id && p.SucursalId == Sucursal.Id && (TipoId == null || p.TipoIdentificacion.Contains(TipoId)) &&
+            (NoId == null || p.NoIdentificacion.Contains(NoId)) &&
+            (Nombre == null || p.Nombre.Contains(Nombre))).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    @*public async Task CargarSucursales()
+        {
+            IsBusy = true;
+
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            TipoFacturas = await DbContext..ToListAsync();
+
+
+            IsBusy = false;
+        }*@
+
+    private void Nuevo()
+    {
+        NavManager.NavigateTo("/clientes/crear");
+    }
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/clientes/vista/" + Id);
+    }
+    
+    public void MenuNotaCredito(int Id)
+    {
+        NavManager.NavigateTo("/cxcregistrarnc/param/cliente/" + Id);
+    }
+
+    public void MenuNotaDebito(int Id)
+    {
+        NavManager.NavigateTo("/cxcregistrarnd/param/cliente/" + Id);
+    }
+}

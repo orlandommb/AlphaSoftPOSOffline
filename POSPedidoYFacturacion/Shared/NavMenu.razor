@@ -1,0 +1,115 @@
+﻿@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthProv
+
+@if (IsBusy) { }
+else
+{
+    <MudPaper Width="100%" Height="100%" Elevation="2" Style="font-size: small">
+        <MudNavMenu>
+            <AuthorizeView Roles="Admin,SuperAdmin,Cajero/a">
+                <MudNavGroup Title="Caja" Icon="@Icons.Material.Filled.PointOfSale">
+                    <MudNavLink Icon="@Icons.Material.Filled.Money" Href="aperturacuadre">Apertura de Cuadre</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.Close" Href="cierrecuadre">Cierre de Cuadre</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.AttachMoney" Href="cxcregistrarri">Recibo de Ingreso</MudNavLink>
+                    @if (Empresa.UsarPOSRestaurant)
+                    {
+                        <MudNavLink Icon="@Icons.Material.Filled.PointOfSale" Href="posrestaurante">Punto de Venta</MudNavLink>
+                    }
+                    else
+                    {
+                        <MudNavLink Icon="@Icons.Material.Filled.PointOfSale" Href="puntodeventa">Punto de Venta</MudNavLink>
+                    }
+                    <MudNavLink Icon="@Icons.Material.Filled.MonetizationOn" Href="cuadres">Lista de Cuadres</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Inventario" Icon="@Icons.Material.Filled.Inventory">
+                    <MudNavLink Icon="@Icons.Material.Filled.AddBox" Href="/productos">Productos</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.Category" Href="/categorias">Categorias</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.Class" Href="/subcategorias">Sub-Categorias</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.Storage" Href="/almacenes">Almacenes</MudNavLink>
+                    <MudNavGroup Title="Transacciones" Icon="@Icons.Material.Filled.ChangeCircle">
+                        <MudNavLink Icon="@Icons.Material.Filled.MoveToInbox" Href="/ajustesinventario">Ajustes</MudNavLink>
+                    </MudNavGroup>
+                    <MudNavGroup Title="Reportes" Icon="@Icons.Material.Filled.Report">
+                        <MudNavLink Href="/reporteexistencia">Reporte de Existencias</MudNavLink>
+                        <MudNavLink Href="/inventario/reporte_inventario_general">Reporte de Inventario</MudNavLink>
+                    </MudNavGroup>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Suplidores" Icon="@Icons.Material.Filled.Person">
+                    <MudNavLink Icon="@Icons.Material.Filled.List" Href="/suplidores">Lista de Suplidores</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Clientes" Icon="@Icons.Material.Filled.People">
+                    <MudNavLink Icon="@Icons.Material.Filled.List" Href="/clientes">Lista de Clientes</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Compras" Icon="@Icons.Material.Filled.ShoppingBasket">
+                    <MudNavLink Icon="@Icons.Material.Filled.List" Href="/compras">Lista de Compras</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin,Cajero/a">
+                <MudNavGroup Title="Ordenes" Icon="@Icons.Material.Filled.ShoppingCart">
+                    <MudNavLink Icon="@Icons.Material.Filled.List" Href="/ordenes">Lista de Ordenes</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin,Cajero/a">
+                <MudNavGroup Title="Ventas" Icon="@Icons.Material.Filled.ShoppingBag">
+                    <MudNavLink Icon="@Icons.Material.Filled.List" Href="/ventas">Lista de Ventas</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Devoluciones" Icon="@Icons.Material.Filled.AssignmentReturn">
+                    <MudNavLink Icon="@Icons.Material.Filled.List" Href="/devolucionesdeventa">Lista de Devoluciones</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Seguridad" Icon="@Icons.Material.Filled.Security">
+                    <MudNavLink Icon="@Icons.Material.Filled.AccountCircle" Href="/usuarios">Usuarios</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Configuraciones" Icon="@Icons.Material.Filled.Settings">
+                    <MudNavLink Icon="@Icons.Material.Filled.House" Href="/empresa">Empresa</MudNavLink>
+                    @if (Empresa.UsarPOSRestaurant)
+                    {
+                        <MudNavLink Icon="@Icons.Material.Filled.Restaurant" Href="/editorarea">Areas</MudNavLink>
+                    }
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin,SuperAdmin">
+                <MudNavGroup Title="Administracion" Icon="@Icons.Material.Filled.Dashboard">
+                    <MudNavLink Icon="@Icons.Material.Filled.Dashboard" Href="/dashboard">Dashboard</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+            <AuthorizeView Roles="SuperAdmin">
+                <MudNavGroup Title="Master" Icon="@Icons.Material.Filled.AdminPanelSettings">
+                    <MudNavLink Icon="@Icons.Material.Filled.AdminPanelSettings" Href="/mainframe">Master</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+        </MudNavMenu>
+    </MudPaper>
+}
+
+@code {
+
+    public bool IsBusy { get; set; } = false;
+    public string UserName { get; set; }
+    public Empresa Empresa { get; set; } = new Empresa();
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Empresa = await DbContext.Empresa.OrderBy(e => e.Id).SingleOrDefaultAsync();
+        // Logo = await DbContext.Empresa.OrderBy(e => e.Id).Select(e => e.Logo).SingleOrDefaultAsync();
+
+        var AuthState = await AuthProv.GetAuthenticationStateAsync();
+        UserName = AuthState.User.Identity.Name;
+        IsBusy = false;
+    }
+}

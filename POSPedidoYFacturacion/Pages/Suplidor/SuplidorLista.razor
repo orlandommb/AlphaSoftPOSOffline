@@ -1,0 +1,255 @@
+﻿@page "/suplidores"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de Suplidores</h5>
+        <MudSpacer />
+        <MudTooltip Text="Nueva Suplidor">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="Nuevo" />
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="padding:5px; font-size:small">
+    <div class="row">
+        <div class="col-sm-3">
+            <div class="form-group">
+                <RadzenLabel Text="Cedula:" />
+                <div>
+                    <RadzenTextBox class="form-control" @bind-Value="@Cedula" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <RadzenLabel Text="RNC:" />
+                <div>
+                    <RadzenTextBox class="form-control" @bind-Value="@RNC" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <RadzenLabel Text="Nombre:" />
+                <div>
+                    <RadzenTextBox class="form-control" @bind-Value="@Nombre" />
+                </div>
+            </div>
+            @*<div class="form-group">
+                <RadzenLabel Text="Tipo:" />
+                <div>
+                    <RadzenDropDown AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="Radzen.StringFilterOperator.Contains"
+                                    TValue="int?"
+                                    Data=@TipoFacturas
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="@TipoFacturaSeleccionadaId"
+                                    Style="width:auto" />
+                </div>
+            </div>*@
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <RadzenLabel Text="Nulo:" />
+                <div>
+                    <RadzenCheckBox @bind-Value="Activo" Name="Activo" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Buscar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarSuplidores"/>
+                </MudTooltip>            
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="d-flex justify-content-center">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard Style="width:100%; width:fit-content()">
+        <div class="table-responsive-sm w-auto" style="width:100%; overflow:scroll">
+            <table class="table table-sm" style="width:100%">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Razon Social</th>
+                        <th scope="col">Cedula</th>
+                        <th scope="col">RNC</th>
+                        <th scope="col">Activo</th>
+                        <th scope="col">Telefono</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Suplidores)
+                    {
+                        <tr>
+                            <th scope="row">@item.Id</th>
+                            <td>@item.Nombre</td>
+                            <td>@item.RazonSocial</td>
+                            <td>@item.Cedula</td>
+                            <td>@item.RNC</td>
+                            <td>
+                            @if(item.Activo)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Error"/>
+                            }
+                            </td>
+                            <td>@item.Telefono</td>
+                            <td>
+                                <MudButtonGroup Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small">
+                                    <MudTooltip Text="Vista">
+                                        <MudIconButton Icon="@Icons.Material.Outlined.Preview" OnClick="()=>BtnVistaPreviaClick(item.Id)">Vista</MudIconButton>
+                                    </MudTooltip>
+                                    <MudTooltip Text="Registro de Pago">
+                                        <MudIconButton Icon="@Icons.Material.Outlined.Money" OnClick="()=>RegistrarRP(item.Id)">RP</MudIconButton>
+                                    </MudTooltip>
+                                    <MudTooltip Text="Nota de Credito">
+                                        <MudIconButton Icon="@Icons.Material.Outlined.Payment" OnClick="()=>MenuNotaCredito(item.Id)">NC</MudIconButton>
+                                    </MudTooltip>
+                                    <MudTooltip Text="Nota de Debito">
+                                        <MudIconButton Icon="@Icons.Material.Outlined.CommentBank" OnClick="()=>MenuNotaDebito(item.Id)">ND</MudIconButton>
+                                    </MudTooltip>                                
+                                </MudButtonGroup>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<Sucursal> Sucursales = new List<Sucursal>();
+    private List<Suplidor> Suplidores = new List<Suplidor>();
+    private List<TipoFactura> TipoFacturas = new List<TipoFactura>();
+    private bool IsBusy { get; set; }
+
+
+    private bool Activo { get; set; } = true;
+
+    private int? SucursalSeleccionadaId { get; set; }
+    private string Cedula { get; set; }
+    private string RNC { get; set; }
+    private string Nombre { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarSuplidores();
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+
+    public async Task CargarTipoFacuras()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext.TipoFacturas.ToListAsync();
+
+        IsBusy = false;
+    }
+
+    public async Task CargarSuplidores()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Suplidores = await DbContext.Suplidores.Where(
+            p => p.EmpresaId == Empresa.Id && p.Activo == Activo &&
+                        (Cedula == null || p.Cedula.Contains(Cedula)) &&
+                        (RNC == null || p.RNC.Contains(RNC)) &&
+                        (Nombre == null || p.Nombre.Contains(Nombre))).ToListAsync();
+
+        IsBusy = false;
+    }
+
+    @*public async Task CargarSucursales()
+        {
+            IsBusy = true;
+
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            TipoFacturas = await DbContext..ToListAsync();
+
+
+            IsBusy = false;
+        }*@
+
+    private void Nuevo()
+    {
+        NavManager.NavigateTo("/suplidores/crear");
+    }
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/suplidores/vista/" + Id);
+    }
+
+    public void RegistrarRP(int Id)
+    {
+        NavManager.NavigateTo("/cxpregistrarrp/param/suplidor/" + Id);
+    }
+    
+    public void MenuNotaCredito(int Id)
+    {
+        NavManager.NavigateTo("/cxpregistrarnc/param/suplidor/" + Id);
+    }
+
+    public void MenuNotaDebito(int Id)
+    {
+        NavManager.NavigateTo("/cxpregistrarnd/param/suplidor/" + Id);
+    }
+}

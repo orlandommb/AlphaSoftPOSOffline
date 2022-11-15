@@ -1,0 +1,107 @@
+@page "/cxc/reciboingreso/vista/{Id:int}"
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject AuthenticationStateProvider AuthStateProv
+@inject UserManager<Usuario> UserManager
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard>
+    <h5>Vista de Recibo de Ingreso</h5>
+</RadzenCard>
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard>
+
+                <RadzenCard Style="padding:5px">
+                    <div class=row>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                    <MudTextField T="string" Label="Cliente" Text="@($"{ReciboIngreso.Cliente.Nombre} {ReciboIngreso.Cliente.Apellido}")"/>
+                            </div>
+                            <div class="form-group">
+                                <MudTextField T="string" Label="Tipo" Text="@ReciboIngreso.CXCTransaccionTipoDocumento.Nombre"/>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                    <MudTextField T="string" Label="Fecha:" Text="@ReciboIngreso.Fecha.ToString("d")" />
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                    <MudTextField T="string" Label="Monto:" Text="@ReciboIngreso.Monto.ToString("C2")"/>
+                            </div>
+                        </div>
+                    </div>
+                </RadzenCard>
+                <RadzenCard Style="padding:15px">
+                    <div class="row">
+                        <div class="table-responsive-sm" style="width: 100%; overflow:scroll; height:500px">
+                            <table class="table table-sm" style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th col="scope">No. Factura</th>
+                                        <th col="scope">Fecha</th>
+                                        <th col="scope">Balance Antes</th>
+                                        <th col="scope">Monto a aplicar</th>
+                                        <th col="scope">Balance Despues</th>
+                                        <th col="scope"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (ReciboIngreso.CXCTransaccionDetalles.Count > 0)
+                                    {
+                                        @foreach (var cxcventas in ReciboIngreso.CXCTransaccionDetalles)
+                                        {
+                                            <tr>
+                                                <td>@cxcventas.Venta.Id</td>
+                                                @if (cxcventas.Venta.FechaFinalizado.HasValue)
+                                                {
+                                                    <td>@cxcventas.Venta.FechaFinalizado.Value.ToString("d")</td>
+                                                }
+                                                <td>@cxcventas.BalanceAntes.ToString("C2")</td>
+                                                <td>@cxcventas.MontoAAplicar.ToString("C2")</td>
+                                                <td>@cxcventas.BalanceDespues.ToString("C2")</td>
+                                                <td></td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </RadzenCard>
+        </RadzenCard>
+}
+
+@code{
+    [Parameter]
+    public int Id { get; set; }
+    private CXCTransaccion ReciboIngreso { get; set; } = new CXCTransaccion();
+
+    public bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        ReciboIngreso = await DbContext.CXCTransacciones
+            .Include(x => x.Cliente)
+            .Include(x => x.CXCTransaccionTipoDocumento)
+            .Include(x => x.CXCTransaccionDetalles)
+            .ThenInclude(x => x.Venta)
+            .FirstOrDefaultAsync(x => x.Id == Id);
+
+        IsBusy = false;
+    }
+    
+}

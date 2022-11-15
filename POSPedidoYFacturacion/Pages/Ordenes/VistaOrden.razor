@@ -1,0 +1,282 @@
+﻿@page "/ordenes/vista/{Id:int?}"
+
+@attribute [Authorize] 
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject IJSRuntime IJSRuntime
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Vista de Orden</h5>
+        <MudSpacer />
+        <MudTooltip Text="Editar">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Color="Color.Info" OnClick="(()=>EditarOrden(Orden.Id))" />
+        </MudTooltip>
+        <MudTooltip Text="Anular">
+            <MudIconButton Icon="@Icons.Material.Filled.Clear" Variant="Variant.Outlined" Color="Color.Error" OnClick="AnularOrden" />
+        </MudTooltip>
+        <MudTooltip Text="Imprimir">
+            <MudIconButton Icon="@Icons.Material.Filled.Print" Variant="Variant.Outlined" Color="Color.Secondary" OnClick="(()=> ImprimirOrden(Orden.Id))" />
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+<RadzenCard>
+    @if (IsBusy)
+    {
+        <div class="middle-box">
+            <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+        </div>
+    }
+    else
+    {
+        <RadzenCard style="padding:5px">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Codigo:</label>
+                        <div>
+                            <RadzenLabel Text="@Orden.Id.ToString()" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Orden</label>
+                        <div>
+                            <RadzenLabel Text="@Orden.TipoOrden.Nombre" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <div>
+                            <RadzenLabel Text="@Orden.FechaPedido.ToString("d")" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado:</label>
+                        <div>
+                            @if (Orden.Nulo == true)
+                            {
+                                <RadzenLabel Text="Orden Anulada" />
+                            }
+                            else if (Orden.Facturado == true)
+                            {
+                                <RadzenLabel Text="Orden Facturada" />
+                            }
+                            else
+                            {
+                                <RadzenLabel Text="Pendiente" />
+
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Cliente:</label>
+                        <div>
+                            <RadzenLabel Text="@Orden.NombreCliente" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Direccion:</label>
+                        <div>
+                            <RadzenLabel Text="@Orden.DireccionCliente" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Celular:</label>
+                        <div>
+                            <RadzenLabel Text="@Orden.CelularCliente" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div>
+                                    <label>Sub-Total: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Descuento: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Delivery: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Impuesto: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Total: </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" style="justify-content:flex-end">
+                            <div class="form-group">
+                                <div>
+                                    <label>@Orden.SubTotal.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Orden.Descuento.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Orden.MontoDelivery.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Orden.Impuesto.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Orden.Total.ToString("C2")</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </RadzenCard>
+
+        <RadzenCard style="padding:15px">
+
+            <div class="row">
+                <div style="margin:10px"></div>
+
+
+                <div class="table-responsive">
+                    <table class="table table-sm" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th scope="col">Codigo</th>
+                                <th scope="col">Producto</th>
+                                <th scope="col">Cantidad</th>
+                                <th scope="col">Precio</th>
+                                <th scope="col">Descuento</th>
+                                <th scope="col">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            @foreach (var item in Orden.OrdenDetalles)
+                            {
+
+                                <tr>
+                                    <th scope="row">@item.Producto.Codigo</th>
+                                    <td>@item.NombreProducto</td>
+                                    <td>@item.Cantidad</td>
+                                    <td>@String.Format("{0:C2}", item.Precio)</td>
+                                    <td>@String.Format("{0:C2}", item.Descuento)</td>
+                                    <td>@String.Format("{0:C2}", item.Importe)</td>
+                                </tr>
+
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </RadzenCard>
+    }
+
+</RadzenCard>
+
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    public bool IsBusy { get; set; } = false;
+
+    public Orden Orden { get; set; } = new Orden();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarOrden();
+    }
+
+    private async Task CargarOrden()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Orden = await DbContext.Ordenes
+            .Include(o => o.TipoOrden)
+            .Include(o => o.OrdenDetalles)
+            .ThenInclude(od => od.Producto)
+            .Include(o => o.Sector)
+            .SingleOrDefaultAsync(o => o.Id == Id);
+        IsBusy = false;
+    }
+
+    private async Task AnularOrden()
+    {
+        if (Orden.Facturado == true)
+        {
+            await IMessage.Alert("Orden esta facturada no se puede anular!");
+            return;
+        }
+
+        if (Orden.Nulo == true)
+        {
+            await IMessage.Alert("Orden ya esta nula!");
+            return;
+        }
+
+        var Confirm = await IJSRuntime.Confirmar($"Desea anular la Orden {Id} del cliente {Orden.NombreCliente} ?");
+
+        if (Confirm)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            var OrdenAnular = await DbContext.Ordenes
+            .SingleOrDefaultAsync(o => o.Id == Id);
+
+            OrdenAnular.Nulo = true;
+
+            DbContext.Update(OrdenAnular);
+
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success($"la orden {OrdenAnular.Id} del cliente {OrdenAnular.NombreCliente} ha sido anulada!");
+            await CargarOrden();
+        }
+    }
+
+    private async void ImprimirOrden(int Id)
+    {
+        await IJSRuntime.AbrirNuevaPagina($"imprimirorden/{Id}");
+    }
+
+    private async Task EditarOrden(int Id)
+    {
+        if (Orden.Facturado == true)
+        {
+            await IMessage.Alert("Orden esta facturada no se puede modificar");
+            return;
+        }
+
+        if (Orden.Nulo == true)
+        {
+            await IMessage.Alert("Orden esta anulada no se puede modificar");
+            return;
+        }
+
+        NavManager.NavigateTo($"/registrodeorden/{Id}/{Uri.EscapeDataString(NavManager.Uri)}");
+
+    }
+
+}

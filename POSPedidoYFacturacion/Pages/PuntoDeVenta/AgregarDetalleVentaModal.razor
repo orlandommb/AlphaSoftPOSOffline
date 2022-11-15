@@ -1,0 +1,106 @@
+﻿@inject IMessage IMessage
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+<!-- Modal -->
+<MudOverlay Visible="true" DarkBackground="true">
+<div class="modal fade show" id="exampleModal" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Agregar Producto a Orden</h5>
+                <button type="button" class="close" @onclick="OnCancel">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="form-group" style="padding-left:1rem">
+                        <div>Producto:</div>
+                        <div>
+                            <RadzenLabel class="form-control" Text="@Detalle.Producto.Nombre" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <div>Cantidad</div>
+                            <div>
+                                <RadzenNumeric TValue="int" @bind-Value="Detalle.Cantidad" Change="@((args)=>CantidadModalChange(args))" />
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <div>Precio:</div>
+                            <div>
+                                <RadzenLabel class="form-control" Text="@Detalle.Producto.Precio.ToString("C2")" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <div>Descuento:</div>
+                            <div>
+                                <RadzenNumeric TValue="decimal" @bind-Value="Detalle.Descuento" ShowUpDown="false" Format="0.00" Change="@((args)=>DescuentoModalChange(args))" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <div>Importe:</div>
+                            <div>
+                                <RadzenLabel class="form-control" Text="@Detalle.Importe.ToString("C2")" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <RadzenButton class="btn btn-danger" Click="OnDelete">Eliminar Producto</RadzenButton>
+                <RadzenButton class="btn btn-primary" Click="OnConfirm">Agregar Producto</RadzenButton>
+            </div>
+        </div>
+    </div>
+</div>
+</MudOverlay>
+@code {
+
+    [Parameter] public VentaDetalle Detalle { get; set; }
+    [Parameter] public Almacen Almacen { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        await CantidadModalChange(Detalle.Cantidad);
+    }
+
+    private async Task CantidadModalChange(dynamic value)
+    {
+        if(Detalle.Producto.ManejaExistencia)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+            var Existencias = await DbContext.Existencias.Where(e => e.ProductoId == Detalle.ProductoId && e.AlmacenId == Almacen.Id).ToListAsync();
+            if (Existencias.Sum(e=>e.Cantidad) <= 0)
+            {
+                await IMessage.Alert("No hay existencias para este producto");
+                return;
+            }
+
+            if (value > Existencias.Sum(e => e.Cantidad))
+            {
+                await IMessage.Alert("No hay existencias suficientes para este producto");
+                return;
+            }
+        }
+
+        Detalle.Importe = Detalle.Precio * value;
+    }
+
+    private void DescuentoModalChange(dynamic value)
+    {
+        Detalle.Importe -= value;
+    }
+}
+

@@ -1,0 +1,202 @@
+@page "/ajustesinventario/vista/{Id:int}"
+@attribute [Authorize(Roles = "SuperAdmin,Admin,Cajero/a,Enc. Almacen")]
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+@inject IJSRuntime JSRuntime
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Vista de Ajuste</h5>
+        <MudSpacer/>
+        <MudTooltip Text="Editar">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Variant="Variant.Outlined" OnClick="Editar"/>
+        </MudTooltip>
+        <MudTooltip Text="Anular">
+            <MudIconButton Icon="@Icons.Material.Filled.Clear" Color="Color.Error" Variant="Variant.Outlined" OnClick="Anular"/>
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard>
+    @if(IsBusy)
+    {
+        <MudOverlay Visible="@IsBusy" DarkBackground="true" Absolute="true" Style="height:100%">
+            <MudProgressCircular Size="Size.Large" Color="Color.Info" Indeterminate="true" />
+        </MudOverlay>
+    }
+    else
+    {
+    <RadzenCard>
+        <div class="row">
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <MudTextField T="string" @bind-Value="@AjusteInventario.AjusteInventarioTipo.Nombre" ReadOnly="true" Label="Tipo Ajuste"/>
+                </div>
+                <div class="form-group">
+                    <MudTextField T="string" @bind-Value="@AjusteInventario.Usuario.UserName" ReadOnly="true" Label="Usuario"/>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <MudTextField T="string" @bind-Value="@AjusteInventario.Almacen.Nombre" ReadOnly="true" Label="Almacen"/>
+                </div>
+                <div class="form-group">
+                    <label>Estado</label>
+                    @if(AjusteInventario.Nulo)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Error"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+                    }
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <MudTextField T="DateTime" @bind-Value="@AjusteInventario.Fecha" Label="Fecha"/>
+                </div>
+            </div>
+        </div>
+    </RadzenCard>
+    <RadzenCard>
+        <div class="row">
+            <div class="table-responsive-sm" style="overflow:scroll; height: 400px;width: 100%">
+                <table class="table table-sm" style="width: 100%">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Costo</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var item in AjusteInventario.AjusteDetalles)
+                        {
+                            <tr>
+                                <td>@item.Producto.Nombre</td>
+                                <td>@item.Cantidad</td>
+                                <td>@item.Costo</td>
+                                <td>@item.Importe</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                
+
+                
+            </div>
+        </div>
+    </RadzenCard>
+    }
+</RadzenCard>
+
+@code{
+
+    [Parameter]
+    public int Id { get; set; }
+    
+    public AjusteInventario AjusteInventario {get; set;} = new AjusteInventario();
+
+    private bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAjusteInventario();
+    }
+
+    private async Task CargarAjusteInventario()
+    {
+        if (Id != 0)
+        {
+            IsBusy = true;
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            AjusteInventario = await DbContext.AjustesInventario
+                .Include(p => p.AjusteDetalles)
+                .ThenInclude(cd => cd.Producto)
+                .Include(p => p.AjusteInventarioTipo)
+                .Include(p => p.Usuario)
+                .Include(p => p.Almacen).SingleOrDefaultAsync(p => p.Id == Id);
+
+            IsBusy = false;
+        }
+        StateHasChanged();
+    }
+
+    private async Task Editar()
+    {
+        if(AjusteInventario.Nulo)
+        {
+            await IMessage.Alert("No se puede editar un ajuste que esta anulado");
+            return;
+        }
+
+        NavManager.NavigateTo("/ajustesinventario/crear/" + AjusteInventario.Id);
+    }
+    
+    private async Task Anular()
+    {
+        if(AjusteInventario.Nulo)
+        {
+            await IMessage.Alert("Documento ya esta Nulo");
+            return;
+        }
+
+        var Confirm = await IMessage.Confirm($"Desea anular el Ajuste #{Id} ?");
+
+        if (Confirm)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+            AjusteInventario.Nulo = true;
+
+            DbContext.Update(AjusteInventario);
+
+            await DbContext.SaveChangesAsync();
+        
+
+            foreach (var item in AjusteInventario.AjusteDetalles)
+            {
+                //Consultamos la Existencia del producto, donde el Almacen sea igual al Almacen de la AjusteInventario.
+                var EPxA = await DbContext.Existencias.Include(e => e.Almacen).Include(e => e.Producto).SingleOrDefaultAsync(epa => epa.ProductoId == item.ProductoId && epa.AlmacenId == AjusteInventario.AlmacenId);
+                //Si la Existencia no Existe
+                if (EPxA == null)
+                {
+                    //Creamos una Existencia nueva con los datos de la AjusteInventario.
+                    var ExistenciaProductosXAlmacen = new Existencia()
+                    {
+                        AlmacenId = AjusteInventario.AlmacenId,
+                        ProductoId = item.ProductoId,
+                        Cantidad = item.Cantidad
+                    };
+                    //Insertamos la Existencia creada en la base de datos.
+                    await DbContext.AddAsync(ExistenciaProductosXAlmacen);
+                    await DbContext.SaveChangesAsync();
+                }
+                else
+                {
+                    //Si la Existencia existe, sumamos la cantidad del detalle a la cantidad de la existencia.
+                    switch(AjusteInventario.AjusteInventarioTipoId)
+                    {
+                        case 1:                        
+                            EPxA.Cantidad -= item.Cantidad;
+                            break;
+                        case 2: 
+                            EPxA.Cantidad += item.Cantidad;
+                            break;
+                    }
+                    //Actualizamos la Existencia consultada en la base de datos.
+                    DbContext.Update(EPxA);
+                    await DbContext.SaveChangesAsync();
+                } 
+            }
+
+            await IMessage.Success($"El Ajuste #{AjusteInventario.Id} con fecha {AjusteInventario.Fecha} ha sido anulado!");
+            StateHasChanged();
+        }
+    }
+}

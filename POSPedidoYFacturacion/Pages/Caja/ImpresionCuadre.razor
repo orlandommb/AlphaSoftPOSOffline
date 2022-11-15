@@ -1,0 +1,249 @@
+﻿@page "/imprimircuadre/{Id:int}"
+
+@layout ImpresionLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject IJSRuntime IJSRuntime
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+
+
+@if (Empresa.Id == 0 || Cuadre.Id == 0)
+{
+    <label class="title" style="font-size:48px; margin:auto">Cargando ...</label>
+}
+else
+{
+
+    <div class="invoice-box" style="margin-top: 5px; width:385px;font-size:16px;font-weight:bold">
+        <table cellpadding="0" cellspacing="0">
+
+            @if (Empresa.Id != 0)
+            {
+                <tr class="top">
+                    <td colspan="5">
+                        <table>
+                            <tr>
+                                <td class="title" colspan="3">
+                                    @if (string.IsNullOrEmpty(Empresa.Logo))
+                                    {
+
+                                        <img src="AlphaSoftLogo.png" style="width: 100%; max-width: 100px;height:100px" />
+
+                                    }
+                                    else
+                                    {
+                                        if (Empresa.ImprimirLogoEnFactura)
+                                        {
+                                            <img src="@Empresa.Logo" style="width: 100%; width: 370px" />
+                                        }
+                                    }
+                                </td>
+                            </tr>
+
+                        </table>
+                    </td>
+                </tr>
+
+
+                <tr style="text-align:center">
+                    <td colspan="3" style="font-size:30px">@Empresa.Nombre.ToString()</td>
+                </tr>
+                <tr style="text-align:center">
+                    <td colspan="3">Direccion:@Empresa.Direccion.ToString()</td>
+                </tr>
+                <tr style="text-align:center">
+                    <td colspan="3"><RadzenIcon Icon="phone" /> @Empresa.Telefono.ToString()</td>
+                </tr>
+            }
+
+            <tr style="text-align:center">
+                <td style="font-size:30px" colspan="3">Cuadre</td>
+            </tr>
+
+            <tr class="information">
+                <td colspan="5">
+                    <table>
+                        <tr>
+                            <td>
+                                No. Cuadre #:<br />
+                                @Cuadre.Id<br />
+                                Cajero:<br />
+                                @Cuadre.Usuario.UserName.ToString()<br />
+
+                            </td>
+
+                            <td>
+                                Fecha Apertura:<br />
+                                @Cuadre.FechaApertura.ToString()<br />
+                                Fecha Cierre:<br />
+                                @Cuadre.FechaCierre.ToString()<br />
+                            </td>
+
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr style="margin-top:30px" class="heading">
+                <td class="title" colspan="3">Ventas por Categoria</td>
+            </tr>
+
+            <tr class="heading">
+                <td>Categoria</td>
+                <td>Cantidad</td>
+                <td>Total Ventas</td>
+            </tr>
+
+            @foreach (var item in Categorias)
+            {
+                <tr>
+                    <td>@item.Nombre</td>
+                    <td>@(Cuadre.Ventas.SelectMany(v => v.VentaDetalles).Where(vd => vd.Producto.CategoriaId == item.Id).ToList().Sum(vd=>vd.Cantidad))</td>
+                    <td>@(Cuadre.Ventas.SelectMany(v => v.VentaDetalles).Where(vd => vd.Producto.CategoriaId == item.Id).ToList().Sum(vd=>vd.Importe).ToString("C2"))</td>
+                </tr>
+            }
+
+            <tr class="heading">
+                <td>Delivery</td>
+                <td>@Cuadre.Ventas.Where(v=>v.TipoOrdenId == 1).ToList().Count</td>
+                <td>@Cuadre.Ventas.ToList().Sum(v => v.Delivery).ToString("C2")</td>
+            </tr>
+
+            <tr style="height:30px"></tr>
+
+            <tr style="margin-top:30px" class="heading">
+                <td class="title" colspan="3">Desglose de Monedas</td>
+            </tr>
+
+            <tr class="heading">
+                <td>Cant.</td>
+                <td>Valor</td>
+                <td>Total</td>
+            </tr>
+
+            @foreach (var item in Cuadre.Desgloses)
+            {
+                <tr>
+                    <td>@item.Cantidad</td>
+                    <td>@item.Denominacion.Valor</td>
+                    <td>@item.Total.ToString("C")</td>
+                </tr>
+            }
+
+            <tr style="height:30px">
+            </tr>
+
+            <tr style="margin-top:50px" class="heading">
+                <td class="title" colspan="3">Totales</td>
+            </tr>
+
+            <tr class="total">
+                <td colspan="2">Total en Efectivo:</td>
+                <td>@Cuadre.MontoEfectivo.ToString("C2")</td>
+            </tr>
+            <tr class="total">
+                <td colspan="2">Total en Ventas al Contado:</td>
+                <td>@Cuadre.Ventas.Sum(v => v.Total).ToString("C2")</td>
+            </tr>
+            <tr class="total">
+                <td colspan="2">Total CXC Recibo de Ingresos:</td>
+                <td>@(Cuadre.RecibosIngresos.Where(ri=>ri.CXCTransaccionTipoId == 3).Sum(v => v.Monto).ToString("C2"))</td>
+            </tr>
+            <tr class="total">
+                <td colspan="2">Total Devoluciones Contado:</td>
+                <td>@(Cuadre.Devoluciones.Sum(v => v.Total).ToString("C2"))</td>
+            </tr>
+            <tr class="total">
+                <td colspan="2">Fondo de Caja:</td>
+                <td>@Cuadre.FondoCaja.ToString("C2")</td>
+            </tr>
+            <tr class="total">
+                <td colspan="2">Total en Desglose:</td>
+                <td>@Cuadre.Desgloses.Sum(d => d.Total).ToString("C2")</td>
+            </tr>
+            <tr class="total">
+                @if (Cuadre.MontoEfectivo >= Cuadre.Ventas.Sum(v => v.Total))
+                {
+                    <td colspan="2">Sobrante</td>
+                }
+                else if (Cuadre.MontoEfectivo < Cuadre.Ventas.Sum(v => v.Total))
+                {
+                    <td colspan="2">Faltante</td>
+                }
+                <td>@((Cuadre.MontoEfectivo - Cuadre.Ventas.Sum(d => d.MontoEfectivo - d.MontoDevuelta) - Cuadre.RecibosIngresos.Where(ri=>ri.CXCTransaccionTipoId == 3).Sum(v => v.Monto) + Cuadre.Devoluciones.Sum(v => v.Total)).ToString("C2"))</td>
+            </tr>
+
+        </table>
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public bool IsBusy { get; set; } = false;
+
+    public Cuadre Cuadre { get; set; } = new Cuadre();
+
+    public List<Categoria> Categorias { get; set; } = new List<Categoria>();
+
+    public Empresa Empresa { get; set; } = new Empresa();
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Cuadre = await DbContext.Cuadres
+                            .Include(c => c.Desgloses)
+                            .ThenInclude(d => d.Denominacion)
+                            .Include(c => c.Ventas.Where(v=>v.Nulo == false && v.TipoFacturaId == 2))
+                            .ThenInclude(v => v.VentaDetalles)
+                            .ThenInclude(vd => vd.Producto)
+                            .Include(c => c.RecibosIngresos.Where(v=>v.Nulo == false))
+                            .Include(c => c.Devoluciones.Where(v=>v.Nulo == false && v.Venta.TipoFacturaId == 2))
+                            .Include(v => v.Usuario)
+                            .FirstOrDefaultAsync(v => v.Id == Id);
+        IsBusy = false;
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarCategorias();
+            await ImprimirFactura();
+        }
+    }
+    
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task CargarCategorias()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Categorias = await DbContext.Categorias.OrderBy(E => E.Id).Where(c=>c.EmpresaId == Empresa.Id).ToListAsync();
+        StateHasChanged();
+    }
+
+    private async Task ImprimirFactura()
+    {
+        await IJSRuntime.ImprimirPagina();
+        await IJSRuntime.CerrarPagina();
+
+    }
+}

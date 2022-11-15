@@ -1,0 +1,325 @@
+﻿@page "/ventas/vista/{Id:int}"
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject IJSRuntime IJSRuntime
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Detalles de Venta</h5>
+        <MudSpacer />
+        <MudTooltip Text="Imprimir">
+            <MudIconButton Icon="@Icons.Material.Filled.Print" Color="Color.Info" Variant="Variant.Outlined" OnClick="ImprimirVenta"/>
+        </MudTooltip>
+        <MudTooltip Text="Anular">
+            <MudIconButton Icon="@Icons.Material.Filled.Clear" Color="Color.Error" Variant="Variant.Outlined" OnClick="Anular"/>
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+<RadzenCard Style="padding:5px">
+    @if (IsBusy)
+    {
+        <MudOverlay Visible="@IsBusy" DarkBackground="true" Absolute="true" Style="height:100%">
+            <MudProgressCircular Size="Size.Large" Color="Color.Info" Indeterminate="true" />
+        </MudOverlay>
+    }
+    else
+    {
+        <RadzenCard>
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <label>Codigo:</label>
+                        <div>
+                            <RadzenLabel Text="@Venta.Id.ToString()" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Facturado</label>
+                        <div>
+                            <RadzenLabel Text="@Venta.TipoFactura.Nombre" />
+                        </div>
+                    </div>
+                    @if (Venta.TipoOrdenId != null)
+                    {
+                        <div class="form-group">
+                            <label>Tipo de Orden</label>
+                            <div>
+                                <RadzenLabel Text="@Venta.TipoOrden.Nombre" />
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <div>
+                            <RadzenLabel Text="@Venta.FechaFinalizado.Value.ToString("d")" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Facturado:</label>
+                        <div>
+                            <RadzenLabel Text="@(Venta.Facturado == false ? "Pendiente" : "Facturado")" />
+                        </div>
+                    </div>
+                    @if(Venta.Nulo)
+                    {
+                    <div class="form-group">
+                        <label>Nula:</label>
+                        <div>
+                            <RadzenLabel Text="Documento Nulo" />
+                        </div>
+                    </div>
+                    }
+                    @if(Venta.TipoFacturaId == 1)
+                    {
+                        <div class="form-group">
+                            <label>Balance a Credito:</label>
+                            <div>
+                                <RadzenLabel Text="@EstadoFacturaCredito" />
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <label>Cliente:</label>
+                        <div>
+                            <RadzenLabel Text="@Venta.NombreCliente" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Direccion:</label>
+                        <div>
+                            <RadzenLabel Text="@Venta.DireccionCliente" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Celular:</label>
+                        <div>
+                            <RadzenLabel Text="@Venta.CelularCliente" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <div>
+                                    <label>Sub-Total: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Descuento: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Delivery: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Impuesto: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Total: </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>Devuelta: </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6" style="justify-content:flex-end">
+                            <div class="form-group">
+                                <div>
+                                    <label>@Venta.SubTotal.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Venta.Descuento.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Venta.Delivery.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Venta.Impuesto.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Venta.Total.ToString("C2")</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>
+                                    <label>@Venta.MontoDevuelta.ToString("C2")</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </RadzenCard>
+
+        <RadzenCard>
+
+            <div class="row">
+                <div style="margin:10px"></div>
+
+
+                <div class="table-responsive-sm" style="height: 400px; width: 100%; overflow: scroll">
+                    <table class="table table-sm" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th scope="col">Codigo</th>
+                                <th scope="col">Producto</th>
+                                <th scope="col">Cantidad</th>
+                                <th scope="col">Precio</th>
+                                <th scope="col">Descuento</th>
+                                <th scope="col">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            @foreach (var item in Venta.VentaDetalles)
+                            {
+
+                                <tr>
+                                    <th scope="row">@item.Producto.Codigo</th>
+                                    <td>@item.NombreProducto</td>
+                                    <td>@item.Cantidad</td>
+                                    <td>@String.Format("{0:C2}", item.Precio)</td>
+                                    <td>@String.Format("{0:C2}", item.Descuento)</td>
+                                    <td>@String.Format("{0:C2}", item.Importe)</td>
+                                </tr>
+
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </RadzenCard>
+    }
+
+</RadzenCard>
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public bool IsBusy { get; set; } = false;
+
+    public Venta Venta { get; set; } = new Venta();
+
+    public string EstadoFacturaCredito {get; set;}
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarOrden();
+    }
+
+    private async Task CargarOrden()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Venta = await DbContext.Ventas
+            .Include(o => o.TipoFactura)
+            .Include(o => o.TipoOrden)
+            .Include(o => o.VentaDetalles)
+            .ThenInclude(od => od.Producto)
+            .Include(o => o.Sector)
+            .SingleOrDefaultAsync(o => o.Id == Id);
+
+        if(Venta.TipoFacturaId == 1)
+        {
+            await CargarBalance(Id);
+        }
+
+        IsBusy = false;
+    }
+
+    private async Task CargarBalance(int Id)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        var Balance = await DbContext.CXCVentaBalances
+        .Include(cxcv => cxcv.Venta)
+        .SingleOrDefaultAsync(cxcv => cxcv.VentaId == Id && cxcv.Venta.TipoFacturaId == 1 );
+
+            if(Balance.Balance > 0)
+            {
+                EstadoFacturaCredito = "Pago Incompleto";
+            }
+            else if(Balance.Balance == 0)
+            {
+                EstadoFacturaCredito = "Pago completo";
+            }
+    }
+
+    private async Task Anular()
+    {                    
+        using var DbContext = DbContextFactory.CreateDbContext();
+            
+
+        var TieneMovimientos = await DbContext.CXCTransaccionDetalles.Include(cxcnc=>cxcnc.CXCTransaccion).Where(cxcnc=>cxcnc.VentaId == Venta.Id && cxcnc.CXCTransaccion.Nulo == false).ToListAsync();
+        
+        if(TieneMovimientos.Count() > 0)
+        {
+            await IMessage.Alert($"la venta #{Venta.Id} del cliente {Venta.NombreCliente} tiene transacciones de cxc aplicadas, no se puede anular!");
+            return;
+        }
+        
+        if(Venta.Nulo)
+        {
+            await IMessage.Alert($"la venta #{Venta.Id} del cliente {Venta.NombreCliente} ya esta anulada, no se puede anular!");
+            return;
+        }
+
+
+
+        var Confirm = await IMessage.Confirm($"Desea anular la Venta #{Id} del cliente {Venta.NombreCliente} ?");
+
+        if (Confirm)
+        {
+            Venta.Nulo = true;
+
+            DbContext.Update(Venta);
+
+            await DbContext.SaveChangesAsync();
+
+            foreach (var item in Venta.VentaDetalles)
+            {
+                if (item.Producto.ManejaExistencia)
+                {
+                    var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(EPA => EPA.ProductoId == item.ProductoId && EPA.AlmacenId == Venta.AlmacenId);
+
+                    EPxA.Cantidad += item.Cantidad;
+                    DbContext.Update(EPxA);
+                    await DbContext.SaveChangesAsync();
+                
+                }
+            }
+
+
+            await IMessage.Success($"la venta #{Venta.Id} del cliente {Venta.NombreCliente} ha sido anulada!");
+        }
+    }
+
+    private async Task ImprimirVenta()
+    {
+        await IJSRuntime.AbrirNuevaPagina($"/imprimirfactura/{Venta.Id}");
+    }
+
+}

@@ -1,0 +1,345 @@
+@page "/devolucionesdeventa"
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de Devoluciones de Ventas</h5>
+        <MudSpacer />
+        @* <MudTooltip Text="Nuevo Ajuste de Inventario">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="NuevoAjuste" />
+        </MudTooltip> *@
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="padding:5px; font-size:small">
+    <div class="row">
+        @* <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Nueva Devolucion">
+                    <MudIconButton Text="Nuevo" ButtonStyle="Radzen.ButtonStyle.Primary" Click="Nuevo"></MudIconButton>
+                </MudTooltip>
+            </div>
+        </div> *@
+        <div class="col-sm-3">
+            <div class="form-group">
+                <MudDateRangePicker Editable="true" Label="Elija el rango de fecha" Variant="Variant.Outlined" Color="Color.Info" @bind-DateRange="DateRange" />
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <RadzenLabel Text="Cliente:" />
+                <div>
+                    <RadzenDropDown AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="Radzen.StringFilterOperator.Contains"
+                                    Data="@Clientes"
+                                    TValue="int?"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="@ClienteSeleccionadoId"
+                                    Style="width:auto" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <RadzenLabel Text="Tipo:" />
+                <div>
+                    <RadzenDropDown AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="Radzen.StringFilterOperator.Contains"
+                                    TValue="int?"
+                                    Data=@TipoFacturas
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="@TipoFacturaSeleccionadaId"
+                                    Style="width:auto" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="form-group">
+                <RadzenLabel Text="Nulo:" />
+                <div>
+                    <RadzenCheckBox @bind-Value="Nulo" Name="Activo" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Buscar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Color="Color.Info" OnClick="CargarDevoluciones" />
+                </MudTooltip>
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+@if (IsBusy)
+{
+    <MudOverlay Visible="true" DarkBackground="true" Absolute="true" Style="height:800px">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info" Size="Size.Large"/>
+    </MudOverlay>
+}
+else
+{
+    <RadzenCard Style="width:100%; width:fit-content()">
+        <div class="table-responsive-sm w-auto" style="width:100%; overflow:scroll; height:400px">
+            <table class="table table-sm" style="width:100%">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Cliente</th>
+                        <th scope="col">Fecha de Factura</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Sub-Total</th>
+                        <th scope="col">Descuento</th>
+                        <th scope="col">Impuesto</th>
+                        <th scope="col">Total</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Devoluciones)
+                    {
+                        <tr>
+                            <th scope="row">@item.Id.ToString()</th>
+                            <td>@(item.ClienteId == null ? "" : item.Cliente.Nombre.ToString())</td>
+                            <td>@String.Format("{0:d}", item.Fecha)</td>
+                            <td>@item.Venta.TipoFactura.Nombre.ToString()</td>
+                            <td>
+                                @if(item.Nulo)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Error"/>
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+                                }
+                            </td>
+                            <td>@String.Format("{0:C2}", item.SubTotal)</td>
+                            <td>@String.Format("{0:C2}", item.Descuento)</td>
+                            <td>@String.Format("{0:C2}", item.Impuesto)</td>
+                            <td>@String.Format("{0:C2}", item.Total)</td>
+                            <td>
+                                <RadzenButton Icon="preview" Click="@(() => BtnVistaPreviaClick(item.Id))"></RadzenButton>
+                                <AuthorizeView Roles="SuperAdmin,Admin,Enc.Compras">
+                                    <RadzenButton Icon="delete" Click="@(async () => await BtnAnularClick(item))"></RadzenButton>
+                                </AuthorizeView>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<VentaDevolucion> Devoluciones = new List<VentaDevolucion>();
+    private List<Sucursal> Sucursales = new List<Sucursal>();
+    private List<Cliente> Clientes = new List<Cliente>();
+    private List<TipoFactura> TipoFacturas = new List<TipoFactura>();
+    private bool IsBusy { get; set; }
+
+    private DateTime FechaInicial { get; set; } = DateTime.Today + new TimeSpan(8, 0, 0);
+    private DateTime FechaFinal { get; set; } = DateTime.Now;
+
+    private DateRange DateRange = new DateRange(DateTime.Today + new TimeSpan(8, 0, 0), DateTime.Now);
+
+    private bool Nulo { get; set; } = false;
+
+    private int? SucursalSeleccionadaId { get; set; }
+    private int? ClienteSeleccionadoId { get; set; }
+    private int? TipoFacturaSeleccionadaId { get; set; }
+    private string NumeroFactura { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarClientes();
+            await CargarTipoFacuras();
+            await CargarDevoluciones();
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarDevoluciones()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Devoluciones = await DbContext.VentaDevoluciones
+            .Include(p => p.DevolucionDetalles)
+            .Include(p => p.Empresa)
+            .Include(p => p.Sucursal)
+            .Include(p => p.Usuario)
+            .Include(p => p.Cliente)
+            .Include(p => p.Almacen)
+            .Include(p => p.Venta)
+            .ThenInclude(p => p.TipoFactura)
+            .Include(p => p.Cuadre)
+            .Where(p => p.EmpresaId == Empresa.Id && 
+                        p.SucursalId == Sucursal.Id && 
+                        p.Fecha >= DateRange.Start &&
+                        p.Fecha <= DateRange.End &&
+                        p.Nulo == Nulo &&
+                        (ClienteSeleccionadoId == null || p.ClienteId == ClienteSeleccionadoId) &&
+                        (NumeroFactura == null || p.Id == Convert.ToInt32(NumeroFactura)) 
+                        ).ToListAsync();
+
+        IsBusy = false;
+
+    }
+
+    public async Task CargarTipoFacuras()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext.TipoFacturas.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarClientes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Clientes = await DbContext.Clientes
+        .Where(s=>s.EmpresaId == Empresa.Id && 
+                  s.SucursalId == Sucursal.Id && 
+                  s.CreditoAbierto == true)
+        .ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    @*public async Task CargarSucursales()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext..ToListAsync();
+
+
+        IsBusy = false;
+    }*@
+
+    private void Nuevo()
+    {
+        NavManager.NavigateTo("/compras/crear");
+    }
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/devolucionesdeventa/vista/" + Id);
+    }
+
+    public async Task BtnAnularClick(VentaDevolucion Anular)
+    {
+        if (!await JSRuntime.Confirmar($"Esta seguro que desea Anular la Devolucion Numero '{Anular.Id}' del Cliente '{Anular.Cliente.Nombre}'?"))
+            return;
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var DevAnular = await DbContext.VentaDevoluciones
+        .Include(vd=>vd.DevolucionDetalles)
+        .ThenInclude(vd=>vd.Producto)
+        .SingleOrDefaultAsync(vd=>vd.Id == Anular.Id);
+
+        DevAnular.Nulo = true;
+
+        DbContext.Update(DevAnular);
+        await DbContext.SaveChangesAsync();
+
+        if(Anular.Venta.TipoFacturaId == 1)
+        {
+            var NotaCredito = await DbContext.CXCTransacciones
+            .Include(cxctd => cxctd.CXCTransaccionDetalles)
+            .Include(cxct => cxct.Usuario)
+            .SingleOrDefaultAsync(cxctd => cxctd.DevolucionNo == Anular.Id.ToString());
+
+            NotaCredito.Nulo = true;
+            
+            DbContext.Update(NotaCredito);
+            await DbContext.SaveChangesAsync();
+            
+            foreach(var item in NotaCredito.CXCTransaccionDetalles)
+            {
+                var CXCBalance = await DbContext.CXCVentaBalances.SingleOrDefaultAsync(cxcb => cxcb.VentaId == item.VentaId);
+                CXCBalance.Balance = CXCBalance.Balance + item.MontoAAplicar;
+                DbContext.Update(CXCBalance);
+                await DbContext.SaveChangesAsync();
+            }
+        }
+
+        foreach (var item in DevAnular.DevolucionDetalles)
+        {
+            if (item.Producto.ManejaExistencia)
+            {
+                var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(EPA => EPA.ProductoId == item.ProductoId && EPA.AlmacenId == DevAnular.AlmacenId);
+                if (EPxA == null)
+                {
+                    var Existencia = new Existencia()
+                    {
+                        AlmacenId = DevAnular.AlmacenId,
+                        ProductoId = item.ProductoId,
+                        Cantidad = item.Cantidad
+                    };
+                    await DbContext.AddAsync(Existencia);
+                    await DbContext.SaveChangesAsync();
+                }
+                else
+                {
+                    EPxA.Cantidad -= item.Cantidad;
+                    DbContext.Update(EPxA);
+                    await DbContext.SaveChangesAsync();
+                }
+            }
+        }
+
+        await IMessage.Success("Devolucion Anulada");
+
+        IsBusy = false;
+
+
+    }
+}

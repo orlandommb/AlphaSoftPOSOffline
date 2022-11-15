@@ -1,0 +1,159 @@
+﻿@page "/productos/vista/{Id:int?}"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+
+    <h3>Vista previa de Producto</h3>
+    <div class="container">
+        <RadzenCard>
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+                            <label>Imagen:</label>
+                            <div>
+                                @if (string.IsNullOrEmpty(Producto.ImageString))
+                                {
+                                    <RadzenImage Path="AlphaSoftLogo.png" class="img-fluid" alt="Responsive image" Style="min-height: 200px; min-width: 200px; max-height: 300px; max-width: 300px" />
+                                }
+                                else
+                                {
+                                    <RadzenImage Path="@Producto.ImageString" class="img-fluid" alt="Responsive image" Style="min-height: 200px; min-width: 200px; max-height: 300px; max-width: 300px" />
+                                }
+                            </div>
+                        </div>
+
+                        
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Codigo:</label>
+                            <div>
+                                <RadzenLabel Text="@Producto.Codigo" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Nombre:</label>
+                            <div>
+                                <RadzenLabel Text="@Producto.Nombre" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Estado:</label>
+                            <div>
+                                <RadzenRadioButtonList @bind-Value="Producto.Activo" TValue="bool" Orientation="Radzen.Orientation.Horizontal" Disabled="true">
+                                    <Items>
+                                        <RadzenRadioButtonListItem Text="Activo" Value="true" />
+                                        <RadzenRadioButtonListItem Text="Inactivo" Value="false" />
+                                    </Items>
+                                </RadzenRadioButtonList>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Categoria:</label>
+                            <div>
+                                <div>
+                                    <RadzenLabel Text="@Producto.Categoria.Nombre" />
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Sub-Categoria:</label>
+                            <div>
+                                <RadzenLabel Text="@Producto.SubCategoria.Nombre" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Costo:</label>
+                                    <div>
+                                        <RadzenLabel Text="@(String.Format("{0:C2}",Producto.Costo))" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Precio:</label>
+                                    <div>
+                                        <RadzenLabel Text="@(String.Format("{0:C2}",Producto.Precio))" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </div>
+
+            <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary"
+                          ButtonType="Radzen.ButtonType.Button"
+                          Icon="edit"
+                          Click="@(()=>BtnEditarClick(Producto.Id))" />
+
+            @*<RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger"
+                          ButtonType="Radzen.ButtonType.Button"
+                          Icon="edit" />*@
+            @*Click="@(()=>BtnEditarClick(Producto.Id))" />*@
+
+
+        </RadzenCard>
+
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public Producto Producto { get; set; } = new Producto();
+
+    public bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+        {
+            await CargarProducto();
+        }
+
+    @*protected override async Task OnParametersSetAsync()
+    {
+        await CargarProducto();
+    }*@
+
+
+
+private async Task CargarProducto()
+{
+    IsBusy = true;
+    using var DbContext = DbContextFactory.CreateDbContext();
+    Producto = await DbContext.Productos.Include(p=>p.Categoria).Include(p=>p.SubCategoria).SingleOrDefaultAsync(p => p.Id == Id);
+    IsBusy = false;
+}
+
+public void BtnEditarClick(int Id)
+{
+    NavManager.NavigateTo("/productos/crear/" + Id);
+}
+}

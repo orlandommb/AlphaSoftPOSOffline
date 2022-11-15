@@ -1,0 +1,1375 @@
+@page "/puntodeventa/{returnURL?}"
+@page "/puntodeventa/factorden/{ordenId:int?}/{returnURL?}"
+@page "/puntodeventa/factmesa/{mesaId:int?}/{returnURL?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin,Cajero/a")]
+
+@layout MainLayout
+@*@inject ApplicationDbContext DbContext*@
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject AuthenticationStateProvider AuthStateProv
+@inject UserManager<Usuario> UserManager
+@inject NavigationManager NavManager
+@inject IJSRuntime IJSRuntime
+@inject ProtectedLocalStorage LocalStorage
+
+
+@if (!HayCuadreAbierto)
+{
+    <div class="middle-box">
+        <h3>Debe abrir un cuadre antes de empezar a facturar!</h3>
+        <MudButton Style="margin:auto" StartIcon="@Icons.Material.Filled.AttachMoney" Color="Color.Info" Variant="Variant.Outlined" Link="/aperturacuadre" >Abrir Cuadre</MudButton>
+    </div>
+}
+else
+{
+    <RadzenCard Style="padding:5px">
+        <MudPaper>
+            <MudToolBar Dense="true">
+                <MudTextField T="string" ReadOnly="true" Text="@($"{CuadreAbierto.FechaApertura.ToString("d")} ")" Label="Cuadre" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+                <MudTextField T="string" ReadOnly="true" Text="@($"{CuadreAbierto.Usuario.UserName} ")" Label="Cajero" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+                <RadzenLabel  />
+                <MudSpacer />
+                <MudTooltip Text="Importar ordenes">
+                    <MudIconButton Style="height: auto" OnClick="AbrirImportarOrdenes" Color="Color.Info" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Add"/>
+                </MudTooltip>
+                <MudTooltip Text="Devolucion">
+                    <MudIconButton Style="height: auto" OnClick="MostrarModalDevolucion" Color="Color.Info" Variant="Variant.Outlined" Icon="@Icons.Filled.AssignmentReturn"/>
+                </MudTooltip>
+                <MudTooltip Text="Cancelar Orden">
+                    <MudIconButton Style="height: auto" OnClick="CancelarVenta" Color="Color.Error" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Clear"/>
+                </MudTooltip>
+            </MudToolBar>
+        </MudPaper>
+        <EditForm Model="Venta">
+            <div class="row">
+                <div class="col-sm-9">
+                    <RadzenCard Style="min-height:max-content; padding:5px">
+                        <RadzenCard Style="font-size:small; padding:5px">
+                            <div class="row">
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <MudTextField @ref="TextFieldCodigo" AutoFocus="false" T="string" Margin="Margin.Dense" Label="Codigo" Variant="Variant.Outlined" Immediate="true" Value="CodigoProducto" ValueChanged="@(async (args)=> await AgregarProductoEscaneado(args))" />
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-group">
+                                        <MudTextField T="string" Margin="Margin.Dense" Label="Nombre" Variant="Variant.Outlined" @bind-Value="NombreProducto" />
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-group">
+                                        <MudSelect Label="Categoria" 
+                                                    Margin="Margin.Dense"
+                                                    Dense="true"
+                                                    Variant="Variant.Outlined"
+                                                    Clearable="true"
+                                                    T="int?"
+                                                    Value="@CategoriaSeleccionadaId"
+                                                    ValueChanged="@(async args => await CargarSubCategorias(args))"
+                                                    OnClearButtonClick="@(async ()=> await OnClearClick())"
+                                                    AnchorOrigin="Origin.BottomCenter"
+                                                    TransformOrigin="Origin.TopCenter">
+                                                    @foreach (var item in Categorias)
+                                                    {
+                                                        <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
+                                                    }
+                                        </MudSelect>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-group">
+                                        <MudSelect Label="Sub-Categoria" 
+                                                    Margin="Margin.Dense"
+                                                    Dense="true"
+                                                    Variant="Variant.Outlined"
+                                                    Clearable="true"
+                                                    T="int?" 
+                                                    AnchorOrigin="Origin.BottomCenter"
+                                                    TransformOrigin="Origin.TopCenter"
+                                                    @bind-Value="SubCategoriaSeleccionadaId">
+                                                    @foreach (var item in SubCategorias)
+                                                    {
+                                                        <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
+                                                    }
+                                        </MudSelect>
+                                    </div>
+                                </div>
+                                <div class="col-sm-1">
+                                    <div class="form-group">
+                                        <MudTooltip Text="Buscar">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Color="Color.Info" OnClick="CargarProductos" />
+                                        </MudTooltip>
+                                    </div>
+                                </div>
+                            </div>
+                        </RadzenCard>
+                        <RadzenCard Style="height: 500px; overflow:scroll">
+                            @if (IsBusy)
+                            {
+                                <div class="middle-box">
+                                    <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+                                </div>
+                            }
+                            else
+                            {
+                                <ul class="pizza-cards scrollable">
+
+                                    @foreach (var item in Productos)
+                                    {
+                                        if (Productos != null)
+                                        {
+                                            <li style="background-image: url('@item.ImageString')" @onclick="(async () => await SeleccionarProducto(item))">
+                                                <div class="pizza-info">
+                                                    <span class="title">@item.Nombre</span>
+                                                    @if (item.ManejaExistencia)
+                                                    {
+                                                        <span class="stock">@("Existencia: " + item.Existencias.Where(e => e.ProductoId == item.Id).Sum(e=>e.Cantidad).ToString())</span>
+                                                    }
+                                                    <span class="price">@item.Precio.ToString("C2")</span>
+                                                </div>
+                                            </li>
+                                        }
+                                    }
+                                    @* <Virtualize Context="item" Items="Productos" ItemSize="144">
+                                            <li style="background-image: url('@item.ImageString')" @onclick="(async () => await SeleccionarProducto(item))">
+                                                <div class="pizza-info">
+                                                    <span class="title">@item.Nombre</span>
+                                                    @if (item.ManejaExistencia)
+                                                    {
+                                                        <span class="stock">@("Existencia: " + item.Existencias.Where(e => e.ProductoId == item.Id).Sum(e=>e.Cantidad).ToString())</span>
+                                                    }
+                                                    <span class="price">@item.Precio.ToString("C2")</span>
+                                                </div>
+                                            </li>
+                                    </Virtualize> *@
+
+                                </ul>
+                            }
+                        </RadzenCard>
+
+                    </RadzenCard>
+                </div>
+                <div class="col-sm-3">
+                    <RadzenCard Style="padding:5px; margin-bottom:10px">
+                        <RadzenButton Text="Datos de Factura" Click="AbrirAgregarDatos" />
+                        <RadzenCard Style="padding: 5px; font-size: small;">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label>Cliente:</label>
+                                        <div>
+                                            <label>@Venta.NombreCliente</label>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label>Celular:</label>
+                                        <div>
+                                            <label>@Venta.CelularCliente</label>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @if (Venta.SectorId != null)
+                                    {
+                                        <div class="form-group">
+                                            <label>Direccion:</label>
+                                            <div>
+                                                <label>@Venta.Sector.Nombre</label>
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="form-group">
+                                        <label>Direccion:</label>
+                                        <div>
+                                            <label>@Venta.DireccionCliente</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </RadzenCard>
+                        <RadzenCard Style="min-height: fit-content; padding: 5px; font-size: small">
+                            <div class="table-responsive-sm" style="overflow:scroll; height:250px; font-size:small">
+                                <table class="table table-sm" style="width:100%">
+                                    <tbody>
+                                        @foreach (var item in Venta.VentaDetalles)
+                                        {      
+                                                    <tr style="width: 100%" @onclick="(()=>SeleccionarDetalle(item))">
+                                                        <th scope="row" colspan="3">@item.NombreProducto</th>
+                                                    </tr>
+                                                    <tr style="width: 100%" @onclick="(()=>SeleccionarDetalle(item))">
+                                                        <td scope="row">@item.Cantidad</td>
+                                                        <td scope="row">@item.Precio.ToString("C2")</td>
+                                                        <td scope="row">@item.Importe.ToString("C2")</td>
+                                                    </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </RadzenCard>
+                        <h5 style="margin-top:10px">Totales</h5>
+                        <RadzenCard Style="padding:20px;height:120px">
+                            <div class="row" style="font-size: small">
+                                <table cellspacing="0" cellpadding="0" style="width: 100%">
+                                    <tr class="total">
+                                        <td><b>Sub-Total:</b></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><b>@Venta.SubTotal.ToString("C2")</b></td>
+                                    </tr>
+                                    <tr class="total">
+                                        <td><b>Descuento:</b></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><b>@Venta.Descuento.ToString("C2")</b></td>
+                                    </tr>
+                                    <tr class="total">
+                                        <td><b>Delivery:</b></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><b>@Venta.Delivery.ToString("C2")</b></td>
+                                    </tr>
+                                    <tr class="total">
+
+                                        <td><b>Impuesto:</b></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><b>@Venta.Impuesto.ToString("C2")</b></td>
+                                    </tr>
+                                    <tr class="total">
+
+                                        <td><b>Total:</b></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><b>@Venta.Total.ToString("C2")</b></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </RadzenCard>
+                        <RadzenButton Style="margin-top: 10px; background-color:green" Text="Pagar" Icon="check_circle_outline" Click="(async()=>await AbrirFormaDePago())" />
+                    </RadzenCard>
+                </div>
+            </div>
+        </EditForm>
+    </RadzenCard>
+
+}
+
+@if (MostrarListaOrdenes)
+{
+    <MudOverlay Visible="true" DarkBackground="true">
+    <div class="modal fade show" id="exampleModal2" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Orden</h5>
+                    <button type="button" class="close" @onclick="CerrarImportarPedidos">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <RadzenCard Style="box-shadow: 5px 10px 18px #888888; border-radius: 20px; padding:5px; height:70px; font-size:small">
+                        <div class="row">
+                            <div class="col-8">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <RadzenLabel Text="Nombre:" />
+                                            <div>
+                                                <RadzenTextBox @bind-Value="@NombreClienteOrden" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <RadzenLabel Text="Tipos de Ordenes:" />
+                                            <div>
+                                                <RadzenDropDown AllowClear="true"
+                                                                TValue="int?"
+                                                                Data=@TiposOrdenes
+                                                                TextProperty="Nombre"
+                                                                ValueProperty="Id"
+                                                                @bind-Value="@TipoOrdenSeleccionada" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <RadzenLabel Text="Nulo:" />
+                                    <div>
+                                        <RadzenCheckBox @bind-Value="Nulo" Name="Nulo" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <div></div>
+                                    <div>
+                                        <RadzenButton Text="Buscar" ButtonType="Radzen.ButtonType.Submit" Click="CargarOrdenes" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </RadzenCard>
+                    <div style="margin:10px"></div>
+                    @if (IsBusy)
+                    {
+                        <div class="middle-box">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+                        </div>
+                    }
+                    else
+                    {
+                        <RadzenCard Style="padding:5px">
+                            <div class="table-responsive-md" style="overflow:scroll;height:300px; font-size:small">
+                                <table class="table" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Id</th>
+                                            <th scope="col">Tipo</th>
+                                            <th scope="col">Nombre</th>
+                                            <th scope="col">Celular</th>
+                                            <th scope="col">Fecha Pedido</th>
+                                            <th scope="col">Usuario</th>
+                                            <th scope="col">Sub-Total</th>
+                                            <th scope="col">Descuento</th>
+                                            <th scope="col">Delivery</th>
+                                            <th scope="col">Total</th>
+                                            <th scope="col" style="width:10%"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Ordenes)
+                                        {
+                                            <tr>
+                                                <th scope="row">@item.Id</th>
+                                                <td>@item.TipoOrden.Nombre</td>
+                                                <td>@item.NombreCliente</td>
+                                                <td>@item.CelularCliente</td>
+                                                <td>@item.FechaPedido</td>
+                                                <td>@item.Usuario.UserName</td>
+                                                <td>@String.Format("{0:C2}", item.SubTotal)</td>
+                                                <td>@String.Format("{0:C2}", item.Descuento)</td>
+                                                <td>@String.Format("{0:C2}", item.MontoDelivery)</td>
+                                                <td>@String.Format("{0:C2}", item.Total)</td>
+                                                <td>
+                                                    <RadzenButton Icon="preview" Click="@(async () => await BtnImportarPedido(item))"></RadzenButton>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </RadzenCard>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    </MudOverlay>
+}
+
+@if (MostrarFormaPago)
+{
+    <MudOverlay Visible="true" DarkBackground="true">
+    <div class="modal fade show" id="modalFormaPago" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Forma de Pago</h5>
+                    <button type="button" class="close" @onclick="CerrarFormaDePago">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="Venta">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                        <MudTextField T="decimal" ReadOnly="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AttachMoney" Label="Total a Pagar:" @bind-Value="@Venta.Total" Format="0.00" />
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                        <MudTextField T="decimal" Value="Venta.MontoEfectivo" Label="Efectivo" Immediate="true" Format="0.00" ValueChanged="@(args=> ChangeNumericMontoEfectivo(args))" />
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                        <MudTextField T="decimal" ReadOnly="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AttachMoney" Label="Devuelta:" @bind-Value="@Venta.MontoDevuelta" />
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <RadzenButton Icon="save" Click="RegistrarFactura" />
+                </div>
+            </div>
+        </div>
+    </div>
+    </MudOverlay>
+}
+
+@if (ShowModalAgregarDetalle)
+{
+    <AgregarDetalleVentaModal Almacen="Almacen" Detalle="Detalle" OnConfirm="AgregarProducto" OnCancel="CerrarModalVentaDetalle" OnDelete="()=>RemoverDetalle(Detalle)" />
+}
+
+@if (ShowModalAgregarDatos)
+{
+    <AgregarDatosVentaModal Venta="Venta" OnConfirm="ConfirmarDatos" OnCancel="ConfirmarDatos" />
+}
+
+@if (ShowModalFacturaDevolucion)
+{
+    <ModalDevolucionFactura OnCancel="CerrarModalDevolucion"/>
+}
+
+@if (ShowModalImprimirFactura)
+{
+    <MudOverlay Visible="true" DarkBackground="true" Style="padding:0px;margin:0px">
+        <ImpresionPuntoVenta Id="FacturaIdImp"/>
+    </MudOverlay>
+}
+
+@code{
+
+    [Parameter]
+    public int? mesaId { get; set; }
+
+    [Parameter]
+    public int? ordenId { get; set; }
+
+    [Parameter]
+    public string returnURL { get; set; }
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private Almacen Almacen { get; set; } = new Almacen();
+
+    public Venta Venta { get; set; } = new Venta();
+
+    public VentaDetalle Detalle { get; set; } = new VentaDetalle();
+
+    public List<Orden> OrdenesImportadas { get; set; } = new List<Orden>();
+
+
+    public Usuario Usuario { get; set; } = new Usuario();
+
+
+    public decimal Devuelta { get; set; }
+
+    public bool MostrarListaOrdenes { get; set; } = false;
+    public bool MostrarFormaPago { get; set; } = false;
+
+    public bool HayCuadreAbierto { get; set; }
+    public Cuadre CuadreAbierto { get; set; } = new Cuadre();
+
+    public bool ShowModalAgregarDetalle { get; set; } = false;
+    public bool ShowModalAgregarDatos { get; set; } = false;
+    public bool ShowModalFacturaDevolucion { get; set; } = false;
+    public bool ShowModalImprimirFactura { get; set; } = false;
+    public int FacturaIdImp { get; set; }
+
+    private List<Producto> Productos { get; set; } = new List<Producto>();
+    private List<Categoria> Categorias { get; set; } = new List<Categoria>();
+    private List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+
+    private int? CategoriaSeleccionadaId { get; set; }
+    private int? SubCategoriaSeleccionadaId { get; set; }
+
+    private string NombreProducto { get; set; }
+    private string CodigoProducto { get; set; }
+
+    public MudTextField<string> TextFieldCodigo { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await GetUsuario();
+            await GetAlmacenVenta();
+            await RevisarCuadre();
+            await CargarTipoOrdenes();
+            await CargarCategorias();
+            //await CargarProductos();
+
+            if (mesaId != null)
+            {
+                await CheckOrdenMesa(mesaId);
+            }
+
+            if (ordenId != null)
+            {
+                await CheckOrden(ordenId);
+            }
+
+            if (Venta.TipoOrdenId == 0)
+            {
+                Venta.TipoOrdenId = 2;
+            }
+
+            Venta.TipoFacturaId = 2;
+        }
+
+        StateHasChanged();
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            Venta.EmpresaId = Empresa.Id;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            Venta.SucursalId = Sucursal.Id;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarProductos()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Productos = await DbContext.Productos
+            .Include(p => p.Existencias)
+            .Where(p => p.EmpresaId == Empresa.Id && p.Activo == true &&
+            (string.IsNullOrWhiteSpace(CodigoProducto) || p.Codigo.Contains(CodigoProducto)) &&
+            (string.IsNullOrWhiteSpace(NombreProducto) || p.Nombre.Contains(NombreProducto)) &&
+                (CategoriaSeleccionadaId == null || p.CategoriaId == CategoriaSeleccionadaId) &&
+                (SubCategoriaSeleccionadaId == null || p.SubCategoriaId == SubCategoriaSeleccionadaId))
+            .ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+
+    }
+
+    public void CalcularTotales()
+    {
+        Venta.SubTotal = Venta.VentaDetalles.Sum(ve => ve.Importe);
+        Venta.Descuento = Venta.VentaDetalles.Sum(ve => ve.Descuento);
+        Venta.Total = Venta.SubTotal + Venta.Delivery + Venta.Impuesto;
+    }
+
+    public async Task CargarCategorias()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Categorias = await DbContext.Categorias.ToListAsync();
+
+        IsBusy = false;
+    }
+
+    private async Task OnClearClick()
+    {
+        CategoriaSeleccionadaId = null;
+        SubCategoriaSeleccionadaId = null;
+        await CargarSubCategorias(null);
+    }
+
+    public async Task CargarSubCategorias(int? Id)
+    {
+        if (Id == null)
+        {
+            SubCategorias = new List<SubCategoria>();
+            return;
+        }
+        CategoriaSeleccionadaId = Id;
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+        
+        SubCategorias = await DbContext.SubCategorias
+        .Where(p => p.CategoriaId == Id)
+        .ToListAsync();
+
+        IsBusy = false;
+            
+    }
+
+    public async Task SeleccionarProducto(Producto Item)
+    {
+        if(Item.ManejaExistencia)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+            var Existencias = await DbContext.Existencias.Where(e => e.ProductoId == Item.Id && e.AlmacenId == Almacen.Id).ToListAsync();
+            if (Existencias.Sum(e=>e.Cantidad) <= 0)
+            {
+                await IMessage.Alert("No hay existencias el almacen de ventas para este producto");
+                return;
+            }
+        }
+
+        Detalle = new VentaDetalle()
+        {
+            Producto = Item,
+            ProductoId = Item.Id,
+            NombreProducto = Item.Nombre,
+            Cantidad = 1,
+            Precio = Item.Precio,
+            Importe = Item.Precio,
+            Descuento = 0
+        };
+
+        ShowModalAgregarDetalle = true;
+    }
+
+    public void SeleccionarDetalle(VentaDetalle Item)
+    {
+
+        Detalle = Item;
+
+        ShowModalAgregarDetalle = true;
+
+    }
+
+    public void RemoverDetalle(VentaDetalle Item)
+    {
+
+        var item = Venta.VentaDetalles.Find(v => v.ProductoId == Item.ProductoId);
+        Venta.VentaDetalles.Remove(item);
+        CalcularTotales();
+        ShowModalAgregarDetalle = false;
+        StateHasChanged();
+
+    }
+
+    public void AgregarProducto()
+    {
+
+
+        if (Detalle.Importe < 0)
+        {
+            return;
+        }
+
+        var Prod = Venta.VentaDetalles.SingleOrDefault(p => p.ProductoId == Detalle.ProductoId);
+        if (Prod == null)
+        {
+            if (Detalle.Cantidad <= 0)
+            {
+                return;
+            }
+            Venta.VentaDetalles.Add(Detalle);
+            Detalle = null;
+        }
+        else
+        {
+            if (Detalle.Cantidad <= 0)
+            {
+                Venta.VentaDetalles.Remove(Prod);
+            }
+            else
+            {
+                Prod.Cantidad = Detalle.Cantidad;
+                Prod.Precio = Detalle.Precio;
+                Prod.Descuento = Detalle.Descuento;
+                Prod.Importe = Detalle.Importe;
+            }
+        }
+        CalcularTotales();
+        ShowModalAgregarDetalle = false;
+    }
+
+    private async Task AgregarProductoEscaneado(string Codigo)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        var Producto = await DbContext.Productos.SingleOrDefaultAsync(p => p.EmpresaId == Empresa.Id && p.Codigo == Codigo);
+        
+        if(Producto == null)
+        {
+            return;
+        }
+
+        Detalle = new VentaDetalle()
+        {
+            Producto = Producto,
+            ProductoId = Producto.Id,
+            NombreProducto = Producto.Nombre,
+            Cantidad = 1,
+            Precio = Producto.Precio,
+            Importe = Producto.Precio,
+            Descuento = 0
+        };
+
+        if(Producto.ManejaExistencia)
+        {
+            var Existencias = await DbContext.Existencias.Where(e => e.ProductoId == Producto.Id && e.AlmacenId == Almacen.Id).ToListAsync();
+            if (Existencias.Where(e=>e.AlmacenId == Almacen.Id).Sum(e=>e.Cantidad) <= 0)
+            {
+                await IMessage.Alert("No hay existencias suficientes el almacen de ventas para este producto");
+                return;
+            }
+
+            var Prodcantidad = Venta.VentaDetalles.SingleOrDefault(p => p.ProductoId == Detalle.ProductoId);
+            if ((Prodcantidad != null ? Detalle.Cantidad + Prodcantidad.Cantidad : Detalle.Cantidad) > Existencias.Where(e=>e.AlmacenId == Almacen.Id).Sum(e => e.Cantidad))
+            {
+                await IMessage.Alert("No hay existencias suficientes el almacen de ventas para este producto");
+                return;
+            }
+        }
+        
+        if (Detalle.Importe < 0)
+        {
+            return;
+        }
+
+        var Prod = Venta.VentaDetalles.SingleOrDefault(p => p.ProductoId == Detalle.ProductoId);
+        if (Prod == null)
+        {
+            if (Detalle.Cantidad <= 0)
+            {
+                return;
+            }
+            Venta.VentaDetalles.Add(Detalle);
+            Detalle = null;
+        }
+        else
+        {
+            if (Detalle.Cantidad <= 0)
+            {
+                Venta.VentaDetalles.Remove(Prod);
+            }
+            else
+            {
+                Prod.Cantidad += Detalle.Cantidad;
+                Prod.Precio = Detalle.Precio;
+                Prod.Descuento = Detalle.Descuento;
+                Prod.Importe = Prod.Precio * Prod.Cantidad - Prod.Descuento;
+            }
+        }
+        CalcularTotales();
+        CodigoProducto = string.Empty;
+        await TextFieldCodigo.Clear();
+        TextFieldCodigo.Reset();
+        await TextFieldCodigo.FocusAsync();
+
+    }
+
+    public void AbrirAgregarDatos()
+    {
+        ShowModalAgregarDatos = true;
+    }
+
+    public void ConfirmarDatos()
+    {
+        ShowModalAgregarDatos = false;
+    }
+
+    public void CerrarModalVentaDetalle()
+    {
+        if (ShowModalAgregarDetalle == true)
+        {
+            ShowModalAgregarDetalle = false;
+            Detalle = new VentaDetalle();
+        }
+    }
+    
+    public void MostrarModalDevolucion()
+    {
+        if (ShowModalFacturaDevolucion == false)
+        {
+            ShowModalFacturaDevolucion = true;
+        }
+    }
+    
+    public void CerrarModalDevolucion()
+    {
+        if (ShowModalFacturaDevolucion == true)
+        {
+            ShowModalFacturaDevolucion = false;
+        }
+    }
+
+    public async Task CheckOrden(int? ordenId)
+    {
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var orden = await DbContext.Ordenes.Include(o => o.TipoOrden)
+                                               .Include(o => o.Cliente)
+                                               .Include(o => o.Usuario)
+                                               .Include(o => o.Sector)
+                                               .Include(o => o.Usuario)
+                                               .Include(o => o.OrdenDetalles)
+                                               .ThenInclude(o => o.Producto)
+                                               .SingleOrDefaultAsync(o => o.Facturado == false && o.Nulo == false && o.Id == ordenId);
+        if (orden != null)
+        {
+            await BtnImportarPedido(orden);
+        }
+        StateHasChanged();
+
+    }
+
+    public async Task CheckOrdenMesa(int? mesaId)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var orden = await DbContext.Ordenes.Include(o => o.TipoOrden)
+                                               .Include(o => o.Cliente)
+                                               .Include(o => o.Usuario)
+                                               .Include(o => o.Sector)
+                                               .Include(o => o.Usuario)
+                                               .Include(o => o.OrdenDetalles)
+                                               .ThenInclude(o => o.Producto)
+                                               .SingleOrDefaultAsync(o => o.Facturado == false && o.Nulo == false && o.MesaId == mesaId);
+        if (orden != null)
+        {
+            await BtnImportarPedido(orden);
+        }
+        StateHasChanged();
+    }
+
+    public async Task GetUsuario()
+    {
+        var AState = await AuthStateProv.GetAuthenticationStateAsync();
+        var User = AState.User;
+        Usuario = await UserManager.FindByNameAsync(User.Identity.Name);
+        StateHasChanged();
+    }
+
+    public async Task GetAlmacenVenta()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Almacen = await DbContext.Almacenes.SingleOrDefaultAsync(a => a.EmpresaId == Empresa.Id && a.SucursalId == Sucursal.Id && a.EsDeVentas == true);
+        
+        Venta.Almacen = Almacen;
+        Venta.AlmacenId = Almacen.Id;
+        
+        StateHasChanged();
+    }
+
+    public async Task RevisarCuadre()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        CuadreAbierto = await DbContext.Cuadres
+        .Include(c => c.Usuario)
+        .Include(c => c.Ventas)
+        .SingleOrDefaultAsync(c => c.EmpresaId == Empresa.Id && c.SucursalId == Sucursal.Id && c.Cerrado == false);
+
+        if (CuadreAbierto != null)
+        {
+            HayCuadreAbierto = true;
+            Venta.Cuadre = CuadreAbierto;
+            Venta.CuadreId = CuadreAbierto.Id;
+        }
+        else
+        {
+            HayCuadreAbierto = false;
+        }
+        StateHasChanged();
+    }
+
+    private void RemoverProductoVenta(VentaDetalle Item)
+    {
+        var Detalle = Venta.VentaDetalles.Find(od => od.ProductoId == Item.ProductoId);
+        if (Detalle != null)
+        {
+            Venta.VentaDetalles.Remove(Detalle);
+            Venta.SubTotal = Venta.VentaDetalles.Sum(vd => vd.Precio * vd.Cantidad);
+            Venta.Descuento = Venta.VentaDetalles.Sum(vd => vd.Descuento);
+            Venta.Total = Venta.VentaDetalles.Sum(vd => vd.Importe) - Venta.Descuento + Venta.Delivery;
+        }
+    }
+
+    private void CancelarVenta()
+    {
+        Venta = new Venta();
+        if (returnURL != null)
+        {
+            NavManager.NavigateTo(returnURL);
+        }
+    }
+
+    #region Logica de Modal para importar las ordenes
+
+    private List<Orden> Ordenes { get; set; } = new List<Orden>();
+    private List<TipoOrden> TiposOrdenes { get; set; } = new List<TipoOrden>();
+
+
+    private int? TipoOrdenSeleccionada { get; set; }
+
+    private bool Nulo { get; set; } = false;
+
+    private string Codigo { get; set; }
+    private string NombreClienteOrden { get; set; }
+
+    private bool IsBusy { get; set; } = false;
+
+    public async Task CargarOrdenes()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Ordenes = await DbContext.Ordenes
+        .Include(p => p.OrdenDetalles)
+        .Include(p => p.TipoOrden)
+        .Include(p => p.Usuario)
+        .Where(p => p.EmpresaId == Empresa.Id && p.SucursalId == Sucursal.Id && p.Nulo == Nulo && p.Facturado == false &&
+        (NombreClienteOrden == null || p.NombreCliente.Contains(NombreClienteOrden)) &&
+            (Codigo == null || p.Id == Convert.ToInt32(Codigo)) &&
+            (TipoOrdenSeleccionada == null || p.TipoOrdenId == TipoOrdenSeleccionada))
+        .ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarTipoOrdenes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TiposOrdenes = await DbContext.TipoOrdenes.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+
+
+    public void CerrarImportarPedidos()
+    {
+        if (MostrarListaOrdenes)
+        {
+            MostrarListaOrdenes = false;
+        }
+    }
+
+    public void AbrirImportarOrdenes()
+    {
+        if (!MostrarListaOrdenes)
+        {
+            MostrarListaOrdenes = true;
+        }
+    }
+
+    public async Task BtnImportarPedido(Orden item)
+    {
+        if (item.Nulo)
+        {
+            await IMessage.Alert("Orden es nula, no se puede facturar!");
+            return;
+        }
+
+
+        OrdenesImportadas = new List<Orden>();
+
+        Venta = new Venta();
+        Venta.TipoFacturaId = 2;
+        Venta.FechaPedido = item.FechaPedido;
+        Venta.ClienteId = item.ClienteId;
+        Venta.NombreCliente = item.NombreCliente;
+        Venta.DireccionCliente = item.DireccionCliente;
+        Venta.CelularCliente = item.CelularCliente;
+        Venta.TipoOrden = item.TipoOrden;
+        Venta.TipoOrdenId = item.TipoOrdenId;
+        if (item.SectorId != null)
+        {
+            Venta.Sector = item.Sector;
+            Venta.SectorId = item.SectorId;
+        }
+        Venta.Delivery = item.MontoDelivery;
+        Venta.SubTotal = item.SubTotal;
+        Venta.Descuento = item.Descuento;
+        Venta.Impuesto = item.Impuesto;
+        Venta.Total = item.Total;
+
+        foreach (var ordendetalle in item.OrdenDetalles)
+        {
+            var ventadetalle = new VentaDetalle()
+            {
+                Producto = ordendetalle.Producto,
+                ProductoId = ordendetalle.ProductoId,
+                NombreProducto = ordendetalle.NombreProducto,
+                Cantidad = ordendetalle.Cantidad,
+                Descuento = ordendetalle.Descuento,
+                Precio = ordendetalle.Precio,
+                Importe = ordendetalle.Importe
+            };
+
+            Venta.VentaDetalles.Add(ventadetalle);
+        }
+
+        Venta.MontoDevuelta = Venta.MontoEfectivo - Venta.Total;
+
+        OrdenesImportadas.Add(item);
+
+        MostrarListaOrdenes = false;
+    }
+
+    #endregion
+
+    #region Logica de Modal para Forma de Pago
+
+    public void ChangeNumericMontoEfectivo(dynamic value)
+    {
+        if (Venta.TipoFacturaId == 2)
+        {
+            Venta.MontoEfectivo = value;
+            Venta.MontoDevuelta = value - Venta.Total;
+        }
+    }
+
+    public void CerrarFormaDePago()
+    {
+        if (MostrarFormaPago)
+        {
+            MostrarFormaPago = false;
+        }
+    }
+
+    public async Task AbrirFormaDePago()
+    {
+        if (Venta.VentaDetalles.Count > 0)
+        {
+            if (!MostrarFormaPago)
+            {
+                ChangeNumericMontoEfectivo(Venta.MontoEfectivo);
+                MostrarFormaPago = true;
+            }
+        }
+        else
+        {
+            await IMessage.Alert("Debe de anadir una orden que contenga items para poder facturar!");
+        }
+    }
+
+    private async Task RegistrarFactura()
+    {
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        if (Venta.TipoFacturaId == 1 && Venta.ClienteId == null)
+        {
+            await IMessage.Alert("Se marco esta venta como factura credito y no selecciono un cliente, debe seleccionar un cliente!");
+            return;
+        }
+
+        if (Venta.TipoFacturaId == 2 && Venta.MontoDevuelta < 0)
+        {
+            await IMessage.Alert("El monto a pagar no esta completo, se debe de pagar la factura completa, favor revisar!");
+            return;
+        }
+
+        if (Venta.TipoFacturaId == 1 && Venta.ClienteId != null)
+        {
+            var Cliente = await DbContext.Clientes.SingleOrDefaultAsync(c=>c.Id == Venta.ClienteId);
+            if(!Cliente.CreditoAbierto)
+            {
+                await IMessage.Alert($"El Cliente {Venta.Cliente.Nombre} tiene el credito cerrado!");
+                return;
+            }
+            else
+            {
+                var Balance = await DbContext.CXCVentaBalances
+                            .Include(cxcv => cxcv.Venta)
+                            .Where(cxcv =>
+                            cxcv.Venta.TipoFacturaId == 1 &&
+                            cxcv.Venta.ClienteId == Venta.ClienteId).Select(b=>b.Balance).SumAsync();
+
+                if(Cliente.LimiteCredito <= Balance + Venta.Total)
+                {
+                    await IMessage.Alert($"El Cliente {Cliente.Nombre} ha alcanzado el limite de Credito, para mas informacion contacte a su supervisor!");
+                    return;
+                }
+            }
+            
+        }
+
+        IsBusy = true;
+
+        var VentaNueva = new Venta();
+
+
+        if (Venta.Id == 0)
+        {
+
+            var OrdenFacturada = await DbContext.OrdenVentas
+                .Include(ov => ov.Venta)
+                .ThenInclude(v => v.Usuario)
+                .Include(ov => ov.Orden)
+                .SingleOrDefaultAsync(od => od.OrdenId == ordenId);
+
+            if (OrdenFacturada != null)
+            {
+                await IMessage.Alert($"La Orden #{OrdenFacturada.OrdenId} ya ha sido facturada por el usuario {OrdenFacturada.Venta.Usuario.UserName}");
+                return;
+            }
+
+            Venta.EmpresaId = Empresa.Id;
+            Venta.SucursalId = Sucursal.Id;
+            Venta.Cuadre = null;
+            Venta.Almacen = await DbContext.Almacenes.SingleOrDefaultAsync(p => p.EmpresaId == Empresa.Id && p.SucursalId == Sucursal.Id && p.EsDeVentas == true);
+
+            Venta.TipoOrden = null;
+            Venta.Sector = null;
+            Venta.CuadreId = CuadreAbierto.Id;
+            Venta.Usuario = null;
+            Venta.UsuarioId = Usuario.Id;
+            Venta.FechaFinalizado = DateTime.Now;
+            Venta.Facturado = true;
+
+            VentaNueva = Venta;
+
+            foreach (var item in VentaNueva.VentaDetalles)
+            {
+                item.Producto = await DbContext.Productos.Include(p => p.Categoria).Include(p => p.SubCategoria).SingleOrDefaultAsync(p => p.Id == item.ProductoId);
+            }
+
+
+            await DbContext.AddAsync(VentaNueva);
+            await DbContext.SaveChangesAsync();
+
+            if (VentaNueva.TipoFacturaId == 1)
+            {
+
+                var NewCXCVentaBalance = new CXCVentaBalance()
+                {
+                    VentaId = VentaNueva.Id,
+                    Balance = VentaNueva.Total - VentaNueva.MontoEfectivo
+                };
+
+
+                await DbContext.AddAsync(NewCXCVentaBalance);
+                await DbContext.SaveChangesAsync();
+            }
+
+
+            foreach (var item in VentaNueva.VentaDetalles)
+            {
+                if (item.Producto.ManejaExistencia)
+                {
+                    var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(EPA => EPA.ProductoId == item.ProductoId && EPA.AlmacenId == VentaNueva.AlmacenId);
+
+                    if (EPxA == null)
+                    {
+                        var Existencia = new Existencia()
+                        {
+                            AlmacenId = VentaNueva.AlmacenId,
+                            ProductoId = item.ProductoId,
+                            Cantidad = item.Cantidad
+
+                        };
+
+                        await DbContext.AddAsync(Existencia);
+                        await DbContext.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        EPxA.Cantidad -= item.Cantidad;
+                        DbContext.Update(EPxA);
+                        await DbContext.SaveChangesAsync();
+                    }
+                }
+            }
+
+            var ListaOrdenVenta = new List<OrdenVenta>();
+
+            if (OrdenesImportadas.Count > 0)
+            {
+                foreach (var orden in OrdenesImportadas)
+                {
+                    var OrdenVenta = new OrdenVenta()
+                    {
+                        Orden = null,
+                        OrdenId = orden.Id,
+                        Venta = null,
+                        VentaId = Venta.Id
+                    };
+
+                    ListaOrdenVenta.Add(OrdenVenta);
+                }
+
+                await DbContext.AddRangeAsync(ListaOrdenVenta);
+                await DbContext.SaveChangesAsync();
+            }
+
+            foreach (var orden in OrdenesImportadas)
+            {
+                orden.OrdenDetalles = null;
+                orden.Facturado = true;
+                if (orden.FechaFinalizado == null)
+                {
+                    orden.FechaFinalizado = DateTime.Now;
+                }
+                DbContext.Update(orden);
+                await DbContext.SaveChangesAsync();
+            }
+
+
+
+            Venta = new Venta();
+            OrdenesImportadas = new List<Orden>();
+
+            MostrarFormaPago = false;
+
+            await IMessage.Success("Facturado!");
+            await CargarOrdenes();
+
+        }
+        else
+        {
+
+            @*var VentaFromDb = await DbContext.Ventas
+                .Include(v => v.Usuario)
+                .Include(v => v.Cuadre)
+                .Include(v => v.TipoOrden)
+                .Include(v => v.Sector)
+                .Include(v => v.VentaDetalles)
+                .Include(v => v.OrdenVentas)
+                .SingleOrDefaultAsync(v => v.Id == Venta.Id);
+
+                if (VentaFromDb.Cuadre.Cerrado == true)
+                {
+                    await IMessage.Alert("El cuadre de esta transaccion esta cerrado, no puede modificar esta factura!");
+                    return;
+                }
+
+                VentaFromDb.NombreCliente = Venta.NombreCliente;
+                VentaFromDb.CelularCliente = Venta.CelularCliente;
+                VentaFromDb.DireccionCliente = Venta.DireccionCliente;
+                VentaFromDb.SectorId = Venta.SectorId;
+                VentaFromDb.Sector = await DbContext.Sectores.SingleOrDefaultAsync(s => s.Id == Venta.SectorId);
+                VentaFromDb.SubTotal = Venta.VentaDetalles.Sum(vd => vd.Precio * vd.Cantidad);
+                VentaFromDb.Descuento = Venta.VentaDetalles.Sum(vd => vd.Descuento);
+                VentaFromDb.Total = Venta.VentaDetalles.Sum(vd => vd.Importe) - Venta.Descuento + Venta.Delivery;
+
+                DbContext.Update(VentaFromDb);
+
+                await DbContext.SaveChangesAsync();
+
+                //
+                //Procesos de Detalle de la venta
+                //
+
+                //Consultamos el detalle antiguo de la venta.
+                var DetalleAntiguo = await DbContext.VentaDetalles
+                    .Include(VD=>VD.Venta)
+                    .Include(VD=>VD.Producto)
+                    .Where(fcd => fcd.VentaId == Venta.Id).ToListAsync();
+
+                //Por cada detalle en el detalle de la venta enviada.
+                foreach (var item in Venta.VentaDetalles)
+                {
+                    //Asignamos los nuevos datos al detalle para que entity framework no arroje excepciones.
+                    item.VentaId = VentaFromDb.Id;
+                    item.Venta = await DbContext.Ventas.SingleOrDefaultAsync(fc => fc.Id == VentaFromDb.Id);
+                    item.Producto = await DbContext.Productos.SingleOrDefaultAsync(p => p.Id == item.ProductoId);
+
+                    //Si el detalle nuevo no existe en la base de datos.
+                    if (item.Id == 0)
+                    {
+                        //lo insertamos.
+                        await DbContext.VentaDetalles.AddAsync(item);
+                        await DbContext.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        //Consultamos el detalle de la lista de Detalles Antiguos, donde el producto y la venta sean igual al detalle de la venta enviada.
+                        var detalle = DetalleAntiguo.Where(fcda => fcda.ProductoId == item.ProductoId && fcda.VentaId == item.VentaId).SingleOrDefault();
+
+                        //Asignamos los datos a actualizar al detalle consultado
+                        detalle.NombreProducto = item.NombreProducto;
+                        detalle.Cantidad = item.Cantidad;
+                        detalle.Precio = item.Precio;
+                        detalle.Descuento = item.Descuento;
+                        detalle.Importe = item.Importe;
+
+                        //actualizamos los datos en la base de datos.
+                        DbContext.VentaDetalles.Update(item);
+                        await DbContext.SaveChangesAsync();
+                    }
+
+                }
+
+                //Creamos una lista de detalles removidos para agregar los detalles que se hayan removido.
+                var DetallesRemovidos = new List<VentaDetalle>();
+
+                //por cada detalle en la lista de detalles antiguos
+                foreach (var item in DetalleAntiguo)
+                {
+                    //Consultamos en la lista de detalles de la compra enviada donde el producto sea igual al producto del detalle antiguo.
+                    var Exists = Venta.VentaDetalles.Where(fcd => fcd.ProductoId == item.ProductoId).SingleOrDefault();
+
+                    //Si no existe el detalle antiguo en el detalle de al venta enviada.
+                    if (Exists == null)
+                    {
+                        //Agregamos el detalle antiguo a lista de DetalleRemovidos.
+                        DetallesRemovidos.Add(item);
+                    }
+                }
+
+                //Borramos todos los detalles removidos en la lista de detalles removidos de la Base de Datos.
+                DbContext.VentaDetalles.RemoveRange(DetallesRemovidos);
+                await DbContext.SaveChangesAsync();*@
+        }
+
+        IsBusy = false;
+        var result = await IJSRuntime.Confirmar("Desea imprimir?");
+        if (result)
+        {
+            await IJSRuntime.AbrirNuevaPagina($"/imprimirfactura/{VentaNueva.Id}");
+            //FacturaIdImp = VentaNueva.Id;
+            //ShowModalImprimirFactura = true;
+        }
+
+        if(!string.IsNullOrEmpty(returnURL))
+        {
+            NavManager.NavigateTo(returnURL);
+        }
+
+        await CargarProductos();
+        #endregion
+    }
+
+    }

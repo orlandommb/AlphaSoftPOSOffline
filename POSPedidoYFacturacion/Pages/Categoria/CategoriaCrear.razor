@@ -1,0 +1,116 @@
+﻿@page "/categorias/crear/{Id:int?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+<RadzenCard>
+    <h3>Registro de Categorias</h3>
+</RadzenCard>
+    @if(IsBusy)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    }
+    else
+    {
+    <RadzenCard>
+        <EditForm Model="Categoria" OnValidSubmit="CrearCategoria">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div>Nombre:</div>
+                        <div>
+                            <InputText @bind-Value="Categoria.Nombre" />
+                            <ValidationMessage For="@(() => Categoria.Nombre)" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success" />
+        </EditForm>
+    </RadzenCard>
+    }
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+
+    private bool IsBusy { get; set; } = false;
+    public Categoria Categoria { get; set; } = new Categoria();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCategoria();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarCategoria()
+    {
+        IsBusy = true;
+        if (Id != null)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            Categoria = await DbContext.Categorias.SingleOrDefaultAsync(c => c.Id == Id);
+        }
+        IsBusy = false;
+    }
+
+    public async Task CrearCategoria()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        if (Categoria.Id == 0)
+        {
+            Categoria.EmpresaId = Empresa.Id;
+            Categoria.SucursalId = Sucursal.Id;
+            await DbContext.AddAsync(Categoria);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Registro Exitoso!");
+            Categoria = new Categoria();
+        }
+        else
+        {
+            var Item = await DbContext.Categorias.SingleOrDefaultAsync(c => c.Id == Categoria.Id);
+            Item.Nombre = Categoria.Nombre;
+            DbContext.Update(Item);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Modificacion Exitoso!");
+            Categoria = new Categoria();
+        }
+        IsBusy = false;
+    }
+}

@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:ASCamarerosApp.ViewModels"
+    xmlns:DTOs="clr-namespace:Shared.DTOs;assembly=Shared"
+    x:Class="ASCamarerosApp.Views.OrdenesAmbulantesPage"
+    Title="Ordenes Ambulantes">
+
+    <ContentPage.BindingContext>
+        <vm:OrdenesAmbulantesViewModel/>
+    </ContentPage.BindingContext>
+
+    <ContentPage.Content>
+        <AbsoluteLayout>
+            <StackLayout AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All">
+                <RefreshView Command="{Binding LoadOrdenesCommand}" IsRefreshing="{Binding IsBusy}">
+                    <Frame HasShadow="False">
+                        <CollectionView ItemsSource="{Binding Ordenes}"
+                                            SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Frame HasShadow="False" CornerRadius="15" BorderColor="DodgerBlue">
+                                        <Grid RowDefinitions="*,*,*" ColumnDefinitions="*,*">
+                                            <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding NombreCliente, StringFormat='Nombre: {0}'}"/>
+                                            <Label Grid.Row="1" Grid.Column="0" Text="{Binding Id, StringFormat='Id: {0}'}"/>
+                                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding TipoOrden.Nombre, StringFormat='TipoOrden: {0}'}"/>
+                                            <Label Grid.Row="2" Grid.Column="0" Text="{Binding SubTotal, StringFormat='Sub Total: {0:C2}'}"/>
+                                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding Descuento, StringFormat='Descuento: {0:C2}'}"/>
+                                            <Label Grid.Row="3" Grid.Column="0" Text="{Binding Impuesto, StringFormat='Impuesto: {0:C2}'}"/>
+                                            <Label Grid.Row="3" Grid.Column="1" Text="{Binding Total, StringFormat='Total: {0:C2}'}"/>
+                                        </Grid>
+                                        <Frame.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={x:RelativeSource AncestorType={x:Type vm:OrdenesAmbulantesViewModel}}, Path=ItemTapped}"
+                                                                         CommandParameter="{Binding .}"
+                                                                         NumberOfTapsRequired="1"/>
+                                        </Frame.GestureRecognizers>
+                                    </Frame>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="2" />
+                            </CollectionView.ItemsLayout>
+
+                            <CollectionView.EmptyView>
+                                <StackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Label Text="NO HAY ORDENES" VerticalTextAlignment="Center" HorizontalTextAlignment="Center"/>
+                                </StackLayout>
+                            </CollectionView.EmptyView>
+                        </CollectionView>
+                    </Frame>
+                </RefreshView>
+                </StackLayout>
+                <ImageButton Source="add_icon.png" 
+                    BackgroundColor="Transparent"
+                    AbsoluteLayout.LayoutFlags="PositionProportional"  
+                    AbsoluteLayout.LayoutBounds=".99,.88,80,80" 
+                    Command="{Binding OnAddItemCommand}" />
+
+        </AbsoluteLayout>
+    </ContentPage.Content>
+</ContentPage>

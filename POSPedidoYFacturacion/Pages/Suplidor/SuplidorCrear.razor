@@ -1,0 +1,216 @@
+﻿@page "/suplidores/crear/{Id:int?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+
+@inject ApplicationDbContext DbContext
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard>
+    <h3>Registrar Suplidor</h3>
+</RadzenCard>
+<RadzenCard>
+    <RadzenCard>
+        <EditForm Model="Suplidor" OnValidSubmit="CrearSuplidor">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div>Nombre:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.Nombre" />
+                            <ValidationMessage For="@(() => Suplidor.Nombre)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Razon Social:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.RazonSocial" />
+                            <ValidationMessage For="@(() => Suplidor.RazonSocial)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Cedula:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.Cedula" />
+                            <ValidationMessage For="@(() => Suplidor.Cedula)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>RNC:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.RNC" />
+                            <ValidationMessage For="@(() => Suplidor.RNC)" />
+                        </div>
+                    </div>
+                    
+
+
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div>Activo:</div>
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="Suplidor.Activo" />
+                            <ValidationMessage For="@(() => Suplidor.Activo)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Telefono:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.Telefono" />
+                            <ValidationMessage For="@(() => Suplidor.Telefono)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Email:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.Email" />
+                            <ValidationMessage For="@(() => Suplidor.Email)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>WhatsApp:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.WhatsApp" />
+                            <ValidationMessage For="@(() => Suplidor.WhatsApp)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Condiciones:</div>
+                        <div>
+                            <InputSelect @bind-Value="Suplidor.Condiciones" TValue="int" DisplayName="Condiciones">
+                                <option value="0">0 Dias</option>
+                                <option value="30">30 Dias</option>
+                                <option value="60">60 Dias</option>
+                                <option value="90">90 Dias</option>
+                                <option value="120">120 Dias</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => Suplidor.Condiciones)" />
+                        </div>
+                    </div>
+
+                    
+                </div>
+            </div>
+            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success" />
+        </EditForm>
+    </RadzenCard>
+</RadzenCard>
+
+
+@code
+{
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    public Suplidor Suplidor { get; set; } = new Suplidor();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            if (Id != null)
+            {
+                await CargarSuplidor(Id);
+            }
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            Suplidor.EmpresaId = Empresa.Id;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            Suplidor.SucursalId = Sucursal.Id;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSuplidor(int? Id)
+    {
+        Suplidor = await DbContext.Suplidores.SingleOrDefaultAsync(p => p.Id == Id);
+        StateHasChanged();
+    }
+
+
+    private async Task CrearSuplidor()
+    {
+
+
+
+        if (Suplidor.Id == 0)
+        {
+            var ItemNombre = await DbContext.Suplidores.SingleOrDefaultAsync(p => p.Nombre == Suplidor.Nombre || p.RazonSocial == Suplidor.RazonSocial);
+
+            if (ItemNombre != null)
+            {
+                await IMessage.Alert($"Este nombre o razon social pertenece al suplidor {ItemNombre.Nombre} y su razon social {ItemNombre.RazonSocial}!");
+                return;
+            }
+
+            var ItemCodigo = await DbContext.Suplidores.SingleOrDefaultAsync(p => p.Cedula == Suplidor.Cedula || p.RNC == Suplidor.RNC);
+
+            if (ItemCodigo != null)
+            {
+                await IMessage.Alert($"Este RNC o Cedula pertenece al Suplidor: {ItemCodigo.Nombre} con la cedula {ItemCodigo.Cedula} y el RNC {ItemCodigo.RNC}!");
+                return;
+            }
+
+            await DbContext.AddAsync(Suplidor);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Registro exitoso!");
+            Suplidor = new Suplidor();
+
+
+        }
+        else
+        {
+            var Item = await DbContext.Suplidores.SingleOrDefaultAsync(p => p.Id == Suplidor.Id);
+
+            if (Item != null)
+            {
+
+                    Item.Nombre = Suplidor.Nombre;
+                    Item.RazonSocial = Suplidor.RazonSocial;
+                    Item.Activo = Suplidor.Activo;
+                    Item.Cedula = Suplidor.Cedula;
+                    Item.RNC = Suplidor.RNC;
+                    Item.Telefono = Suplidor.Telefono;
+                    Item.Email = Suplidor.Email;
+                    Item.WhatsApp = Suplidor.WhatsApp;
+                    Item.Condiciones = Suplidor.Condiciones;
+
+                    DbContext.Update(Item);
+                    await DbContext.SaveChangesAsync();
+                    await IMessage.Success("Modificacion exitosa!");
+                    Suplidor = new Suplidor();
+            }
+        }
+
+    }
+
+}

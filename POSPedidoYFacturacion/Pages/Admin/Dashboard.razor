@@ -1,0 +1,360 @@
+﻿@page "/dashboard"
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ProtectedLocalStorage LocalStorage
+
+<MudPaper>
+    <MudToolBar>
+        <h3>Dashboard</h3>
+        <MudSpacer/>
+        
+    </MudToolBar>
+</MudPaper>
+<RadzenCard>
+    @if (IsBusy)
+    {
+        <div class="middle-box">
+            <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <MudToolBar>
+                    <MudDateRangePicker Label="Desde - Hasta" Editable="true" @bind-DateRange="Fecha" />
+                    <MudSpacer/>
+                    <MudTooltip Text="Generar Datos">
+                        <MudIconButton Icon="@Icons.Material.Filled.Search" OnClick="CargarDatos" />
+                    </MudTooltip>
+                </MudToolBar>
+            </div>
+        </div>
+        <RadzenCard>
+            <div class="row">
+                <div class="col-sm-4">
+                    <label style="font-size:18px">Ventas por Categorias</label>
+                    <RadzenChart>
+                        <RadzenPieSeries Data="@CategoriasData" Title="Ventas por Categorias" CategoryProperty="Nombre" ValueProperty="Valor" />
+                        <RadzenValueAxis Formatter="@FormatAsDOP">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Ventas por Categorias" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                </div>
+                <div class="col-sm-4">
+                    <label style="font-size:18px">Ventas por Tipo de Venta</label>
+                    <RadzenChart>
+                        <RadzenPieSeries Data="@TipoFacturasVentasData" Title="Ventas por Tipo de Venta" CategoryProperty="Nombre" ValueProperty="Valor" />
+                        <RadzenValueAxis Formatter="@FormatAsDOP">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Ventas por Tipo de Venta" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                </div>
+                @* <div class="col-sm-4">
+                    <label style="font-size:18px">Cue</label>
+                    <RadzenChart>
+                        <RadzenPieSeries Data="@TipoFacturasVentasData" Title="Ventas por Tipo de Venta" CategoryProperty="Nombre" ValueProperty="Valor" />
+                        <RadzenValueAxis Formatter="@FormatAsDOP">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Ventas por Tipo de Venta" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                </div> *@
+            </div>
+        </RadzenCard>
+        <RadzenCard>
+            <div class="row">
+                <div class="col-sm-12">
+                    <RadzenChart>
+                        <RadzenBarSeries Data="@VentasPorProductos" CategoryProperty="Nombre" LineType="LineType.Dashed" ValueProperty="Valor" />
+                        <RadzenValueAxis Formatter="@FormatAsDOP">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Top 5 Productos Mas Vendidos" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                </div>
+            </div>
+        </RadzenCard>
+        <RadzenCard>
+            <div class="row">
+                <div class="col-sm-12">
+                    <RadzenChart>
+                        <RadzenAreaSeries Smooth="false" Data="@BeneficiosTotales" CategoryProperty="Fecha" ValueProperty="Valor" RenderingOrder="1">
+                        </RadzenAreaSeries>
+                        <RadzenCategoryAxis FormatString="{0:MMM/yyyy}" />
+                        <RadzenValueAxis Formatter="@FormatAsDOP">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Beneficios Ultimos 6 Meses" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                </div>
+            </div>
+        </RadzenCard>
+    }
+</RadzenCard>
+
+
+@code {
+
+    public class DataItem
+    {
+        public string Nombre { get; set; }
+        public decimal Valor { get; set; }
+    }
+
+    public class DataDateItem : DataItem
+    {
+        public DateTime Fecha { get; set; }
+    }
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public List<DataItem> TipoFacturasVentasData { get; set; } = new List<DataItem>();
+    public List<DataItem> CategoriasData { get; set; } = new List<DataItem>();
+
+    public List<DataItem> VentasPorProductos { get; set; } = new List<DataItem>();
+
+    public List<DataDateItem> BeneficiosTotales { get; set; } = new List<DataDateItem>();
+
+    public List<Venta> Ventas { get; set; } = new List<Venta>();
+    public List<TipoOrden> TipoOrdenes { get; set; } = new List<TipoOrden>();
+    public List<TipoFactura> TipoFacturas { get; set; } = new List<TipoFactura>();
+    public List<Categoria> Categorias { get; set; } = new List<Categoria>();
+    public List<Producto> Productos { get; set; } = new List<Producto>();
+
+    private DateRange Fecha { get; set; } = new DateRange(DateTime.Now.AddMonths(-1), DateTime.Now);
+
+    private bool IsBusy { get; set; } = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarDatos();
+        }
+
+        StateHasChanged();
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    string FormatAsDOP(object value)
+    {
+        return ((double)value).ToString("C2", CultureInfo.CreateSpecificCulture("es-DO"));
+    }
+
+
+    private async Task CargarDatos()
+    {
+        IsBusy = true;
+
+        await CargarVentas();
+        await CargarCategorias();
+        await CargarTiposOrdenes();
+        await CargarTipoFacturas();
+        await CargarProductos();
+        await CargarBeneficios();
+
+        IsBusy = false;
+    }
+
+    private async Task CargarVentas()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Ventas = await DbContext.Ventas.Include(v => v.Sector)
+                                       .Include(v => v.TipoOrden)
+                                       .Include(v => v.Cuadre)
+                                       .Include(v => v.VentaDetalles)
+                                       .ThenInclude(vd => vd.Producto)
+                                       .ThenInclude(p => p.Categoria)
+                                       .Include(v => v.VentaDetalles)
+                                       .ThenInclude(vd => vd.Producto)
+                                       .ThenInclude(p => p.SubCategoria)
+                                       .Where(p => p.EmpresaId == Empresa.Id &&
+                                                    p.FechaFinalizado >= Fecha.Start &&
+                                                     p.FechaFinalizado <= Fecha.End)
+                                       .ToListAsync();
+
+        IsBusy = false;
+    }
+
+    private async Task CargarTiposOrdenes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoOrdenes = await DbContext.TipoOrdenes.Include(to => to.Ventas).ToListAsync();
+
+        IsBusy = false;
+    }
+    
+    private async Task CargarTipoFacturas()
+    {
+        IsBusy = true;
+
+        TipoFacturasVentasData.Clear();
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoFacturas = await DbContext.TipoFacturas.ToListAsync();
+
+        foreach (var item in TipoFacturas)
+        {
+            var TipData = new DataItem()
+            {
+                Nombre = item.Nombre,
+                Valor = Ventas.SelectMany(v => v.VentaDetalles).Where(vd => vd.Venta.TipoFacturaId == item.Id).ToList().Sum(vd => vd.Importe)
+            };
+
+            TipoFacturasVentasData.Add(TipData);
+        }
+
+        IsBusy = false;
+    }
+
+    private async Task CargarCategorias()
+    {
+        IsBusy = true;
+
+        CategoriasData.Clear();
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Categorias = await DbContext.Categorias.Where(c=>c.EmpresaId == Empresa.Id).ToListAsync();
+
+        foreach (var item in Categorias)
+        {
+            var CatData = new DataItem()
+            {
+                Nombre = item.Nombre,
+                Valor = Ventas.SelectMany(v => v.VentaDetalles).Where(vd => vd.Producto.Categoria.Nombre == item.Nombre).ToList().Sum(vd => vd.Importe)
+            };
+
+            CategoriasData.Add(CatData);
+        }
+
+        IsBusy = false;
+    }
+
+    private async Task CargarProductos()
+    {
+        IsBusy = true;
+
+        VentasPorProductos.Clear();
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var VentasFromDb = await DbContext.VentaDetalles
+                                       .Include(v => v.Producto)
+                                       .ThenInclude(p=>p.SubCategoria)
+                                       .Include(vd => vd.Producto)
+                                       .ThenInclude(p => p.SubCategoria)
+                                       .Include(v => v.Venta)
+                                       .ThenInclude(v => v.Cuadre)
+                                       .Include(v => v.Venta)
+                                       .ThenInclude(vd => vd.TipoOrden)
+                                       .Include(v => v.Venta)
+                                       .ThenInclude(vd => vd.Sector)
+                                       .Where(p => p.Venta.EmpresaId == Empresa.Id && p.Venta.FechaFinalizado >= Fecha.Start &&
+                                                     p.Venta.FechaFinalizado <= Fecha.End)
+                                       .ToListAsync();
+
+        var query = (from item in VentasFromDb
+                     group item.Importe by item.NombreProducto into g orderby g.Sum() descending select g.Key).Take(5);
+
+        foreach (var item in query)
+        {
+            var CatData = new DataItem()
+            {
+                Nombre = item,
+                Valor = Ventas.SelectMany(v => v.VentaDetalles).Where(vd => vd.Producto.Nombre == item).ToList().Sum(vd => vd.Importe)
+            };
+
+            VentasPorProductos.Add(CatData);
+        }
+
+        IsBusy = false;
+    }
+
+    private async Task CargarBeneficios()
+    {
+        IsBusy = true;
+
+        BeneficiosTotales.Clear();
+
+        var Ultimos6Meses = Enumerable.Range(0, 6)
+                              .Select(i => DateTime.Now.AddMonths(i - 6))
+                              .Select(date => Convert.ToDateTime(date.ToString("dd/MM/yyyy")));
+
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var VentasUltimos6Meses = await DbContext.VentaDetalles
+                                       .Include(v => v.Producto)
+                                       .ThenInclude(p=>p.SubCategoria)
+                                       .Include(vd => vd.Producto)
+                                       .ThenInclude(p => p.SubCategoria)
+                                       .Include(v => v.Venta)
+                                       .ThenInclude(v => v.Cuadre)
+                                       .Include(v => v.Venta)
+                                       .ThenInclude(vd => vd.TipoOrden)
+                                       .Include(v => v.Venta)
+                                       .ThenInclude(vd => vd.Sector)
+                                       .Where(p => p.Venta.EmpresaId == Empresa.Id && p.Venta.FechaFinalizado >= Ultimos6Meses.FirstOrDefault() &&
+                                                     p.Venta.FechaFinalizado <= Ultimos6Meses.LastOrDefault())
+                                       .ToListAsync();
+
+        foreach (var item in Ultimos6Meses)
+        {
+            DateTime ProximoMes;
+
+            if (item != Ultimos6Meses.LastOrDefault())
+            {
+                ProximoMes = item.AddMonths(1);
+            }
+            else
+            {
+                ProximoMes = item;
+            }
+
+            var CatData = new DataDateItem()
+            {
+                Nombre = item.ToString(),
+                Fecha = item,
+                Valor = VentasUltimos6Meses.Where(vd=>vd.Venta.FechaFinalizado >= item &&
+                                                     vd.Venta.FechaFinalizado <= ProximoMes).ToList().Sum(vd => (vd.Precio - vd.Producto.Costo - vd.Descuento) * vd.Cantidad)
+            };
+
+            BeneficiosTotales.Add(CatData);
+        }
+
+        IsBusy = false;
+    }
+
+
+
+}

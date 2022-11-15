@@ -1,0 +1,602 @@
+@page "/ajustesinventario/crear/{Id:int?}"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProv
+@inject UserManager<Usuario> UserManager
+@inject ProtectedLocalStorage LocalStorage
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Registro de Ajustes</h5>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard>
+    <EditForm Model="AjusteInventario">
+        <DataAnnotationsValidator />
+        <ValidationSummary/>
+        <RadzenCard>
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <MudSelect T="int" Label="Tipo de Ajuste" @bind-Value="@AjusteInventario.AjusteInventarioTipoId" Required="true">
+                            @foreach (var item in TiposAjuste)
+                                {
+                                <MudSelectItem Value="@item.Id">@item.Nombre</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <MudSelect T="int" Label="Almacen" @bind-Value="@AjusteInventario.AlmacenId" Required="true">
+                            @foreach (var item in Almacenes)
+                            {
+                                <MudSelectItem Value="@item.Id">@item.Nombre</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <MudTextField T="DateTime" @bind-Value="@AjusteInventario.Fecha" Label="Fecha"/>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <MudIconButton Icon="@Icons.Material.Filled.Save" Variant="Variant.Outlined" Color="Color.Info" OnClick="Crear"/>
+                    </div>
+                </div>
+            </div>
+        </RadzenCard>   
+    </EditForm>
+    <RadzenCard>
+        <div class="row">
+            <div class="col-sm-5">
+                <MudAutocomplete @ref="AutoCompleteRef" ResetValueOnEmptyText="true" T="Producto" Label="Producto" Value="@Detalle.Producto" Immediate="true"
+                         SearchFunc="@Search" ToStringFunc="@(e=> e==null?null : $"{e.Codigo} | {e.Nombre}")" 
+                         ValueChanged="@(async args=> await ProductoSeleccionadoOnChange(args))" />
+            </div>
+            <div class="col-sm-2">
+                <MudTextField T="double" Label="Cantidad" Immediate="true" Value="Detalle.Cantidad" ValueChanged="@(args => CantidadChange(args))" />
+            </div>
+            <div class="col-sm-2">
+                <MudTextField T="decimal" @bind-Value="Detalle.Costo" Label="Costo"/>
+            </div>
+            <div class="col-sm-2">
+                <MudTextField @bind-Value="Detalle.Importe" Label="Importe"/>
+            </div>
+            <div class="col-sm-">
+                <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(()=>AgregarDetalle(Detalle))"/>
+            </div>
+        </div>
+    </RadzenCard>
+    <RadzenCard>
+        <div class="row">
+            <div class="table-responsive-sm" style="overflow:scroll; height: 400px;width: 100%">
+                <table class="table table-sm" style="width: 100%">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Costo</th>
+                            <th>Importe</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var item in AjusteInventario.AjusteDetalles)
+                        {
+                            <tr>
+                                <td>@item.Producto.Nombre</td>
+                                <td>@item.Cantidad</td>
+                                <td>@item.Costo</td>
+                                <td>@item.Importe</td>
+                                <td>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(()=>EditarDetalle(item))"/>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="Variant.Outlined" Color="Color.Error" OnClick="@(()=>EliminarDetalle(item))"/>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                
+
+                
+            </div>
+        </div>
+    </RadzenCard>
+</RadzenCard>
+
+
+
+@code{
+    [Parameter]
+    public int Id {get; set;}
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    
+    public AjusteInventario AjusteInventario {get; set;} = new AjusteInventario();
+    public AjusteInventarioDetalle Detalle {get; set;} = new AjusteInventarioDetalle();
+
+    public List<AjusteInventarioTipo> TiposAjuste { get; set; } = new List<AjusteInventarioTipo>();
+    public List<Almacen> Almacenes { get; set; } = new List<Almacen>();
+    
+    private MudAutocomplete<Producto> AutoCompleteRef { get; set; }
+    private bool IsBusy { get; set; } = false;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarUsuario();
+            await CargarAlmacenes();
+            await CargarTiposAjuste();
+            await CargarAjusteInventario();
+            StateHasChanged();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarAlmacenes()
+    {
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Almacenes = await DbContext.Almacenes.Where(s => 
+        s.EmpresaId == Empresa.Id && 
+        s.SucursalId == Sucursal.Id && 
+        s.Activo == true).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+    
+    public async Task CargarTiposAjuste()
+    {
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TiposAjuste = await DbContext.AjusteInventarioTipos.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    private async Task<IEnumerable<Producto>> Search(string value)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        return  await DbContext.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.SubCategoria)
+            .Where(p => p.EmpresaId == Empresa.Id && 
+            p.Activo == true &&
+            p.ManejaExistencia == true &&
+            p.Codigo.Contains(value) || p.Nombre.Contains(value))
+            .ToListAsync();
+    }
+
+    private async Task CargarAjusteInventario()
+    {
+        if (Id != 0)
+        {
+            IsBusy = true;
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            AjusteInventario = await DbContext.AjustesInventario
+                .Include(p => p.AjusteDetalles)
+                .ThenInclude(cd => cd.Producto)
+                .Include(p => p.AjusteInventarioTipo)
+                .Include(p => p.Usuario)
+                .Include(p => p.Almacen).SingleOrDefaultAsync(p => p.Id == Id);
+
+
+            //CalcularTotales();
+            IsBusy = false;
+        }
+        else
+        {
+            AjusteInventario.Fecha = DateTime.Now;
+        }
+        StateHasChanged();
+    }
+
+    async Task ProductoSeleccionadoOnChange(Producto ProductoSeleccionado)
+    {
+        if(ProductoSeleccionado.ManejaExistencia == false)
+        {
+            await AutoCompleteRef.ToggleMenu();
+            await IMessage.Alert("El producto seleccionado no maneja existencia");
+            return;
+        }
+
+        Detalle.Producto = ProductoSeleccionado;
+        Detalle.ProductoId = ProductoSeleccionado.Id;
+        //Detalle.Nombre = ProductoSeleccionado.Nombre;
+        Detalle.Cantidad = 1;
+        Detalle.Costo = ProductoSeleccionado.Costo;
+
+        CantidadChange(Detalle.Cantidad);
+
+        @*if (ProductoSeleccionado.TipoITBISId != 1)
+            {
+                switch (ProductoSeleccionado.TipoITBISId)
+                {
+                    case 2:
+                        {
+                            var itbis = ProductoSeleccionado.Impuesto.Valor * NuevoDetalle.Costo;
+                            NuevoDetalle.ITBIS = itbis;
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            var CostoBase = NuevoDetalle.Costo / (ProductoSeleccionado.Impuesto.Valor + 1);
+                            var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
+                            NuevoDetalle.ITBIS = ItbisIncluido;
+                        }
+                        break;
+                }
+            }*@
+
+        StateHasChanged();
+    }
+
+    void CantidadChange(dynamic value)
+    {
+        Detalle.Cantidad = value;
+        Detalle.Importe = (decimal)value * Detalle.Costo;
+        @*if (ProductoSeleccionado.TipoITBISId != 1)
+            {
+                switch (ProductoSeleccionado.TipoITBISId)
+                {
+                    case 2:
+                        {
+                            var itbis = ProductoSeleccionado.Impuesto.Valor * NuevoDetalle.Costo;
+                            NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * itbis;
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            var CostoBase = NuevoDetalle.Costo / (ProductoSeleccionado.Impuesto.Valor + 1);
+                            var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
+                            NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * ItbisIncluido;
+                        }
+                        break;
+                }
+            }*@
+    }
+
+    void AgregarDetalle(AjusteInventarioDetalle ParametroDetalle)
+    {
+        if (ParametroDetalle == null)
+            return;
+
+        var Existe = AjusteInventario.AjusteDetalles.Contains(ParametroDetalle);
+
+        if (Existe)
+        {
+            var Item = AjusteInventario.AjusteDetalles.SingleOrDefault(d => d.ProductoId == ParametroDetalle.ProductoId);
+            Item.Cantidad = ParametroDetalle.Cantidad;
+            Item.Costo = ParametroDetalle.Costo;
+            //Item.Descuento = ParametroDetalle.Descuento;
+            //Item.ITBIS = ParametroDetalle.ITBIS;
+            Item.Importe = ParametroDetalle.Importe;
+        }
+        else
+        {
+            var Nuevo = new AjusteInventarioDetalle()
+            {
+                Producto = ParametroDetalle.Producto,
+                ProductoId = ParametroDetalle.ProductoId,
+                Cantidad = ParametroDetalle.Cantidad,
+                Costo = ParametroDetalle.Costo,
+                //Descuento = ParametroDetalle.Descuento,
+                //ITBIS = ParametroDetalle.ITBIS,
+                Importe = ParametroDetalle.Importe
+            };
+
+            AjusteInventario.AjusteDetalles.Add(Nuevo);
+        }
+
+        CalcularTotales();
+
+        Detalle = new AjusteInventarioDetalle();
+
+        StateHasChanged();
+
+
+    }
+
+    void EditarDetalle(AjusteInventarioDetalle e)
+    {
+        Detalle = e;
+        CalcularTotales();
+    }
+    
+    public async Task CargarUsuario()
+    {
+        var AState = await AuthStateProv.GetAuthenticationStateAsync();
+        var User = AState.User;
+        var Usuario = await UserManager.FindByNameAsync(User.Identity.Name);
+        AjusteInventario.UsuarioId = Usuario.Id;
+    }
+
+    void EliminarDetalle(AjusteInventarioDetalle e)
+    {
+
+        if (e == null)
+            return;
+
+        if (!AjusteInventario.AjusteDetalles.Contains(e))
+            return;
+
+        AjusteInventario.AjusteDetalles.Remove(e);
+        CalcularTotales();
+    }
+
+    public void CalcularTotales()
+    {
+        //SubTotal = AjusteInventario.AjusteDetalles.Sum(FCD => FCD.Importe);
+        //Descuentos = AjusteInventario.AjusteDetalles.Sum(FCD => FCD.Descuento);
+        //Impuestos = AjusteInventario.AjusteDetalles.Sum(FCD => FCD.ITBIS);
+        //Total = SubTotal - Descuentos + Impuestos;
+        AjusteInventario.Total = AjusteInventario.AjusteDetalles.Sum(FCD => FCD.Importe);;
+    }
+
+    public async Task Crear()
+    {
+        if(AjusteInventario.AjusteInventarioTipoId == 0)
+        {
+            await IMessage.Alert("Debe de Seleccionar un tipo de Ajuste !");
+            return;
+        }
+
+            if (AjusteInventario.Total == 0)
+            {
+
+                await IMessage.Alert("El monto de Total no puedes ser 0!");
+                return;
+            }
+        
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+
+        var AjusteInventarioNuevo = new AjusteInventario();
+
+
+        if (AjusteInventario.Id == 0)
+        {
+
+
+            AjusteInventario.Usuario = null;
+            AjusteInventario.Fecha = DateTime.Now;
+
+            AjusteInventarioNuevo = AjusteInventario;
+            AjusteInventarioNuevo.EmpresaId = Empresa.Id;
+            AjusteInventarioNuevo.SucursalId = Sucursal.Id;
+            
+            
+            foreach (var item in AjusteInventarioNuevo.AjusteDetalles)
+            {
+                //Se consulta el producto ara que ef no lo inserte de nuevo
+                item.Producto = await DbContext.Productos.Include(p => p.Categoria).Include(p => p.SubCategoria).SingleOrDefaultAsync(p => p.Id == item.ProductoId);
+                //Se actualiza el costo de producto al costo de la AjusteInventario
+                item.Producto.Costo = item.Costo;
+            }
+            
+
+
+            await DbContext.AddAsync(AjusteInventarioNuevo);
+            await DbContext.SaveChangesAsync();
+        
+
+
+            //Actualizamos los productos con los cambios nuevos de la AjusteInventario
+            DbContext.UpdateRange(AjusteInventario.AjusteDetalles.Select(cd => cd.Producto));
+            await DbContext.SaveChangesAsync();
+
+            foreach (var item in AjusteInventario.AjusteDetalles)
+            {
+                if (item.Producto.ManejaExistencia)
+                {
+                    var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(EPA => EPA.ProductoId == item.ProductoId && EPA.AlmacenId == AjusteInventario.AlmacenId);
+
+                    if (EPxA == null)
+                    {
+                        var Existencia = new Existencia()
+                        {
+                            AlmacenId = AjusteInventario.AlmacenId,
+                            ProductoId = item.ProductoId,
+                            Cantidad = item.Cantidad
+
+                        };
+
+                        await DbContext.AddAsync(Existencia);
+                        await DbContext.SaveChangesAsync();
+                    }
+                    else
+                    {
+
+                        switch(AjusteInventario.AjusteInventarioTipoId)
+                        {
+                            case 1:                        
+                                EPxA.Cantidad += item.Cantidad;
+                                break;
+                            case 2: 
+                                EPxA.Cantidad -= item.Cantidad;
+                                break;
+                        }
+                        
+                        DbContext.Update(EPxA);
+                        await DbContext.SaveChangesAsync();
+                    }
+                }
+            }
+
+
+        AjusteInventario = new AjusteInventario();
+        AjusteInventario.AjusteDetalles = new List<AjusteInventarioDetalle>();
+
+        IsBusy = false;
+        await IMessage.Success("Registro exitoso!");
+    }
+    else
+    {
+        //Consultamos la AjusteInventario por el Id.
+        var AjusteInventarioFromDb = await DbContext.AjustesInventario.Include(c => c.AjusteDetalles).SingleOrDefaultAsync(fc => fc.Id == AjusteInventario.Id);
+        AjusteInventarioFromDb.AlmacenId = AjusteInventario.AlmacenId;
+        AjusteInventarioFromDb.Fecha = AjusteInventario.Fecha;
+        AjusteInventarioFromDb.UsuarioId = AjusteInventario.UsuarioId;
+        AjusteInventarioFromDb.Nulo = AjusteInventario.Nulo;
+        AjusteInventarioFromDb.Total = AjusteInventario.Total;
+        //AjusteInventarioFromDb.Concepto = AjusteInventario.Concepto;
+        //Actualizamos FacturaAjusteInventario
+        DbContext.Update(AjusteInventarioFromDb);
+        await DbContext.SaveChangesAsync();
+       
+        //
+        //Procesos de Detalle de la AjusteInventario
+        //
+        //Consultamos el detalle antiguo de la AjusteInventario.
+        var DetalleAntiguo = await DbContext.AjusteInventarioDetalles.Include(cd => cd.AjusteInventario).Include(cd => cd.Producto).Where(fcd => fcd.AjusteInventarioId == AjusteInventario.Id).ToListAsync();
+        //Por cada detalle en el detalle de la AjusteInventario enviada.
+        foreach (var item in AjusteInventario.AjusteDetalles)
+        {
+            //Asignamos los nuevos datos al detalle para que entity framework no arroje excepciones.
+            item.AjusteInventarioId = AjusteInventarioFromDb.Id;
+            item.AjusteInventario = null;
+            item.Producto = null;
+            //Si el detalle nuevo no existe en la base de datos.
+            if (item.Id == 0)
+            {
+                //lo insertamos.
+                await DbContext.AddAsync(item);
+            }
+            else
+            {
+                //Consultamos el detalle de la lista de Detalles Antiguos, donde el producto y la AjusteInventario sean igual al detalle de la AjusteInventario enviada.
+                var detalle = DetalleAntiguo.SingleOrDefault(fcda => fcda.ProductoId == item.ProductoId && fcda.AjusteInventarioId == item.AjusteInventarioId);
+                //Asignamos los datos a actualizar al detalle consultado
+                detalle.Cantidad = item.Cantidad;
+                detalle.Costo = item.Costo;
+                detalle.Importe = item.Importe;
+                //actualizamos los datos en la base de datos.
+                DbContext.Update(detalle);
+                await DbContext.SaveChangesAsync();
+            }
+        }
+        
+            
+        //Creamos una lista de detalles removidos para agregar los detalles que se hayan removido.
+        var DetallesRemovidos = new List<AjusteInventarioDetalle>();
+        //por cada detalle en la lista de detalles antiguos
+        foreach (var item in DetalleAntiguo)
+        {
+            //Consultamos en la lisat de detalles de la AjusteInventario enviada donde el producto sea igual al producto del detalle antiguo.
+            var Exists = AjusteInventario.AjusteDetalles.Where(fcd => fcd.ProductoId == item.ProductoId && fcd.Id == item.Id).SingleOrDefault();
+            //Si no existe el detalle antiguo en el detalle de al AjusteInventario enviada.
+            if (Exists == null)
+            {
+                //Agregamos el detalle antiguo a lista de DetalleRemovidos.
+                DetallesRemovidos.Add(item);
+            }
+            
+            //Consultamos la existencia del producto, donde el almacen sea igual al almacen de la AjusteInventario.
+            var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(epa => epa.ProductoId == item.ProductoId && epa.AlmacenId == AjusteInventarioFromDb.AlmacenId);
+            //Restamos la cantidad del detalle y la asignamos a la cantidad de la existencia consultada.
+
+            
+            EPxA.Cantidad -= item.Cantidad;
+            //Actualizamos la Existencia consultada en la base de datos.
+            DbContext.Update(EPxA);
+            await DbContext.SaveChangesAsync();
+            
+        }
+        //Si hay mas de 0 objetos en la lista de detalles removidos.
+        if (DetallesRemovidos.Count > 0)
+        {
+            //Borramos todos los detalles removidos en la lista de detalles removidos de la Base de Datos.
+            DbContext.RemoveRange(DetallesRemovidos);
+            await DbContext.SaveChangesAsync();
+        }
+        
+        //Por cada detalle en la lista de detalles de la AjusteInventario enviada.
+        foreach (var item in AjusteInventario.AjusteDetalles)
+        {
+            //Consultamos la Existencia del producto, donde el Almacen sea igual al Almacen de la AjusteInventario.
+            var EPxA = await DbContext.Existencias.Include(e => e.Almacen).Include(e => e.Producto).SingleOrDefaultAsync(epa => epa.ProductoId == item.ProductoId && epa.AlmacenId == AjusteInventarioFromDb.AlmacenId);
+            //Si la Existencia no Existe
+            if (EPxA == null)
+            {
+                //Creamos una Existencia nueva con los datos de la AjusteInventario.
+                var ExistenciaProductosXAlmacen = new Existencia()
+                {
+                    AlmacenId = AjusteInventarioFromDb.AlmacenId,
+                    ProductoId = item.ProductoId,
+                    Cantidad = item.Cantidad
+                };
+                //Insertamos la Existencia creada en la base de datos.
+                await DbContext.AddAsync(ExistenciaProductosXAlmacen);
+                await DbContext.SaveChangesAsync();
+            }
+            else
+            {
+                //Si la Existencia existe, sumamos la cantidad del detalle a la cantidad de la existencia.
+                switch(AjusteInventario.AjusteInventarioTipoId)
+                {
+                    case 1:                        
+                        EPxA.Cantidad += item.Cantidad;
+                        break;
+                    case 2: 
+                        EPxA.Cantidad -= item.Cantidad;
+                        break;
+                }
+                //Actualizamos la Existencia consultada en la base de datos.
+                DbContext.Update(EPxA);
+                await DbContext.SaveChangesAsync();
+            } 
+        }
+            
+        
+        AjusteInventario = new AjusteInventario();
+        AjusteInventario.AjusteDetalles = new List<AjusteInventarioDetalle>();
+        await IMessage.Success("Modificacion Exitosa!");
+        NavManager.NavigateTo($"ajusteinventario/vista/{Id}");
+        IsBusy = false;
+    }
+        IsBusy = false;
+    }
+}

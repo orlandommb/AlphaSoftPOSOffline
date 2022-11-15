@@ -1,0 +1,241 @@
+﻿@page "/reporteexistencia"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard Style="border-radius: 20px; font-size:small; padding:5px">
+    <div class="row">
+        <div class="col-sm-8">
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <RadzenLabel Text="Nombre:" />
+                        <div>
+                            <RadzenTextBox class="form-control" @bind-Value="@Nombre" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <RadzenLabel Text="Estado:" />
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="Activo" Name="Activo" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <RadzenLabel Text="Productos que manejen existencia:" />
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="ManejanExistencias" Name="Existencia" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <RadzenLabel Text="Mostrar Almacenes:" />
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="MostrarAlmacenes" Name="Almacenes" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-2">
+
+            <div class="form-group">
+                <div></div>
+                <div>
+                    <RadzenButton Text="Buscar" ButtonType="Radzen.ButtonType.Submit" Click="CargarExistencias" />
+                </div>
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard Style="padding:5px">
+        <div class="table table-responsive-sm" style="width: 100%; height: 400px; overflow: scroll; font-size: small; padding:5px">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Producto</th>
+                        <th scope="col">Categoria</th>
+                        <th scope="col">Sub-Categoria</th>
+                        <th scope="col">Costo</th>
+                        <th scope="col">Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Existencias)
+                    {
+                        <tr>
+                            <th scope="row">@item.Id</th>
+                            <td>@item.Producto.Nombre</td>
+                            <td>@item.Producto.Categoria.Nombre</td>
+                            <td>@item.Producto.SubCategoria.Nombre</td>
+                            <td>@String.Format("{0:C2}", item.Producto.Costo)</td>
+                            <td>@(Existencias.Where(e=>e.ProductoId == item.ProductoId).Sum(e=>e.Cantidad))</td>
+                        </tr>
+                        if (MostrarAlmacenes)
+                        {
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td colspan="2">
+                                    <div class="table-responsive-sm">
+                                        <table class="table table-sm" style="width: 100%; overflow: scroll; font-size: small">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Almacen</th>
+                                                    <th scope="col">Existencia</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var almacen in Almacenes.Where(a => a.Id == item.AlmacenId))
+                                                {
+                                                    <tr>
+                                                        <th scope="col">@almacen.Nombre</th>
+                                                        <th scope="col">@item.Cantidad</th>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<Existencia> Existencias { get; set; } = new List<Existencia>();
+    private List<Almacen> Almacenes { get; set; } = new List<Almacen>();
+    private List<TipoOrden> TiposOrdenes { get; set; } = new List<TipoOrden>();
+    private List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+
+    private int? Almacen { get; set; }
+
+    private bool Activo { get; set; } = true;
+    private bool ManejanExistencias { get; set; } = true;
+    private bool MostrarAlmacenes { get; set; } = false;
+
+    private DateTime FechaInicial { get; set; } = DateTime.Today + new TimeSpan(8, 0, 0);
+    private DateTime FechaFinal { get; set; } = DateTime.Now;
+
+    private string Codigo { get; set; }
+    private string Nombre { get; set; }
+
+    private bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTipoOrdenes();
+        
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarAlmacenes();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarExistencias()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Existencias = await DbContext.Existencias
+            .Include(e => e.Almacen)
+            .Include(e => e.Producto)
+            .ThenInclude(p => p.Categoria)
+            .Include(e => e.Producto)
+            .ThenInclude(p => p.SubCategoria)
+            .Where(e => e.Producto.EmpresaId == Empresa.Id && e.Producto.Activo == Activo &&
+            e.Producto.ManejaExistencia == ManejanExistencias &&
+            (Nombre == null || e.Producto.Nombre.Contains(Nombre)))
+            .ToListAsync();
+
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarAlmacenes()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Almacenes = await DbContext.Almacenes.Where(a=>a.EmpresaId == Empresa.Id && a.SucursalId == Sucursal.Id).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarTipoOrdenes()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TiposOrdenes = await DbContext.TipoOrdenes.ToListAsync();
+
+        IsBusy = false;
+    }
+
+
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/ventas/vista/" + Id);
+    }
+
+
+    @*private void Nuevo()
+        {
+            NavManager.NavigateTo("/registrodeorden");
+        }*@
+}
+

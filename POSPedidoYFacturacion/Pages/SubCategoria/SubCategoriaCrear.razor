@@ -1,0 +1,169 @@
+﻿@page "/subcategorias/crear/{Id:int?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard>
+    <RadzenCard>
+        <h3>Registro de SubCategorias</h3>
+    </RadzenCard>
+    <RadzenCard>
+        <EditForm Model="SubCategoria" OnValidSubmit="CrearSubCategoria">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div>Nombre:</div>
+                        <div>
+                            <InputText @bind-Value="SubCategoria.Nombre" />
+                            <ValidationMessage For="@(() => SubCategoria.Nombre)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Categoria:</div>
+                        <div>
+                            <RadzenDropDown AllowClear="true"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                            FilterOperator="Radzen.StringFilterOperator.Contains"
+                                            Data="@Categorias"
+                                            TValue="int"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            @bind-Value="SubCategoria.CategoriaId" />
+                            <ValidationMessage For="@(() => SubCategoria.CategoriaId)" />
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success" />
+        </EditForm>
+    </RadzenCard>
+</RadzenCard>
+
+@code
+{
+    [Parameter]
+    public int? Id { get; set; }
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public SubCategoria SubCategoria { get; set; } = new SubCategoria();
+    public List<Categoria> Categorias { get; set; } = new List<Categoria>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarCategorias();
+            if (Id != null)
+            {
+                await CargarSubCategoria(Id);
+            }
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSubCategoria(int? Id)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        SubCategoria = await DbContext.SubCategorias.SingleOrDefaultAsync(p => p.Id == Id);
+        StateHasChanged();
+    }
+
+    private async Task CargarCategorias()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Categorias = await DbContext.Categorias.ToListAsync();
+        StateHasChanged();
+
+    }
+
+    @*private async Task CargarSubCategorias(int? Id)
+        {
+            SubCategorias = await DbContext.SubCategorias
+                .Include(s => s.Categoria)
+                .Where(s => s.CategoriaId == Id)
+                .ToListAsync();
+        }*@
+
+private async Task CrearSubCategoria()
+{
+    using var DbContext = DbContextFactory.CreateDbContext();
+
+    if (SubCategoria.Id == 0)
+    {
+        var Item = await DbContext.SubCategorias.SingleOrDefaultAsync(p => p.Nombre == SubCategoria.Nombre);
+
+        if (Item == null)
+        {
+
+            SubCategoria.Categoria = null;
+            SubCategoria.EmpresaId = Empresa.Id;
+            SubCategoria.SucursalId = Sucursal.Id;
+
+            await DbContext.AddAsync(SubCategoria);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Registro exitoso!");
+            SubCategoria = new SubCategoria();
+        }
+    }
+    else
+    {
+        var Item = await DbContext.SubCategorias.SingleOrDefaultAsync(p => p.Id == SubCategoria.Id);
+
+        if (Item != null)
+        {
+            var NombreExiste = await DbContext.SubCategorias.SingleOrDefaultAsync(p => p.Nombre == SubCategoria.Nombre && p.CategoriaId == SubCategoria.CategoriaId);
+            if (NombreExiste != null)
+            {
+                if (NombreExiste.Id != SubCategoria.Id)
+                {
+                    await IMessage.Alert("Ya existe otro subcategoria con este mismo nombre para esta categoria!");
+                    return;
+                }
+            }
+
+
+            Item.Nombre = SubCategoria.Nombre;
+            Item.CategoriaId = SubCategoria.CategoriaId;
+
+
+            DbContext.Update(Item);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Modificacion exitosa!");
+            SubCategoria = new SubCategoria();
+
+        }
+    }
+
+}
+
+}

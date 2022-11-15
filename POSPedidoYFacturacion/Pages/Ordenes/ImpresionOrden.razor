@@ -1,0 +1,246 @@
+﻿@page "/imprimirorden/{Id:int}"
+
+@attribute [Authorize]
+
+@layout ImpresionLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject IJSRuntime IJSRuntime
+@inject NavigationManager NavManager
+
+    @if (IsBusy)
+    {
+        <div class="middle-box">
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="invoice-box" style="margin-top: 1px; width:385px;font-size:16px;font-weight:bold">
+            <table cellpadding="0" cellspacing="0">
+                
+                    <tr class="top">
+                        <td class="title" colspan="3" style="text-align:center;margin:auto">
+                            @if (Empresa.ImprimirLogoEnOrden)
+                            {
+                                <img src="@(string.IsNullOrEmpty(Empresa.Logo) ? "AlphaSoftLogo.png" : @Empresa.Logo)" style="width: 100%; max-width: 200px;height:200px" />
+                            }
+                        </td>
+                    </tr>
+
+
+                    <tr style="text-align:center">
+                        <td colspan="3" style="font-size:30px">@Empresa.Nombre</td>
+                    </tr>
+                    <tr style="text-align:center">
+                        <td colspan="3">@Empresa.Direccion</td>
+                    </tr>
+                    <tr style="text-align:center">
+                        <td colspan="3"><RadzenIcon Icon="phone" /> @Empresa.Telefono</td>
+                    </tr>
+                
+
+                <tr style="text-align:center">
+                    <td style="font-size:30px" colspan="3">Orden</td>
+                </tr>
+
+                <tr style="text-align:center">
+                    <td style="font-size:20px" colspan="3">@Orden.TipoOrden.Nombre.ToString()</td>
+                </tr>
+
+                <tr class="information">
+                    <td colspan="5">
+                        <table class="table table-sm">
+                                <tr style="border-top: 2px solid black">
+                                    <td>
+                                        No. Orden #: <br/>
+                                        @Orden.Id
+                                    </td>
+                                    <td>
+                                        Fecha Emitida:<br/> 
+                                        @Orden.FechaPedido.ToString()
+                                    </td>
+                                </tr>
+                                <tr style="border-top: 2px solid black">
+                                    <td colspan="2">
+                                        Cliente:<br/> 
+                                        @Orden.NombreCliente
+                                    </td>
+                                </tr>
+                                <tr style="border-top: 2px solid black">
+                                    <td>
+                                        Celular: @Orden.CelularCliente
+                                    </td>
+                                    <td>
+                                        Sector: @(Orden.SectorId == null ? "": Orden.Sector.Nombre)
+                                    </td>
+                                </tr>
+                                <tr style="border-top: 2px solid black; border-bottom: 2px solid black">
+                                    <td colspan="2">
+                                        Direccion:<br/> @Orden.DireccionCliente
+                                    </td>
+                                </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                @*<tr class="heading">
+                    <td>Metodo de Pago</td>
+
+                    <td>#</td>
+                </tr>
+
+                <tr class="details">
+                    <td>Efectivo</td>
+
+                    <td>@Venta.MontoEfectivo</td>
+                </tr>*@
+
+                <tr style="height:20px">
+
+                </tr>
+
+                <tr class="heading" style="border-top: 2px solid black">
+                    <td colspan="3">Producto</td>
+                </tr>
+
+                <tr class="heading" style="border-bottom: 2px solid black">
+                    <td>Cant.</td>
+                    <td>Precio</td>
+                    <td>Total</td>
+                </tr>
+
+
+
+                @foreach (var item in Orden.OrdenDetalles)
+                {
+                    <tr class="item">
+                        <td colspan="3">@item.Producto.Nombre</td>
+                    </tr>
+                    <tr style="border-bottom: 2px solid black">
+                        <td>@item.Cantidad</td>
+                        <td>@item.Precio.ToString("C2")</td>
+                        <td>@item.Importe.ToString("C2")</td>
+                    </tr>
+                }
+
+                <tr style="height:20px">
+
+                </tr>
+
+
+                <tr class="total" style="margin-top:10px">
+                    <td>Sub-Total:</td>
+                    <td></td>
+                    <td>@Orden.SubTotal.ToString("C2")</td>
+                </tr>
+                <tr class="total">
+                    <td>Descuento:</td>
+                    <td></td>
+                    <td>@Orden.Descuento.ToString("C2")</td>
+                </tr>
+                <tr class="total">
+                    <td>Delivery:</td>
+                    <td></td>
+                    <td>@Orden.MontoDelivery.ToString("C2")</td>
+                </tr>
+                <tr class="total">
+
+                    <td>Impuesto:</td>
+                    <td></td>
+                    <td>@Orden.Impuesto.ToString("C2")</td>
+                </tr>
+                <tr class="total">
+
+                    <td>Total:</td>
+                    <td></td>
+                    <td>@Orden.Total.ToString("C2")</td>
+                </tr>
+
+                <tr style="height:20px">
+
+                </tr>
+
+                <tr style="text-align:center;">
+                    <td colspan="3">Le atendio @Orden.Usuario.UserName</td>
+                </tr>
+
+                <tr style="text-align:center; margin-top:10px; font-size:small">
+                    <td colspan="3">
+                        Desarrollado y Distribuido por:
+                    </td>
+                </tr>
+                <tr style="text-align:center; margin-top:10px;">
+                    <td colspan="3">
+                        <RadzenImage Path="AlphaSoftLogo.png" Style="height:50px;width:50px" />
+                    </td>
+                </tr>
+                <tr style="text-align:center;">
+                    <td colspan="3">
+                        <RadzenLabel style="font-size: small" Text="@("@alphasoftdev")" />
+                    </td>
+                </tr>
+
+
+            </table>
+        </div>
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public bool IsBusy { get; set; } = false;
+
+    private Orden Orden { get; set; } = new Orden();
+    private Empresa Empresa { get; set; } = new Empresa();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        IsBusy = true;
+        await CargarEmpresa();
+        await CargarOrden(); 
+        IsBusy = false;
+    }
+
+    private async Task CargarOrden()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Orden = await DbContext.Ordenes
+                            .Include(o=>o.Usuario)
+                            .Include(o=>o.Sector)
+                            .Include(v => v.TipoOrden)
+                            .Include(v => v.OrdenDetalles)
+                            .ThenInclude(vd => vd.Producto)
+                            .SingleOrDefaultAsync(v => v.Id == Id);
+
+    }
+    
+    private async Task CargarEmpresa()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Empresa = await DbContext.Empresa.OrderBy(E => E.Id).SingleOrDefaultAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        
+        if (!firstRender)
+        {
+            await ImprimirFactura();
+        }
+    }
+
+    private async Task ImprimirFactura()
+    {
+        await IJSRuntime.ImprimirPagina();
+        await IJSRuntime.CerrarPagina();
+
+    }
+}

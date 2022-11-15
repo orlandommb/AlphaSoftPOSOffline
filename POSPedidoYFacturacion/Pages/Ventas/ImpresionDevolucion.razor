@@ -1,0 +1,223 @@
+@page "/devolucionesdeventa/impresion/{Id:int?}"
+@attribute [Authorize]
+
+@layout ImpresionLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject IJSRuntime IJSRuntime
+@inject NavigationManager NavManager
+
+
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status" style="width: 3rem; height: 3rem;">
+                <span class="sr-only">Cargando...</span>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row" style="margin: 5px;width:380px; font-weight:bold; font-size:24">
+        <div class="col-sm-12">
+            <div class="row">
+                <div class="col-sm-12" style="text-align:center">
+                    @if (Empresa.ImprimirLogoEnOrden)
+                    {
+                        <img src="@(string.IsNullOrEmpty(Empresa.Logo) ? "AlphaSoftLogo.png" : @Empresa.Logo)" style="width: 100%; max-width: 100px; height: 100px; text-align:center" />
+                    }
+                    <div class="form-group">
+                        <label style="font-size:30px">@Empresa.Nombre.ToString()</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6" style="text-align:left">
+                    <div class="form-group">
+                        <label>Direccion:@Empresa.Direccion.ToString()</label>
+                    </div>
+                </div>
+                <div class="col-6" style="text-align:right">
+                    <div class="form-group">
+                        <label><RadzenIcon Icon="phone" /> @Empresa.Telefono.ToString()</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12" style="text-align:center">
+                    <label>Devolucion</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6" style="text-align:left">
+                    <div class="form-group">
+                        <label>No.Devolucion:</label>
+                        <label>@Devolucion.Id</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Cliente:</label>
+                        <label>@(Devolucion.ClienteId != null ? Devolucion.Cliente.Nombre.ToString() : "")</label>
+                    </div>
+                </div>
+                <div class="col-6" style="text-align:right">
+                    <div class="form-group">
+                        <label>No.Factura:</label>
+                        <label>@Devolucion.VentaId</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <label>@Devolucion.Fecha.ToString("dd/MM/yyyy")</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <label>Direccion:</label>
+                        <label>@Devolucion.Venta.DireccionCliente</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12" style="text-align:center">
+                    <label>Detalle</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="table-responsive-sm" style="width:100%;overflow:scroll;">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <td colspan="3">Producto</td>
+                            </tr>
+    
+                            <tr>
+                                <td>Cant.</td>
+                                <td>Precio</td>
+                                <td>Total</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detalle in Devolucion.DevolucionDetalles)
+                            {
+                                <tr>
+                                    <td colspan="3">@detalle.Producto.Nombre</td>
+                                </tr>
+                                <tr>
+                                    <td>@detalle.Cantidad</td>
+                                    <td>@detalle.Precio.ToString("C2")</td>
+                                    <td>@detalle.Total.ToString("C2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row" >
+                <div class="col-6" style="text-align:left">
+                    <div class="form-group">
+                        <label>Sub-Total:</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Descuento:</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Impuesto:</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Total:</label>
+                    </div>
+                </div>
+                <div class="col-6" style="text-align:right">
+                    <div class="form-group">
+                        <label>@Devolucion.SubTotal.ToString("C2")</label>
+                    </div>
+                    <div class="form-group">
+                        <label>@Devolucion.Descuento.ToString("C2")</label>
+                    </div>
+                    <div class="form-group">
+                        <label>@Devolucion.Impuesto.ToString("C2")</label>
+                    </div>
+                    <div class="form-group">
+                        <label>@Devolucion.Total.ToString("C2")</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12" style="text-align:center">
+                    <div class="form-group">
+                        <label style="margin-top:10px;margin-bottom10px">Le atendio @Devolucion.Usuario.UserName</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Desarrollado y Distribuido por:</label>
+                    </div>
+                    <div class="form-group">
+                        <RadzenImage Path="AlphaSoftLogo.png" Style="height:30px;width:30px" />
+                    </div>
+                    <div class="form-group">
+                        <RadzenLabel style="font-size: small" Text="@("@alphasoftdev")" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public bool IsBusy { get; set; } = false;
+    public bool MostrarDatosEmpresa { get; set; } = false;
+
+
+    public VentaDevolucion Devolucion { get; set; } = new VentaDevolucion();
+
+    public Empresa Empresa { get; set; } = new Empresa();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        IsBusy = true;
+        await CargarEmpresa();
+        await CargarVenta(); 
+        IsBusy = false;
+
+    }
+
+
+    private async Task CargarVenta()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Devolucion = await DbContext.VentaDevoluciones
+                            .Include(x => x.Venta)
+                            .Include(o=>o.Cliente)
+                            .Include(o=>o.Usuario)
+                            .Include(v => v.DevolucionDetalles)
+                            .ThenInclude(vd => vd.Producto)
+                            .SingleOrDefaultAsync(v => v.Id == Id);
+
+    }
+    private async Task CargarEmpresa()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Empresa = await DbContext.Empresa.OrderBy(E => E.Id).SingleOrDefaultAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (!firstRender)
+        {
+            await ImprimirFactura();
+        }
+    }
+
+   private async Task ImprimirFactura()
+    {
+        await IJSRuntime.ImprimirPagina();
+        await IJSRuntime.CerrarPagina();
+
+    }
+}

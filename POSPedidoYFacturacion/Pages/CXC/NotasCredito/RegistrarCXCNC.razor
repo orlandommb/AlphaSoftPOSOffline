@@ -1,0 +1,397 @@
+@page "/cxcregistrarnc/{Id:int?}"
+@page "/cxcregistrarnc/param/cliente/{ClienteId:int?}"
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject AuthenticationStateProvider AuthStateProv
+@inject UserManager<Usuario> UserManager
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard>
+    <h5>Registro de Notas de Credito</h5>
+</RadzenCard>
+@if(IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+<RadzenCard>
+    <EditForm Model="NotaCredito" OnValidSubmit="RegistrarNotaCredito">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <RadzenCard Style="padding:5px">
+            <div class=row>
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <label>Cliente:</label>
+                        <div>
+                            <RadzenDropDown AllowFiltering="true"
+                                            Data="Clientes"
+                                            @bind-Value="NotaCredito.ClienteId"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id" 
+                                            Change="CargarVentasACredito"/>
+                            <ValidationMessage For="@(()=> NotaCredito.ClienteId)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo Nota de Credito:</label>
+                        <div>
+                            <RadzenDropDown Data="TipoNotasCreditos"
+                                            @bind-Value="NotaCredito.CXCTransaccionTipoDocumentoId"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id" />
+                            <ValidationMessage For="@(()=> NotaCredito.CXCTransaccionTipoDocumentoId)" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <div>
+                            <RadzenDatePicker @bind-Value="NotaCredito.Fecha" />
+                            <ValidationMessage For="@(()=> NotaCredito.Fecha)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Aplicar Monto a Facturas:</label>
+                        <div>
+                            <MudButton OnClick="AplicarMonto" Disabled="MontosAplicados" StartIcon="@Icons.Material.Outlined.Add" Color="Color.Primary" Variant="Variant.Outlined">Aplicar</MudButton>
+                            <MudButton OnClick="RetirarAplicacionMonto" Disabled="!MontosAplicados" StartIcon="@Icons.Material.Outlined.Clear" Color="Color.Secondary" Variant="Variant.Outlined">Quitar</MudButton>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <label>Monto:</label>
+                        <div>
+                            <RadzenNumeric Disabled="@MontosAplicados" ShowUpDown="false" @bind-Value="NotaCredito.Monto" TValue="decimal" Format="0.00" Change="@(args => OnChangeMonto(args))" />
+                            <ValidationMessage For="@(()=> NotaCredito.Monto)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Monto Restante Aplicar:</label>
+                        <div>
+                            <RadzenLabel Style="color: indianred" Text="@MontoRestanteAplicar.ToString("C2")" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Salvar:</label>
+                        <div>
+                            <MudButton OnClick="RegistrarNotaCredito" StartIcon="@Icons.Material.Outlined.Save" Color="Color.Primary" Variant="Variant.Outlined">Salvar</MudButton>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </RadzenCard>
+        <RadzenCard Style="padding:15px">
+            <div class="row">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th col="scope">No. Factura</th>
+                                <th col="scope">Fecha</th>
+                                <th col="scope">Balance Antes</th>
+                                <th col="scope">Monto a aplicar</th>
+                                <th col="scope">Balance Despues</th>
+                                <th col="scope"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (NotaCredito.CXCTransaccionDetalles.Count > 0)
+                            {
+                                @foreach (var cxcventas in NotaCredito.CXCTransaccionDetalles)
+                                {
+                                    <tr>
+                                        <td>@cxcventas.Venta.Id</td>
+                                        @if(cxcventas.Venta.FechaFinalizado.HasValue)
+                                        {
+                                        <td>@cxcventas.Venta.FechaFinalizado.Value.ToString("d")</td>
+                                        }
+                                        <td>@cxcventas.BalanceAntes</td>
+                                        <td>
+                                            <RadzenNumeric @bind-Value="cxcventas.MontoAAplicar" ShowUpDown="false" Format="0.00" TValue="decimal" Change="@(args => OnChangeMontoAplicado(args, cxcventas))"></RadzenNumeric>
+                                        </td>
+                                        <td>@cxcventas.BalanceDespues</td>
+                                        <td></td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </RadzenCard>
+    </EditForm>
+</RadzenCard>
+}
+
+@code
+{
+    [Parameter]
+    public int? Id { get; set; }
+    [Parameter]
+    public int? ClienteId { get; set; }
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private CXCTransaccion NotaCredito { get; set; } = new CXCTransaccion();
+    private List<Cliente> Clientes { get; set; }
+    private List<CXCTransaccionTipoDocumento> TipoNotasCreditos { get; set; }
+    private List<CXCVentaBalance> VentasCreditoPendientes { get; set; }
+
+    public decimal MontoRestanteAplicar { get; set; }
+    public bool MontosAplicados { get; set; } = false;
+    public bool IsBusy { get; set; } = false;
+    protected override async Task OnInitializedAsync()
+    {
+        NotaCredito.CXCTransaccionTipoId = 1;
+        NotaCredito.Fecha = DateTime.Now;
+        await CargarUsuario();
+
+        if (Id == null && ClienteId != null)
+        {
+            NotaCredito.ClienteId = (int)ClienteId;
+            await CargarVentasACredito();
+        }
+        else if(Id != null && ClienteId == null)
+        {
+            await CargarNotaCredito();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarClientes();
+            await CargarTipoNotasCreditos();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarVentasACredito()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        VentasCreditoPendientes = await DbContext.CXCVentaBalances
+        .Include(cxcv => cxcv.Venta)
+        .ThenInclude(v => v.Almacen)
+        .Include(cxcv => cxcv.Venta)
+        .ThenInclude(v => v.Cliente)
+        .Include(cxcv => cxcv.Venta)
+        .ThenInclude(v => v.TipoFactura)
+        .Where(cxcv =>
+        cxcv.Venta.TipoFacturaId == 1 &&
+        cxcv.Venta.ClienteId == NotaCredito.ClienteId  &&
+        cxcv.Balance > 0)
+        .ToListAsync();
+
+
+
+        @if (VentasCreditoPendientes.Count > 0)
+        {
+
+            foreach (var ventacred in VentasCreditoPendientes)
+            {
+                var NewNCD = new CXCTransaccionDetalle
+                {
+                    VentaId = ventacred.VentaId,
+                    Venta = ventacred.Venta,
+                    BalanceAntes = ventacred.Balance,
+                    BalanceDespues = ventacred.Balance
+                };
+
+                NotaCredito.CXCTransaccionDetalles.Add(NewNCD);
+            }
+        }
+
+        IsBusy =  false;
+    }
+
+    public async Task CargarUsuario()
+    {
+
+        IsBusy =  true;
+        var AState = await AuthStateProv.GetAuthenticationStateAsync();
+        var User = AState.User;
+        var user = await UserManager.FindByNameAsync(User.Identity.Name);
+        NotaCredito.UsuarioId = user.Id;
+        IsBusy =  false;
+    }
+
+    private async Task CargarNotaCredito()
+    {
+        IsBusy =  true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        NotaCredito = await DbContext.CXCTransacciones
+        .Include(nc => nc.Cliente)
+        .Include(nc => nc.Usuario)
+        .Include(nc => nc.CXCTransaccionTipo)
+        .Include(nc => nc.CXCTransaccionTipoDocumento)
+        .Include(nc => nc.CXCTransaccionDetalles)
+        .ThenInclude(ncd => ncd.Venta)
+        .SingleOrDefaultAsync(nc => nc.Id == Id && nc.CXCTransaccionTipoId == 1);
+        IsBusy =  false;
+    }
+
+    private async Task CargarClientes()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Clientes = await DbContext.Clientes.Where(c=>c.EmpresaId == Empresa.Id && c.SucursalId == Sucursal.Id).ToListAsync();
+        StateHasChanged();
+    }
+
+    private async Task CargarTipoNotasCreditos()
+    {
+        IsBusy =  true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoNotasCreditos = await DbContext.CXCTransaccionTipoDocumentos.Where(ttd=>ttd.CXCTransaccionTipoId == 1 && ttd.EmpresaId == Empresa.Id ).ToListAsync();
+        IsBusy =  false;
+        StateHasChanged();
+    }
+
+    private void OnChangeMontoAplicado(dynamic valor, CXCTransaccionDetalle item)
+    {
+        var detalle = NotaCredito.CXCTransaccionDetalles.SingleOrDefault(cxcd => cxcd.VentaId == item.VentaId);
+        detalle.MontoAAplicar = valor;
+        detalle.BalanceDespues = detalle.BalanceAntes - valor;
+
+        MontoRestanteAplicar = MontoRestanteAplicar - valor;
+    }
+
+    private void OnChangeMonto(dynamic valor)
+    {
+        MontoRestanteAplicar = valor;
+    }
+
+    private void AplicarMonto()
+    {
+        if (MontoRestanteAplicar > 0)
+        {
+            foreach (var item in NotaCredito.CXCTransaccionDetalles)
+            {
+                if (MontoRestanteAplicar > item.BalanceAntes)
+                {
+                    OnChangeMontoAplicado(item.BalanceAntes, item);
+                }
+                else
+                {
+                    OnChangeMontoAplicado(MontoRestanteAplicar, item);
+                }
+            }
+
+            MontosAplicados = true;
+        }
+    }
+
+    private void RetirarAplicacionMonto()
+    {
+        foreach (var item in NotaCredito.CXCTransaccionDetalles)
+        {
+            MontoRestanteAplicar += item.MontoAAplicar;
+            item.BalanceDespues = item.BalanceAntes;
+            item.MontoAAplicar = 0;
+        }
+
+        MontosAplicados = false;
+    }
+
+    private async Task RegistrarNotaCredito()
+    {
+        if (NotaCredito.Monto <= 0)
+        {
+            await IMessage.Alert("El monto debe de ser mayor a cero");
+            return;
+        }
+
+        var itemaplicados = NotaCredito.CXCTransaccionDetalles.Sum(nc => nc.MontoAAplicar);
+
+        if (itemaplicados <= 0)
+        {
+            await IMessage.Alert("El detalle no tiene montos aplicados, debe de aplicar montos a las facturas!");
+            return;
+        }
+        
+        if (MontoRestanteAplicar != 0)
+        {
+            await IMessage.Alert("El monto restante aun no esta aplicado completamente, debe aplicar la totalidad del monto!");
+            return;
+        }
+
+        foreach(var detalle in NotaCredito.CXCTransaccionDetalles.ToList())
+        {
+            if (detalle.Venta.FechaFinalizado > NotaCredito.Fecha)
+            {
+                await IMessage.Alert("La fecha de la transaccion no puede ser menor a la de las facturas seleccionadas!");
+                return;
+            }
+        }
+
+        IsBusy = true;
+
+        NotaCredito.FechaRegistro = DateTime.Now;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var NuevaNC = new CXCTransaccion();
+
+        NuevaNC = NotaCredito;
+        NuevaNC.EmpresaId = Empresa.Id;
+        NuevaNC.SucursalId = Sucursal.Id;
+        foreach(var item in NuevaNC.CXCTransaccionDetalles.ToList())
+        {
+            item.Venta = null;
+            if(item.MontoAAplicar == 0)
+            {
+                NuevaNC.CXCTransaccionDetalles.Remove(item);
+            }
+        }
+
+        await DbContext.AddAsync(NuevaNC);
+
+
+        foreach(var item in NotaCredito.CXCTransaccionDetalles)
+        {
+            if(item.MontoAAplicar > 0)
+            {
+                var CXCBalanceVenta = await DbContext.CXCVentaBalances.SingleOrDefaultAsync(cxcvb=>cxcvb.VentaId == item.VentaId);
+                CXCBalanceVenta.Balance = CXCBalanceVenta.Balance - item.MontoAAplicar;
+                DbContext.Update(CXCBalanceVenta);
+                await DbContext.SaveChangesAsync();
+            }
+        }
+
+        NotaCredito = new CXCTransaccion();
+        IsBusy =  false;
+        await IMessage.Success("Registro exitoso!");
+
+    }
+}

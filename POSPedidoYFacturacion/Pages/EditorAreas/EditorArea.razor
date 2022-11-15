@@ -1,0 +1,282 @@
+﻿@page "/editorarea"
+
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+
+<h3>Editor de Areas</h3>
+<RadzenTabs style="height: 880px" RenderMode="TabRenderMode.Server">
+    <Tabs>
+        <RadzenTabsItem Text="Areas">
+            <RadzenCard style="margin:5px">
+                <div class="row">
+                    <div class="col">
+                        <h5>Crear Area</h5>
+                    </div>
+                    <div class="col">
+                        <RadzenButton Text="Nueva Area" Click="AbrirNuevaAreaModal" />
+                    </div>
+                </div>
+            </RadzenCard>
+            <RadzenCard>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <div>
+                                <RadzenDropDown Placeholder="Seleccione un Area" Data="Areas" TValue="int?" @bind-Value="SelectedAreaId" TextProperty="Nombre" ValueProperty="Id" AllowClear="true" Change="@(args => AreaOnChange(args))" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <b>Crear una Area: </b>
+                        <p>Para crear una Area dele click al boton Nueva Area.</p>
+                        <b>Modificar una Area: </b>
+                        <p>Si quiere modificar una Area, Seleccione el Area, luego cambie los datos que desea modificar y dele click a Salvar.</p>
+
+                    </div>
+                </div>
+            </RadzenCard>
+
+            @if (AbrirNuevaArea)
+            {
+                <CrearAreaModal Area="NuevaArea" OnConfirm="CrearArea" OnCancel="CerrarNuevaAreaModal" />
+            }
+        </RadzenTabsItem>
+
+        <RadzenTabsItem Text="Mesas">
+            <h3>Editor de Mesas</h3>
+            <RadzenCard>
+                <div class="row" style="height:50px">
+                    <RadzenButton Text="Nueva Mesa" Click="MesaNueva" />
+                </div>
+            </RadzenCard>
+            <RadzenCard>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <div>
+                                <RadzenTextBox @bind-Value="NuevaMesa.Nombre" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Area</label>
+                            <div>
+                                <RadzenDropDown Placeholder="Seleccione un Area" Data="Areas" TValue="int" @bind-Value="NuevaMesa.AreaId" TextProperty="Nombre" ValueProperty="Id" Change="@(args => AreaMesaOnChange(args))" />
+                            </div>
+                        </div>
+                        <RadzenButton Text="Salvar" Click="CrearMesa" />
+                    </div>
+                    <div class="col-lg-6">
+                        <b>Crear una Mesa: </b>
+                        <p>Para crear una Mesa nueva digite el nombre de la mesa y seleccione el Area en la cual va la mesa.</p>
+                        <b>Modificar una Mesa: </b>
+                        <p>Si quiere modificar una Mesa, Seleccione el Area en donde se encuentra la mesa y seleccione la mesa en la Lista de Mesas, luego cambie los datos que desea modificar y dele click a Salvar.</p>
+                    </div>
+                </div>
+            </RadzenCard>
+            <RadzenCard>
+                <h5>Lista de Mesas</h5>
+                <div class="row">
+                    @foreach (var mesa in Mesas)
+                    {
+                        <RadzenCard class="mesa" style="margin:5px" @onclick="@(()=> SeleccionarMesa(mesa.Id))">
+                            <div class="row" style="font-size:small">
+                                <div class="col-lg-12">
+                                    <h6>@mesa.Nombre</h6>
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    }
+                </div>
+            </RadzenCard>
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public Area NuevaArea { get; set; } = new Area();
+    public Mesa NuevaMesa { get; set; } = new Mesa();
+    public int? SelectedAreaId { get; set; }
+
+    public List<Area> Areas { get; set; } = new List<Area>();
+    public List<Mesa> Mesas { get; set; } = new List<Mesa>();
+
+    public bool AbrirNuevaArea { get; set; } = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarAreas();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CrearArea()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        if (SelectedAreaId == null)
+        {
+            //var NombreExiste = await DbContext.
+            NuevaArea.EmpresaId = Empresa.Id;
+            NuevaArea.SucursalId = Sucursal.Id;
+            await DbContext.AddAsync(NuevaArea);
+            await DbContext.SaveChangesAsync();
+
+            await IMessage.Success("Registro exitoso!");
+
+        }
+        else
+        {
+
+            var AreaFromDb = await DbContext.Areas.SingleOrDefaultAsync(a => a.Id == SelectedAreaId);
+
+            AreaFromDb.Nombre = NuevaArea.Nombre;
+
+            DbContext.Update(AreaFromDb);
+            await DbContext.SaveChangesAsync();
+
+            await IMessage.Success("Modificacion exitosa!");
+
+        }
+        NuevaArea = new Area();
+        await CargarAreas();
+
+    }
+
+    public async Task CrearMesa()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        if (NuevaMesa.Id == 0)
+        {
+            //var NombreExiste = await DbContext.
+
+            if (NuevaMesa.AreaId == 0)
+            {
+                await IMessage.Alert("Debe seleccionar una Area para crear una mesa!");
+                return;
+            }
+            NuevaMesa.EmpresaId = Empresa.Id;
+            NuevaMesa.SucursalId = Sucursal.Id;
+            await DbContext.AddAsync(NuevaMesa);
+            await DbContext.SaveChangesAsync();
+
+            await IMessage.Success("Registro exitoso!");
+
+        }
+        else
+        {
+
+            var ItemFromDb = await DbContext.Mesas.SingleOrDefaultAsync(a => a.Id == NuevaMesa.Id);
+
+            ItemFromDb.Nombre = NuevaMesa.Nombre;
+
+            DbContext.Update(ItemFromDb);
+            await DbContext.SaveChangesAsync();
+
+            await IMessage.Success("Modificacion exitosa!");
+
+        }
+        await CargarMesas(NuevaMesa.AreaId);
+
+        NuevaMesa = new Mesa();
+
+    }
+
+    public async Task CargarAreas()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Areas = await DbContext.Areas.Where(a=>a.EmpresaId == Empresa.Id && a.SucursalId == Sucursal.Id).ToListAsync();
+        StateHasChanged();
+    }
+
+    public async Task CargarMesas(int AreaId)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Mesas = await DbContext.Mesas.Where(m => m.AreaId == AreaId).ToListAsync();
+        StateHasChanged();
+    }
+
+    public void MesaNueva()
+    {
+        NuevaMesa = new Mesa();
+    }
+
+    public async Task AreaOnChange(dynamic value)
+    {
+        if (SelectedAreaId != null)
+        {
+            AbrirNuevaAreaModal();
+
+            using var DbContext = DbContextFactory.CreateDbContext();
+            NuevaArea = await DbContext.Areas.SingleOrDefaultAsync(a => a.Id == SelectedAreaId);
+            return;
+        }
+
+        NuevaArea = new Area();
+    }
+
+    public async Task AreaMesaOnChange(dynamic value)
+    {
+
+        await CargarMesas(NuevaMesa.AreaId);
+
+    }
+
+    public async Task SeleccionarMesa(int Id)
+    {
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+        NuevaMesa = await DbContext.Mesas.SingleOrDefaultAsync(a => a.EmpresaId == Empresa.Id && a.SucursalId == Sucursal.Id && a.Id == Id);
+
+
+    }
+
+    public void AbrirNuevaAreaModal()
+    {
+        if (AbrirNuevaArea == false)
+        {
+            AbrirNuevaArea = true;
+        }
+    }
+
+    public void CerrarNuevaAreaModal()
+    {
+        if (AbrirNuevaArea == true)
+        {
+            AbrirNuevaArea = false;
+        }
+        NuevaArea = new Area();
+        SelectedAreaId = null;
+    }
+
+}

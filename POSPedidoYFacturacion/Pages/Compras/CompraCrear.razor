@@ -1,0 +1,1023 @@
+﻿@page "/compras/crear/{Id:int?}"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProv
+@inject UserManager<Usuario> UserManager
+@inject ProtectedLocalStorage LocalStorage
+
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard Style="padding:5px; font-size:small">
+        <RadzenCard Style="padding:10px">
+            <h5>Registro de Compras</h5>
+        </RadzenCard>
+        <RadzenCard Style="padding:10px">
+            <EditForm Model="Compra" OnValidSubmit="Crear">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <RadzenCard Style="padding:10px">
+                    <RadzenDropDown class="form-control"
+                                    TValue="int"
+                                    Data=@TipoCompras
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="Compra.TipoCompraId"
+                                    Style="width:auto" 
+                                    Change="OnChangeTipoCompra"
+                                    Placeholder="Seleccione el Tipo de compra"/>
+                    <ValidationMessage For="@(() => Compra.TipoCompraId)" />
+                </RadzenCard>
+
+                    <RadzenCard>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label>Suplidor:</label>
+                                    <div>
+                                        <RadzenDropDown class="form-control"
+                                                        TValue="int"
+                                                        Data=@Suplidores
+                                                        TextProperty="Nombre"
+                                                        ValueProperty="Id"
+                                                        @bind-Value="Compra.SuplidorId"
+                                                        Style="width:auto" />
+                                        <ValidationMessage For="@(() => Compra.SuplidorId)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Almacen:</label>
+                                    <div>
+                                        <RadzenDropDown class="form-control"
+                                                        TValue="int"
+                                                        Data=@Almacenes
+                                                        TextProperty="Nombre"
+                                                        ValueProperty="Id"
+                                                        @bind-Value="Compra.AlmacenId"
+                                                        Style="width:auto" />
+                                        <ValidationMessage For="@(() => Compra.AlmacenId)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>No. Factura:</label>
+                                    <div>
+                                        <InputText Class="form-control" @bind-Value="@Compra.NoFactura"></InputText>
+                                        <ValidationMessage For="@(() => Compra.NoFactura)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>NCF:</label>
+                                    <div>
+                                        <InputText Class="form-control" @bind-Value="@Compra.NCF" />
+                                        <ValidationMessage For="@(() => Compra.NCF)" />
+                                    </div>
+                                </div>
+
+                            </div>
+
+
+
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label>Fecha de Factura:</label>
+                                    <div>
+                                        <RadzenDatePicker @bind-Value="@Compra.FechaHoraFactura" DateFormat="d/M/yyyy H:mm:ss" HourFormat="24" ShowTime="true" />
+                                        <ValidationMessage For="@(() => Compra.FechaHoraFactura)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Fecha de Recepcion:</label>
+                                    <div>
+                                        <RadzenDatePicker @bind-Value="@Compra.FechaHoraRecepcion" DateFormat="d/M/yyyy H:mm:ss" HourFormat="24" ShowTime="true" /><br />
+                                        <ValidationMessage For="@(() => Compra.FechaHoraRecepcion)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Tipo de Factura:</label>
+                                    <div>
+                                        <RadzenDropDown class="form-control"
+                                                        TValue="int"
+                                                        Data=@TiposDeFacturas
+                                                        TextProperty="Nombre"
+                                                        ValueProperty="Id"
+                                                        @bind-Value="Compra.TipoFacturaId"
+                                                        Style="width:auto" />
+                                        <ValidationMessage For="@(() => Compra.TipoFacturaId)" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label>Sub-Total de Factura:</label>
+                                    <div>
+                                        <RadzenNumeric @bind-Value="@Compra.SubTotal" Format="0.00" />
+                                        <ValidationMessage For="@(() => Compra.SubTotal)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Descuento de Factura:</label>
+                                    <div>
+                                        <RadzenNumeric @bind-Value="@Compra.Descuento" Format="0.00" />
+                                        <ValidationMessage For="@(() => Compra.Descuento)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Impuesto de Factura:</label>
+                                    <div>
+                                        <RadzenNumeric @bind-Value="@Compra.Impuesto" Format="0.00" />
+                                        <ValidationMessage For="@(() => Compra.Impuesto)" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Total de Factura:</label>
+                                    <div>
+                                        <RadzenNumeric @bind-Value="@Compra.Total" Format="0.00" />
+                                        <ValidationMessage For="@(() => Compra.Total)" />
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label>Sub-Total del Detalle:</label>
+                                    <div>
+                                        <RadzenLabel Text="@SubTotal.ToString("C2")" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Descuento de Detalle:</label>
+                                    <div>
+                                        <RadzenLabel Text="@Descuentos.ToString("C2")" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Impuesto de Detalle:</label>
+                                    <div>
+                                        <RadzenLabel Text="@Impuestos.ToString("C2")" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Total de Detalle:</label>
+                                    <div>
+                                        <RadzenLabel Text="@Total.ToString("C2")" />
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Registrar:</label>
+                                    <div>
+                                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary"
+                                                      ButtonType="Radzen.ButtonType.Submit"
+                                                      Text="Registar" />
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                </RadzenCard>
+                    @if(Compra.TipoCompraId == 2)
+                    {
+                        <RadzenCard Style="padding:10px">
+                            <InputText Class="form-control" @bind-Value="@Compra.Concepto" placeholder="Concepto"/>
+                            <ValidationMessage For="@(() => Compra.Concepto)" />
+                        </RadzenCard>
+                    }
+            </EditForm>
+            @if(Compra.TipoCompraId == 1)
+            {
+                <RadzenCard Style="padding:15px">
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <MudAutocomplete ResetValueOnEmptyText="true" Dense="true" Margin="Margin.Dense" T="Producto" Label="Producto" Value="@NuevoDetalle.Producto" Immediate="true"
+                                            SearchFunc="@Search" ToStringFunc="@(e=> e==null?null : $"{e.Codigo} | {e.Nombre}")" 
+                                            ValueChanged="@( args=> ProductoSeleccionadoOnChange(args))" />
+                        </div>
+                        <div class="col-sm-1">
+                            <MudTextField T="int" Label="Cantidad" Immediate="true" Value="NuevoDetalle.Cantidad" ValueChanged="@( args => CantidadChange(args))"/>
+                        </div>
+                        <div class="col-sm-1">
+                            <MudTextField T="decimal" Label="Descuento" @bind-Value="NuevoDetalle.Descuento"/>
+                        </div>
+                        <div class="col-sm-2">
+                            <MudTextField T="decimal" Label="Costo" @bind-Value="NuevoDetalle.Costo"/>
+                        </div>
+                        <div class="col-sm-2">
+                            <MudTextField T="decimal" ReadOnly="true" Label="Impuesto" @bind-Value="NuevoDetalle.ITBIS"/>
+                        </div>
+                        <div class="col-sm-2">
+                            <MudTextField T="decimal" Label="Importe" @bind-Value="NuevoDetalle.Importe"/>
+                        </div>
+                        <div class="col-sm-1">
+                            <MudTooltip Text="Agregar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" OnClick="@(() => AgregarDetalle(NuevoDetalle))"/>
+                            </MudTooltip>
+                        </div>
+                    </div>
+                </RadzenCard>
+                <RadzenCard Style="padding: 20px; height: 350px;">
+                    <div class="row">
+                        <div class="table-responsive-sm" style="width: 100%;">
+                        <table class="table table-sm" style="overflow:scroll">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Codigo</th>
+                                    <th scope="col">Producto</th>
+                                    <th scope="col">Cantidad</th>
+                                    <th scope="col">Costo</th>
+                                    <th scope="col">Descuento</th>
+                                    <th scope="col">Impuesto</th>
+                                    <th scope="col">Importe</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Compra.CompraDetalles != null | Compra.CompraDetalles.Count > 0)
+                                {
+                                    @foreach (var item in Compra.CompraDetalles)
+                                    {
+                                        <tr>
+                                            <th scope="row">@item.Producto.Codigo</th>
+                                            <td>@item.Producto.Nombre</td>
+                                            <td>@item.Cantidad</td>
+                                            <td>@String.Format("{0:C2}", item.Costo)</td>
+                                            <td>@String.Format("{0:C2}", item.Descuento)</td>
+                                            <td>@String.Format("{0:C2}", item.ITBIS)</td>
+                                            <td>@String.Format("{0:C2}", item.Importe)</td>
+                                            <td>
+                                                <RadzenButton Icon="edit" Click="@(() => EditarDetalle(item))"></RadzenButton>
+                                                <RadzenButton Icon="delete" Click="@(() => BtnRemoverClick(item))"></RadzenButton>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    </div>
+                </RadzenCard>
+            }
+        </RadzenCard>
+    </RadzenCard>
+}
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public Compra Compra { get; set; } = new Compra();
+    public List<Almacen> Almacenes { get; set; } = new List<Almacen>();
+    public List<Suplidor> Suplidores { get; set; } = new List<Suplidor>();
+    public List<TipoFactura> TiposDeFacturas { get; set; } = new List<TipoFactura>();
+    public List<CompraDetalle> Detalle { get; set; } = new List<CompraDetalle>();
+    public List<TipoCompra> TipoCompras { get; set; } = new List<TipoCompra>();
+    public Producto ProductoSeleccionado { get; set; } = new Producto();
+    public CompraDetalle NuevoDetalle { get; set; } = new CompraDetalle();
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private decimal SubTotal { get; set; }
+    private decimal Descuentos { get; set; }
+    private decimal Impuestos { get; set; }
+    private decimal Total { get; set; }
+
+    private bool IsBusy { get; set; } = false;
+
+    private bool MostrarModal { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Compra.CompraDetalles = new List<CompraDetalle>();
+        
+
+        if (Id == 0)
+        {
+            var AState = await AuthStateProv.GetAuthenticationStateAsync();
+            var User = AState.User;
+            var Usuario = await UserManager.FindByNameAsync(User.Identity.Name);
+
+            Compra.UsuarioId = Usuario.Id;
+
+        }
+
+        await CargarCompra();
+
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarAlmacenes();
+            await CargarSuplidores();
+            await CargarTiposDeFacturas();
+            await CargarTipoCompras();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarCompra()
+    {
+        if (Id != 0)
+        {
+            IsBusy = true;
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            Compra = await DbContext.Compras
+                .Include(p => p.CompraDetalles)
+                .ThenInclude(cd => cd.Producto)
+                .Include(p => p.TipoFactura)
+                .Include(p => p.Usuario)
+                .Include(p => p.Suplidor)
+                .Include(p => p.Almacen).SingleOrDefaultAsync(p => p.Id == Id);
+
+
+            CalcularTotales();
+            IsBusy = false;
+        }
+    }
+
+
+    private async Task<IEnumerable<Producto>> Search(string value)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        return  await DbContext.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.SubCategoria)
+            .Include(p => p.ImpuestoTipo)
+            .Include(p => p.Impuesto)
+            .Where(p => p.EmpresaId == Empresa.Id && 
+            p.Activo == true &&
+            p.ManejaExistencia == true &&
+            p.Codigo.Contains(value) || p.Nombre.Contains(value))
+            .ToListAsync();
+    }
+
+    public async Task CargarTipoCompras()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoCompras = await DbContext.TipoCompras.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+    
+    public void OnChangeTipoCompra()
+    {
+        if(Compra.TipoCompraId == 1)
+        {
+            Compra.Concepto = "Compra de Mercancia";
+        }
+        else
+        {
+            Compra.Concepto = "";
+        }
+    }
+    
+    public async Task CargarSuplidores()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Suplidores = await DbContext.Suplidores.Where(s => 
+            s.EmpresaId == Empresa.Id && 
+            s.SucursalId == Sucursal.Id && 
+            s.Activo == true).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+
+
+    public async Task CargarAlmacenes()
+    {
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Almacenes = await DbContext.Almacenes.Where(s => 
+        s.EmpresaId == Empresa.Id && 
+        s.SucursalId == Sucursal.Id && 
+        s.Activo == true).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarTiposDeFacturas()
+    {
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TiposDeFacturas = await DbContext.TipoFacturas.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    void ProductoSeleccionadoOnChange(Producto ProductoSeleccionado)
+    {
+        if(ProductoSeleccionado == null)
+            return;
+        NuevoDetalle.Producto = ProductoSeleccionado;
+        NuevoDetalle.ProductoId = ProductoSeleccionado.Id;
+        NuevoDetalle.Nombre = ProductoSeleccionado.Nombre;
+        NuevoDetalle.Cantidad = 1;
+        NuevoDetalle.Costo = ProductoSeleccionado.Costo;
+
+        CantidadChange(NuevoDetalle.Cantidad);
+
+        switch (ProductoSeleccionado.ImpuestoTipoId)
+        {
+            case 1:
+            {
+                NuevoDetalle.ITBIS = 0;
+                break;
+            }
+            case 2:
+            {
+                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
+                var itbis = porcentale * NuevoDetalle.Costo;
+                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * itbis;
+                break;
+            }
+            case 3:
+            {
+                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
+                var CostoBase = NuevoDetalle.Costo / (porcentale + 1);
+                var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
+                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * ItbisIncluido;
+                break;
+            }     
+        }
+
+        NuevoDetalle.Importe = NuevoDetalle.Cantidad * NuevoDetalle.Costo;
+    }
+
+    void CantidadChange(dynamic value)
+    {
+        NuevoDetalle.Cantidad = value;
+        
+        switch (ProductoSeleccionado.ImpuestoTipoId)
+        {
+            case 1:
+            {
+                NuevoDetalle.ITBIS = 0;
+                break;
+            }
+            case 2:
+            {
+                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
+                var itbis = porcentale * NuevoDetalle.Costo;
+                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * itbis;
+                break;
+            }
+            case 3:
+            {
+                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
+                var CostoBase = NuevoDetalle.Costo / (porcentale + 1);
+                var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
+                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * ItbisIncluido;
+                break;
+            }     
+        }
+
+        NuevoDetalle.Importe = NuevoDetalle.Cantidad * NuevoDetalle.Costo;
+    }
+
+    void CalcularImpuesto()
+    {
+        switch (ProductoSeleccionado.ImpuestoTipoId)
+        {
+            case 1:
+            {
+                NuevoDetalle.ITBIS = 0;
+                break;
+            }
+            case 2:
+            {
+                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
+                var itbis = porcentale * NuevoDetalle.Costo;
+                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * itbis;
+                break;
+            }
+            case 3:
+            {
+                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
+                var CostoBase = NuevoDetalle.Costo / (porcentale + 1);
+                var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
+                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * ItbisIncluido;
+                break;
+            }     
+        }
+
+
+    }
+
+    void AgregarDetalle(CompraDetalle ParametroDetalle)
+    {
+        if (ParametroDetalle == null)
+            return;
+
+        var Existe = Compra.CompraDetalles.Contains(ParametroDetalle);
+
+        if (Existe)
+        {
+            var Item = Compra.CompraDetalles.SingleOrDefault(d => d.ProductoId == ParametroDetalle.ProductoId);
+            Item.Cantidad = ParametroDetalle.Cantidad;
+            Item.Costo = ParametroDetalle.Costo;
+            Item.Descuento = ParametroDetalle.Descuento;
+            Item.ITBIS = ParametroDetalle.ITBIS;
+            Item.Importe = ParametroDetalle.Importe;
+        }
+        else
+        {
+            var Nuevo = new CompraDetalle()
+            {
+                Producto = ParametroDetalle.Producto,
+                ProductoId = ParametroDetalle.ProductoId,
+                Cantidad = ParametroDetalle.Cantidad,
+                Costo = ParametroDetalle.Costo,
+                Descuento = ParametroDetalle.Descuento,
+                ITBIS = ParametroDetalle.ITBIS,
+                Importe = ParametroDetalle.Importe
+            };
+
+            Compra.CompraDetalles.Add(Nuevo);
+        }
+        CalcularTotales();
+        ProductoSeleccionado = new Producto();
+        NuevoDetalle = new CompraDetalle();
+
+        StateHasChanged();
+
+
+    }
+
+    void EditarDetalle(CompraDetalle e)
+    {
+        ProductoSeleccionado = e.Producto;
+        NuevoDetalle = e;
+    }
+
+    void BtnRemoverClick(CompraDetalle e)
+    {
+
+        if (e == null)
+            return;
+
+        if (!Compra.CompraDetalles.Contains(e))
+            return;
+
+        Compra.CompraDetalles.Remove(e);
+        CalcularTotales();
+    }
+
+    public void CalcularTotales()
+    {
+        SubTotal = Compra.CompraDetalles.Sum(FCD => FCD.Importe);
+        Descuentos = Compra.CompraDetalles.Sum(FCD => FCD.Descuento);
+        Impuestos = Compra.CompraDetalles.Sum(FCD => FCD.ITBIS);
+        Total = SubTotal - Descuentos + Impuestos;
+    }
+
+
+    public async Task Crear()
+    {
+        if(Compra.TipoCompraId == 0)
+        {
+            await IMessage.Alert("Debe de Seleccionar un tipo de compra !");
+            return;
+        }
+
+        if(Compra.TipoCompraId == 1)
+        {
+            if (Compra.SubTotal != SubTotal)
+            {
+                await IMessage.Alert("El monto de Sub total digitado y el total bruto calculado no coinciden!");
+                return;
+            }
+
+            if (Compra.Descuento != Descuentos)
+            {
+                await IMessage.Alert("El monto de Descuento digitado y el Descuento calculado no coinciden!");
+                return;
+            }
+
+            if (Compra.Impuesto != Impuestos)
+            {
+                await IMessage.Alert("El monto de Impuesto digitado y el Impuesto calculado no coinciden!");
+                return;
+            }
+
+            if (Compra.Total != Total)
+            {
+
+                await IMessage.Alert("El monto de Total digitado y el Total calculado no coinciden!");
+                return;
+            }
+        }
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+
+        var CompraNueva = new Compra();
+
+
+        if (Compra.Id == 0)
+        {
+
+
+            Compra.Usuario = null;
+            Compra.FechaHoraFactura = DateTime.Now;
+
+            CompraNueva = Compra;
+            CompraNueva.EmpresaId = Empresa.Id;
+            CompraNueva.SucursalId = Sucursal.Id;
+            if(Compra.TipoCompraId == 1)
+            {
+                foreach (var item in CompraNueva.CompraDetalles)
+                {
+                    //Se consulta el producto ara que ef no lo inserte de nuevo
+                    item.Producto = await DbContext.Productos.Include(p => p.Categoria).Include(p => p.SubCategoria).SingleOrDefaultAsync(p => p.Id == item.ProductoId);
+                    //Se actualiza el costo de producto al costo de la compra
+                    item.Producto.Costo = item.Costo;
+                }
+            }
+
+
+            await DbContext.AddAsync(CompraNueva);
+            await DbContext.SaveChangesAsync();
+
+            if (CompraNueva.TipoFacturaId == 1)
+            {
+                var NewCXPCompraBalance = new CXPCompraBalance()
+                {
+                    CompraId = CompraNueva.Id,
+                    Balance = CompraNueva.Total - CompraNueva.EfectivoMonto
+                };
+            
+                await DbContext.AddAsync(NewCXPCompraBalance);
+                await DbContext.SaveChangesAsync();
+            }
+        
+
+        if(Compra.TipoCompraId == 1)
+        {
+
+            //Actualizamos los productos con los cambios nuevos de la compra
+            DbContext.UpdateRange(Compra.CompraDetalles.Select(cd => cd.Producto));
+            await DbContext.SaveChangesAsync();
+
+            foreach (var item in Compra.CompraDetalles)
+            {
+                if (item.Producto.ManejaExistencia)
+                {
+                    var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(EPA => EPA.ProductoId == item.ProductoId && EPA.AlmacenId == Compra.AlmacenId);
+
+                    if (EPxA == null)
+                    {
+                        var Existencia = new Existencia()
+                        {
+                            AlmacenId = Compra.AlmacenId,
+                            ProductoId = item.ProductoId,
+                            Cantidad = item.Cantidad
+
+                        };
+
+                        await DbContext.AddAsync(Existencia);
+                        await DbContext.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        EPxA.Cantidad += item.Cantidad;
+                        DbContext.Update(EPxA);
+                        await DbContext.SaveChangesAsync();
+                    }
+                }
+            }
+
+            @* //
+            //Procesos de Actualizacion de Existencia de los detalles creados y actualizados.
+            //
+
+            //Consultamos los detalles de las Compras de la empresa.
+            var ComprasDetallesActivos = await DbContext.CompraDetalles.Include(c => c.Compra).Include(c => c.Producto).ToListAsync();
+            //Consultamos los detalles de los Ajustes de la empresa.
+            //var AjustesDetallesActivos = await _IAjusteInventarioDetalleRepository.GetAllAsync(ajd => ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId, null, "AjusteInventario", "Productos");
+            //Consultamos los detalles de las Ventas de la empresa.
+            var VentasDetallesActivos = await DbContext.VentaDetalles.Include(c => c.Venta).Include(c => c.Producto).ToListAsync();
+
+            //Por cada detalle en la lista de la Compra envidada.
+            foreach (var Detalle in Compra.CompraDetalles)
+            {
+                if (Detalle.Producto.ManejaExistencia)
+                {
+                    //Consultamos todas las existencia por almacen, donde el producto sea igual al producto del detalle de la compra enviada.
+                    var Existencias = await DbContext.Existencias.Include(e => e.Almacen).Include(e => e.Producto).Where(EPA => EPA.ProductoId == Detalle.ProductoId && EPA.AlmacenId == Compra.AlmacenId).ToListAsync();
+
+                    //Por cada existencia en la Lista de  Existencias consultada.
+                    foreach (var Existencia in Existencias)
+                    {
+
+                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Compra.
+                        var ComprasCantidad = ComprasDetallesActivos.Where(cd => cd.ProductoId == Detalle.ProductoId && cd.Compra.Nulo == false && cd.Compra.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
+                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado del Ajuste.
+                        //var AjustesCantidad = AjustesDetallesActivos.Where(ajd => ajd.ProductosId == Detalle.ProductosId && ajd.AjusteInventario.Nulo == false && ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId && ajd.AjusteInventario.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
+                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Venta.
+                        var VentasCantidad = VentasDetallesActivos.Where(vd => vd.ProductoId == Detalle.ProductoId && vd.Venta.Nulo == false && vd.Venta.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
+
+                        //Sumamos las Cantidades de cada tipo de producto y asignarlas a las cantidades de la existencia.
+                        Existencia.Cantidad = ComprasCantidad - VentasCantidad;
+
+                        //Salvamos los relacion producto por almacen en la tabla existencias.
+                        DbContext.Update(Existencia);
+                        await DbContext.SaveChangesAsync();
+                    }
+                }
+            } *@
+
+        }
+
+
+        Compra = new Compra();
+        Compra.CompraDetalles = new List<CompraDetalle>();
+
+        IsBusy = false;
+        await IMessage.Success("Registro exitoso!");
+    }
+        else
+        {
+            //Consultamos la compra por el Id.
+            var CompraFromDb = await DbContext.Compras.Include(c => c.CompraDetalles).SingleOrDefaultAsync(fc => fc.Id == Compra.Id);
+
+
+
+    //Asignamos los valores a actualizar en la compra consultada.
+            @*CompraFromDb.EmpresaId = FacturaCompraVM.EmpresaId;
+                CompraFromDb.SucursalId = FacturaCompraVM.SucursalId;*@
+            CompraFromDb.AlmacenId = Compra.AlmacenId;
+            CompraFromDb.FechaHoraFactura = Compra.FechaHoraFactura;
+            CompraFromDb.FechaHoraRecepcion = Compra.FechaHoraRecepcion;
+            CompraFromDb.NoFactura = Compra.NoFactura;
+            CompraFromDb.NCF = Compra.NCF;
+            CompraFromDb.SuplidorId = Compra.SuplidorId;
+            CompraFromDb.UsuarioId = Compra.UsuarioId;
+            CompraFromDb.TipoFacturaId = Compra.TipoFacturaId;
+            CompraFromDb.Nulo = Compra.Nulo;
+            CompraFromDb.SubTotal = Compra.SubTotal;
+            CompraFromDb.Impuesto = Compra.Impuesto;
+            CompraFromDb.Descuento = Compra.Descuento;
+            CompraFromDb.Total = Compra.Total;
+            CompraFromDb.EfectivoMonto = Compra.EfectivoMonto;
+            @*CompraFromDb.TarjetaMonto = Compra.TarjetaMonto;
+                CompraFromDb.TarjetaNumero = Compra.TarjetaNumero;*@
+
+            @*//Si se selecciona un tipo de tarjeta al pagar se rellenan los datos de la tarjeta.
+                if (Compra.TipoTarjetaId != null)
+                {
+                    CompraFromDb.TipoTarjetaId = Compra.TipoTarjetaId;
+                    CompraFromDb.TipoTarjeta = await _ITipoTarjetaRepository.GetAsync(tt => tt.Id == Compra.TipoTarjetaId);
+                }
+                //Si se selecciona un tipo de banco al pagar se rellenan los datos del banco.
+                if (Compra.BancoId != null)
+                {
+                    CompraFromDb.BancoId = Compra.BancoId;
+                    CompraFromDb.Banco = await _IBancoRepository.GetAsync(b => b.Id == Compra.BancoId);
+                }*@
+
+            CompraFromDb.Status = Compra.Status;
+            CompraFromDb.PagoStatus = Compra.PagoStatus;
+            CompraFromDb.Comentarios = Compra.Comentarios;
+            CompraFromDb.Concepto = Compra.Concepto;
+
+            //Actualizamos FacturaCompra
+            DbContext.Update(CompraFromDb);
+            await DbContext.SaveChangesAsync();
+
+            if (CompraNueva.TipoFacturaId == 1)
+            {
+                var CXPCompraBalanceFromDb = await DbContext.CXPCompraBalances.SingleOrDefaultAsync(c => c.CompraId == CompraFromDb.Id);
+                
+                CXPCompraBalanceFromDb.Balance = CompraFromDb.Total - CompraFromDb.EfectivoMonto;
+            
+                DbContext.Update(CXPCompraBalanceFromDb);
+                await DbContext.SaveChangesAsync();
+            }
+
+            if(Compra.TipoCompraId == 1)
+            {
+                //
+                //Procesos de Detalle de la compra
+                //
+
+                //Consultamos el detalle antiguo de la compra.
+                var DetalleAntiguo = await DbContext.CompraDetalles.Include(cd => cd.Compra).Include(cd => cd.Producto).Where(fcd => fcd.CompraId == Compra.Id).ToListAsync();
+
+                //Por cada detalle en el detalle de la compra enviada.
+                foreach (var item in Compra.CompraDetalles)
+                {
+                    //Asignamos los nuevos datos al detalle para que entity framework no arroje excepciones.
+                    item.CompraId = CompraFromDb.Id;
+                    item.Compra = null;
+                    item.Producto = null;
+
+                    //Si el detalle nuevo no existe en la base de datos.
+                    if (item.Id == 0)
+                    {
+                        //lo insertamos.
+                        await DbContext.AddAsync(item);
+                    }
+                    else
+                    {
+                        //Consultamos el detalle de la lista de Detalles Antiguos, donde el producto y la compra sean igual al detalle de la compra enviada.
+                        var detalle = DetalleAntiguo.SingleOrDefault(fcda => fcda.ProductoId == item.ProductoId && fcda.CompraId == item.CompraId);
+
+                        //Asignamos los datos a actualizar al detalle consultado
+                        detalle.Nombre = item.Nombre;
+                        detalle.Cantidad = item.Cantidad;
+                        detalle.Costo = item.Costo;
+                        detalle.Descuento = item.Descuento;
+                        detalle.ITBIS = item.ITBIS;
+                        detalle.Importe = item.Importe;
+
+                        //actualizamos los datos en la base de datos.
+                        DbContext.Update(detalle);
+                        await DbContext.SaveChangesAsync();
+                    }
+
+                }
+
+                
+                    
+                //Creamos una lista de detalles removidos para agregar los detalles que se hayan removido.
+                var DetallesRemovidos = new List<CompraDetalle>();
+
+                //por cada detalle en la lista de detalles antiguos
+                foreach (var item in DetalleAntiguo)
+                {
+                    //Consultamos en la lisat de detalles de la compra enviada donde el producto sea igual al producto del detalle antiguo.
+                    var Exists = Compra.CompraDetalles.Where(fcd => fcd.ProductoId == item.ProductoId && fcd.Id == item.Id).SingleOrDefault();
+
+                    //Si no existe el detalle antiguo en el detalle de al compra enviada.
+                    if (Exists == null)
+                    {
+                        //Agregamos el detalle antiguo a lista de DetalleRemovidos.
+                        DetallesRemovidos.Add(item);
+                    }
+                    
+                    //Consultamos la existencia del producto, donde el almacen sea igual al almacen de la compra.
+                    var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(epa => epa.ProductoId == item.ProductoId && epa.AlmacenId == CompraFromDb.AlmacenId);
+                    //Restamos la cantidad del detalle y la asignamos a la cantidad de la existencia consultada.
+                    EPxA.Cantidad -= item.Cantidad;
+                    //Actualizamos la Existencia consultada en la base de datos.
+                    DbContext.Update(EPxA);
+                    await DbContext.SaveChangesAsync();
+                    
+                }
+
+                //Si hay mas de 0 objetos en la lista de detalles removidos.
+                if (DetallesRemovidos.Count > 0)
+                    {
+                        //Borramos todos los detalles removidos en la lista de detalles removidos de la Base de Datos.
+                        DbContext.RemoveRange(DetallesRemovidos);
+                        await DbContext.SaveChangesAsync();
+                    }
+
+               
+
+                //Por cada detalle en la lista de detalles de la compra enviada.
+                foreach (var item in Compra.CompraDetalles)
+                {
+                    //Consultamos la Existencia del producto, donde el Almacen sea igual al Almacen de la Compra.
+                    var EPxA = await DbContext.Existencias.Include(e => e.Almacen).Include(e => e.Producto).SingleOrDefaultAsync(epa => epa.ProductoId == item.ProductoId && epa.AlmacenId == CompraFromDb.AlmacenId);
+
+                    //Si la Existencia no Existe
+                    if (EPxA == null)
+                    {
+                        //Creamos una Existencia nueva con los datos de la Compra.
+                        var ExistenciaProductosXAlmacen = new Existencia()
+                        {
+                            AlmacenId = CompraFromDb.AlmacenId,
+                            ProductoId = item.ProductoId,
+                            Cantidad = item.Cantidad
+
+                        };
+
+                        //Insertamos la Existencia creada en la base de datos.
+                        await DbContext.AddAsync(ExistenciaProductosXAlmacen);
+                        await DbContext.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        //Si la Existencia existe, sumamos la cantidad del detalle a la cantidad de la existencia.
+                        EPxA.Cantidad += item.Cantidad;
+                        //Actualizamos la Existencia consultada en la base de datos.
+                        DbContext.Update(EPxA);
+                        await DbContext.SaveChangesAsync();
+                    } 
+
+                }
+
+                @* //
+                //Procesos de Actualizacion de Existencia de los detalles creados y actualizados.
+                //
+
+                //Consultamos los detalles de las Compras de la empresa.
+                var ComprasDetallesActivos = await DbContext.CompraDetalles.Include(c => c.Compra).Include(c => c.Producto).ToListAsync();
+                //Consultamos los detalles de los Ajustes de la empresa.
+                //var AjustesDetallesActivos = await _IAjusteInventarioDetalleRepository.GetAllAsync(ajd => ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId, null, "AjusteInventario", "Productos");
+                //Consultamos los detalles de las Ventas de la empresa.
+                var VentasDetallesActivos = await DbContext.VentaDetalles.Include(c => c.Venta).Include(c => c.Producto).ToListAsync();
+
+                //Por cada detalle en la lista de la Compra envidada.
+                foreach (var Detalle in Compra.CompraDetalles)
+                {
+
+                    //Consultamos todas las existencia por almacen, donde el producto sea igual al producto del detalle de la compra enviada.
+                    var Existencias = await DbContext.Existencias.Include(e => e.Almacen).Include(e => e.Producto).Where(EPA => EPA.ProductoId == Detalle.ProductoId && EPA.AlmacenId == Compra.AlmacenId).ToListAsync();
+
+                    //Por cada existencia en la Lista de  Existencias consultada.
+                    foreach (var Existencia in Existencias)
+                    {
+
+                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Compra.
+                        var ComprasCantidad = ComprasDetallesActivos.Where(cd => cd.ProductoId == Detalle.ProductoId && cd.Compra.Nulo == false && cd.Compra.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
+                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado del Ajuste.
+                        //var AjustesCantidad = AjustesDetallesActivos.Where(ajd => ajd.ProductosId == Detalle.ProductosId && ajd.AjusteInventario.Nulo == false && ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId && ajd.AjusteInventario.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
+                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Venta.
+                        var VentasCantidad = VentasDetallesActivos.Where(vd => vd.ProductoId == Detalle.ProductoId && vd.Venta.Nulo == false && vd.Venta.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
+
+                        //Sumamos las Cantidades de cada tipo de producto y asignarlas a las cantidades de la existencia.
+                        Existencia.Cantidad = ComprasCantidad - VentasCantidad;
+
+                        //Salvamos los relacion producto por almacen en la tabla existencias.
+                        DbContext.Update(Existencia);
+                        await DbContext.SaveChangesAsync();
+                    }
+                } *@
+            }
+            Compra = new Compra();
+            Compra.CompraDetalles = new List<CompraDetalle>();
+
+            await IMessage.Success("Modificacion Exitosa!");
+            NavManager.NavigateTo($"compras/vista/{Id}");
+
+            IsBusy = false;
+
+
+        }
+        IsBusy = false;
+    }
+}

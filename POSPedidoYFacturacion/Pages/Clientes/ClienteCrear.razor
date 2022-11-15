@@ -1,0 +1,252 @@
+﻿@page "/clientes/crear/{Id:int?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+@inject ProtectedLocalStorage LocalStorage
+@inject ApplicationDbContext DbContext
+@inject IMessage IMessage
+
+
+<RadzenCard>
+    <h3>Registrar Cliente</h3>
+</RadzenCard>
+@if(IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info" />
+    </div>
+}
+else
+{
+<RadzenCard>
+        <EditForm Model="Cliente" OnValidSubmit="CrearCliente">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div>Nombre:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Cliente.Nombre" />
+                            <ValidationMessage For="@(() => Cliente.Nombre)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Apellido:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Cliente.Apellido" />
+                            <ValidationMessage For="@(() => Cliente.Apellido)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Tipo Identificacion:</div>
+                        <div>
+                            <select class="form-control" @bind="Cliente.TipoIdentificacion" @bind:event="onchange">
+                                <option value="">Seleccione un valor</option>
+                                <option value="CED">Cedula</option>
+                                <option value="RNC">RNC</option>
+                                <option value="PAS">Pasaporte</option>
+                            </select>
+                            <ValidationMessage For="@(() => Cliente.TipoIdentificacion)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>No. Identificacion:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Cliente.NoIdentificacion" />
+                            <ValidationMessage For="@(() => Cliente.NoIdentificacion)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Direccion:</div>
+                        <div>
+                            <RadzenTextArea class="form-control" Style="height:100%" Cols="60" @bind-Value="Cliente.Direccion" />
+                            <ValidationMessage For="@(() => Cliente.Direccion)" />
+                        </div>
+                    </div>
+
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div>Telefono:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Cliente.Telefono" />
+                            <ValidationMessage For="@(() => Cliente.Telefono)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Email:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Cliente.Email" />
+                            <ValidationMessage For="@(() => Cliente.Email)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>WhatsApp:</div>
+                        <div>
+                            <InputText class="form-control" @bind-Value="Cliente.WhatsApp" />
+                            <ValidationMessage For="@(() => Cliente.WhatsApp)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Condiciones:</div>
+                        <div>
+                            <InputSelect @bind-Value="Cliente.Condiciones" TValue="int" DisplayName="Condiciones">
+                                <option value="0">0 Dias</option>
+                                <option value="30">30 Dias</option>
+                                <option value="60">60 Dias</option>
+                                <option value="90">90 Dias</option>
+                                <option value="120">120 Dias</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => Cliente.Condiciones)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Credito Abierto:</div>
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="Cliente.CreditoAbierto" />
+                            <ValidationMessage For="@(() => Cliente.CreditoAbierto)" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div>Limite de Credito:</div>
+                        <div>
+                            <RadzenNumeric class="form-control" @bind-Value="Cliente.LimiteCredito" Format="0.00" TValue="decimal" />
+                            <ValidationMessage For="@(() => Cliente.LimiteCredito)" />
+                        </div>
+                    </div>
+
+                    
+
+
+                </div>
+            </div>
+            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success" />
+        </EditForm>
+    </RadzenCard>
+    }
+
+@code
+{
+    [Parameter]
+    public int? Id { get; set; }
+
+    private bool IsBusy { get; set; } = false;
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public Cliente Cliente { get; set; } = new Cliente();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (Id != null)
+        {
+            await CargarCliente(Id);
+        }
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+    private async Task CargarCliente(int? Id)
+    {
+        IsBusy = true;
+        Cliente = await DbContext.Clientes.SingleOrDefaultAsync(p => p.Id == Id);
+        IsBusy = false;
+    }
+
+
+    private async Task CrearCliente()
+    {
+        IsBusy = true;
+
+        if (Cliente.Id == 0)
+        {
+            var ItemNombre = await DbContext.Clientes.SingleOrDefaultAsync(p => p.Nombre == Cliente.Nombre);
+
+            if (ItemNombre != null)
+            {
+                await IMessage.Alert($"Este nombre o razon social pertenece al suplidor {ItemNombre.Nombre}!");
+                return;
+            }
+
+            var ItemCodigo = await DbContext.Clientes.SingleOrDefaultAsync(p => p.TipoIdentificacion == Cliente.TipoIdentificacion && p.NoIdentificacion.Contains(Cliente.NoIdentificacion));
+
+            if (ItemCodigo != null)
+            {
+                await IMessage.Alert($"Este No. Identificacion pertenece al Suplidor: {ItemCodigo.Nombre} con la cedula {ItemCodigo.NoIdentificacion} y el Tipo {ItemCodigo.TipoIdentificacion}!");
+                return;
+            }
+
+            Cliente.EmpresaId = Empresa.Id;
+            Cliente.SucursalId = Sucursal.Id;
+            await DbContext.AddAsync(Cliente);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Registro exitoso!");
+            Cliente = new Cliente();
+
+
+        }
+        else
+        {
+            var Item = await DbContext.Clientes.SingleOrDefaultAsync(p => p.Id == Cliente.Id);
+
+            if (Item != null)
+            {
+
+                Item.Nombre = Cliente.Nombre;
+                Item.Apellido = Cliente.Apellido;
+                Item.TipoIdentificacion = Cliente.TipoIdentificacion;
+                Item.NoIdentificacion = Cliente.NoIdentificacion;
+                Item.Direccion = Cliente.Direccion;
+                Item.Telefono = Cliente.Telefono;
+                Item.WhatsApp = Cliente.WhatsApp;
+                Item.Condiciones = Cliente.Condiciones;
+                Item.CreditoAbierto = Cliente.CreditoAbierto;
+                Item.LimiteCredito = Cliente.LimiteCredito;
+
+                DbContext.Update(Item);
+                await DbContext.SaveChangesAsync();
+                await IMessage.Success("Modificacion exitosa!");
+                Cliente = new Cliente();
+            }
+        }
+
+        IsBusy = false;
+
+    }
+
+}

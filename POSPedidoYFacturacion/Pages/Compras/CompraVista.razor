@@ -1,0 +1,272 @@
+﻿@page "/compras/vista/{Id:int?}"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProv
+@inject UserManager<Usuario> UserManager
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Vista de Compra</h5>
+        <MudSpacer/>
+        <MudTooltip Text="Editar">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Variant="Variant.Outlined" OnClick="Editar"/>
+        </MudTooltip>
+        <MudTooltip Text="Anular">
+            <MudIconButton Icon="@Icons.Material.Filled.Clear" Color="Color.Error" Variant="Variant.Outlined" OnClick="Anular"/>
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+@if (IsBusy)
+{
+    <MudOverlay Visible="@IsBusy" DarkBackground="true" Absolute="true" Style="height:100%">
+        <MudProgressCircular Size="Size.Large" Color="Color.Info" Indeterminate="true" />
+    </MudOverlay>
+}
+else
+{
+        <RadzenCard Style="padding:5px">
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <div class="form-group">
+                                <label>Suplidor:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.Suplidor.Nombre"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Almacen:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.Almacen.Nombre" />
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="col-sm-3">
+                            <div class="form-group">
+                                <label>No. Factura:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.NoFactura"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>NCF:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.NCF" />
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-sm-3">
+                            <div class="form-group">
+                                <label>Fecha de Factura:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.FechaHoraFactura.ToString("d")"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Fecha de Recepcion:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.FechaHoraRecepcion.ToString()" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Tipo de Factura:</label>
+                                <div>
+
+                                    <RadzenLabel Text="@Compra.TipoFactura.Nombre" />
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <div class="form-group">
+                                <label>Sub-Total de Factura:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.SubTotal.ToString("C2")" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Descuento de Factura:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.Descuento.ToString("C2")" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Impuesto de Factura:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.Impuesto.ToString("C2")" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Total de Factura:</label>
+                                <div>
+                                    <RadzenLabel Text="@Compra.Total.ToString("C2")" />
+                                </div>
+                            </div>
+
+                        </div>
+
+                        
+                    </div>
+                    <RadzenCard Style="padding: 20px; ">
+                        <div class="table-responsive-sm" style="height: 350px; width:100%; overflow:scroll">
+                            <table class="table table-sm" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Codigo</th>
+                                        <th scope="col">Producto</th>
+                                        <th scope="col">Cantidad</th>
+                                        <th scope="col">Costo</th>
+                                        <th scope="col">Descuento</th>
+                                        <th scope="col">Impuesto</th>
+                                        <th scope="col">Importe</th>
+                                        <th scope="col"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Compra.CompraDetalles != null | Compra.CompraDetalles.Count > 0)
+                                    {
+                                        @foreach (var item in Compra.CompraDetalles)
+                                        {
+                                            <tr>
+                                                <th scope="row">@item.Producto.Codigo</th>
+                                                <td>@item.Producto.Nombre</td>
+                                                <td>@item.Cantidad</td>
+                                                <td>@String.Format("{0:C2}", item.Costo)</td>
+                                                <td>@String.Format("{0:C2}", item.Descuento)</td>
+                                                <td>@String.Format("{0:C2}", item.ITBIS)</td>
+                                                <td>@String.Format("{0:C2}", item.Importe)</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                </RadzenCard>
+        </RadzenCard>
+}
+@code {
+    public Compra Compra { get; set; } = new Compra();
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCompra();
+    }
+
+    private async Task CargarCompra()
+    {
+        if (Id != 0)
+        {
+            IsBusy = true;
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            Compra = await DbContext.Compras
+                .Include(p => p.CompraDetalles)
+                .ThenInclude(cd=>cd.Producto)
+                .Include(p => p.TipoFactura)
+                .Include(p => p.Usuario)
+                .Include(p => p.Suplidor)
+                .Include(p => p.Almacen).SingleOrDefaultAsync(p => p.Id == Id);
+            
+            IsBusy = false;
+        }
+    }
+
+    public async Task Editar()
+    {
+
+        if(Compra.Nulo)
+        {
+            await IMessage.Alert($"la Compra #{Compra.NoFactura} del cliente {Compra.Suplidor.Nombre} ya esta anulada, no se puede anular!");
+            return;
+        }
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var TieneMovimientos = await DbContext.CXPTransaccionDetalles.Include(c=>c.CXPTransaccion).Where(c=>c.CompraId == Id && c.CXPTransaccion.Nulo == false).ToListAsync();
+
+        if(TieneMovimientos.Count > 0)
+        {
+            await IMessage.Alert("No se puede editar la compra, tiene movimientos asociados en Cuentas por Pagar.");
+            return;
+        }
+
+
+
+        NavManager.NavigateTo($"compras/crear/{Id}");
+
+
+    }
+
+    private async Task Anular()
+    {                    
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var TieneMovimientos = await DbContext.CXPTransaccionDetalles.Include(c=>c.CXPTransaccion).Where(c=>c.CompraId == Id && c.CXPTransaccion.Nulo == false).ToListAsync();
+        
+
+        if(TieneMovimientos.Count() > 0)
+        {
+            await IMessage.Alert($"la Compra #{Compra.NoFactura} del Suplidor {Compra.Suplidor.Nombre} tiene transacciones de cxp aplicadas, no se puede anular!");
+            return;
+        }
+        
+        if(Compra.Nulo)
+        {
+            await IMessage.Alert($"la Compra #{Compra.Id} del Suplidor {Compra.Suplidor.Nombre} ya esta anulada, no se puede anular!");
+            return;
+        }
+
+
+
+        var Confirm = await IMessage.Confirm($"Desea anular la Venta #{Id} del Suplidor {Compra.Suplidor.Nombre} ?");
+
+        if (Confirm)
+        {
+            Compra.Nulo = true;
+
+            DbContext.Update(Compra);
+
+            await DbContext.SaveChangesAsync();
+
+            foreach (var item in Compra.CompraDetalles)
+            {
+                if (item.Producto.ManejaExistencia)
+                {
+                    var EPxA = await DbContext.Existencias.SingleOrDefaultAsync(EPA => EPA.ProductoId == item.ProductoId && EPA.AlmacenId == Compra.AlmacenId);
+
+                    EPxA.Cantidad -= item.Cantidad;
+                    DbContext.Update(EPxA);
+                    await DbContext.SaveChangesAsync();
+                
+                }
+            }
+
+
+            await IMessage.Success($"la Compra #{Compra.Id} del Suplidor {Compra.Suplidor.Nombre} ha sido anulada!");
+            StateHasChanged();
+        }
+    }
+
+}

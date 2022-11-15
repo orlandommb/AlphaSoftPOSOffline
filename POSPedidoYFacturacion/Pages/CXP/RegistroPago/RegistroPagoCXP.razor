@@ -1,0 +1,409 @@
+@page "/cxpregistrarrp/{Id:int?}"
+@page "/cxpregistrarrp/param/suplidor/{SuplidorId:int?}"
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject AuthenticationStateProvider AuthStateProv
+@inject UserManager<Usuario> UserManager
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard>
+    <h5>Registro de Pago</h5>
+</RadzenCard>
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard>
+            <EditForm Model="RegistroPago" OnValidSubmit="Registrar">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <RadzenCard Style="padding:5px">
+                    <div class=row>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label>Suplidor:</label>
+                                <div>
+                                    <RadzenDropDown AllowFiltering="true" Data="Suplidores" @bind-Value="RegistroPago.SuplidorId"
+                                TextProperty="Nombre" ValueProperty="Id" Change="CargarComprasACredito" />
+                                    <ValidationMessage For="@(()=> RegistroPago.SuplidorId)" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo Nota de Credito:</label>
+                                <div>
+                                    <RadzenDropDown Data="TipoRecibosIngreso"
+                                @bind-Value="RegistroPago.CXPTransaccionTipoDocumentoId" TextProperty="Nombre"
+                                ValueProperty="Id" />
+                                    <ValidationMessage For="@(()=> RegistroPago.CXPTransaccionTipoDocumentoId)" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label>Fecha:</label>
+                                <div>
+                                    <RadzenDatePicker @bind-Value="RegistroPago.Fecha" />
+                                    <ValidationMessage For="@(()=> RegistroPago.Fecha)" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Aplicar Monto a Facturas:</label>
+                                <div>
+                                    <MudButton OnClick="AplicarMonto" Disabled="MontosAplicados"
+                                StartIcon="@Icons.Material.Outlined.Add" Color="Color.Primary"
+                                Variant="Variant.Outlined">Aplicar</MudButton>
+                                    <MudButton OnClick="RetirarAplicacionMonto" Disabled="!MontosAplicados"
+                                StartIcon="@Icons.Material.Outlined.Clear" Color="Color.Secondary"
+                                Variant="Variant.Outlined">Quitar</MudButton>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label>Monto:</label>
+                                <div>
+                                    <RadzenNumeric Disabled="@MontosAplicados" ShowUpDown="false" @bind-Value="RegistroPago.Monto"
+                                TValue="decimal" Format="0.00" Change="@(args => OnChangeMonto(args))" />
+                                    <ValidationMessage For="@(()=> RegistroPago.Monto)" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Monto Restante Aplicar:</label>
+                                <div>
+                                    <RadzenLabel Style="color: indianred" Text="@MontoRestanteAplicar.ToString("C2")" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Salvar:</label>
+                                <div>
+                                    <MudButton StartIcon="@Icons.Material.Outlined.Save"
+                                Color="Color.Primary" ButtonType="MudBlazor.ButtonType.Submit" Variant="Variant.Outlined">Salvar</MudButton>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </RadzenCard>
+                <RadzenCard Style="padding:15px">
+                    <div class="row">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th col="scope">No. Factura</th>
+                                        <th col="scope">Fecha</th>
+                                        <th col="scope">Balance Antes</th>
+                                        <th col="scope">Monto a aplicar</th>
+                                        <th col="scope">Balance Despues</th>
+                                        <th col="scope"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (RegistroPago.CXPTransaccionDetalles.Count > 0)
+                                    {
+                                        @foreach (var cxpcompras in RegistroPago.CXPTransaccionDetalles)
+                                        {
+                                            <tr>
+                                                <td>@cxpcompras.Compra.Id</td>
+                                                <td>@cxpcompras.Compra.FechaHoraFactura.ToString("d")</td>
+                                                <td>@cxpcompras.BalanceAntes</td>
+                                                <td>
+                                                    <RadzenNumeric @bind-Value="cxpcompras.MontoAAplicar" 
+                                                    ShowUpDown="false"
+                                        Format="0.00" TValue="decimal"
+                                        Change="@(args => OnChangeMontoAplicado(args, cxpcompras))"></RadzenNumeric>
+                                                </td>
+                                                <td>@cxpcompras.BalanceDespues</td>
+                                                <td></td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </RadzenCard>
+            </EditForm>
+        
+        </RadzenCard>
+}
+
+@code
+{
+    [Parameter]
+    public int? Id { get; set; }
+    [Parameter]
+    public int? SuplidorId { get; set; }
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private CXPTransaccion RegistroPago { get; set; } = new CXPTransaccion();
+    private List<Suplidor> Suplidores { get; set; }
+    private List<CXPTransaccionTipoDocumento> TipoRecibosIngreso { get; set; }
+    private List<CXPCompraBalance> ComprasCreditoPendientes { get; set; }
+
+    public decimal MontoRestanteAplicar { get; set; }
+    public bool MontosAplicados { get; set; } = false;
+    public bool CuadreAbierto { get; set; } = false;
+    public bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //await RevisarCuadre();
+        RegistroPago.CXPTransaccionTipoId = 3;
+        RegistroPago.Fecha = DateTime.Now;
+        await CargarUsuario();
+        
+
+        if (Id == null && SuplidorId != null)
+        {
+            RegistroPago.SuplidorId = (int)SuplidorId;
+            await CargarComprasACredito();
+        }
+        else if (Id != null && SuplidorId == null)
+        {
+            await CargarTransaccion();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarSuplidores();
+            await CargarTipoRecibosIngreso();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarComprasACredito()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        ComprasCreditoPendientes = await DbContext.CXPCompraBalances
+        .Include(cxpv => cxpv.Compra)
+        .ThenInclude(v => v.Almacen)
+        .Include(cxpv => cxpv.Compra)
+        .ThenInclude(v => v.Suplidor)
+        .Include(cxpv => cxpv.Compra)
+        .ThenInclude(v => v.TipoFactura)
+        .Where(cxpv =>
+        cxpv.Compra.TipoFacturaId == 1 &&
+        cxpv.Compra.SuplidorId == RegistroPago.SuplidorId &&
+        cxpv.Balance > 0)
+        .ToListAsync();
+
+
+
+        @if (ComprasCreditoPendientes.Count > 0)
+        {
+
+            foreach (var ventacred in ComprasCreditoPendientes)
+            {
+                var NewNCD = new CXPTransaccionDetalle()
+                {
+                    CompraId = ventacred.CompraId,
+                    Compra = ventacred.Compra,
+                    BalanceAntes = ventacred.Balance,
+                    BalanceDespues = ventacred.Balance
+                };
+
+                RegistroPago.CXPTransaccionDetalles.Add(NewNCD);
+            }
+        }
+
+        IsBusy = false;
+    }
+
+    public async Task CargarUsuario()
+    {
+
+        IsBusy = true;
+        var AState = await AuthStateProv.GetAuthenticationStateAsync();
+        var User = AState.User;
+        var user = await UserManager.FindByNameAsync(User.Identity.Name);
+        RegistroPago.UsuarioId = user.Id;
+        IsBusy = false;
+    }
+
+    private async Task CargarTransaccion()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        RegistroPago = await DbContext.CXPTransacciones
+        .Include(nc => nc.Suplidor)
+        .Include(nc => nc.Usuario)
+        .Include(nc => nc.CXPTransaccionTipoDocumento)
+        .Include(nc => nc.CXPTransaccionDetalles)
+        .ThenInclude(ncd => ncd.Compra)
+        .SingleOrDefaultAsync(nd => nd.Id == Id && nd.CXPTransaccionTipoId == 3);
+        IsBusy = false;
+    }
+
+    private async Task CargarSuplidores()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Suplidores = await DbContext.Suplidores.Where(s=>s.EmpresaId == Empresa.Id && s.SucursalId == Sucursal.Id && s.Activo == true).ToListAsync();
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    private async Task CargarTipoRecibosIngreso()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoRecibosIngreso = await DbContext.CXPTransaccionTipoDocumentos.Where(ttd => ttd.EmpresaId == Empresa.Id && ttd.SucursalId == Sucursal.Id && ttd.CXPTransaccionTipoId == 3).ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    private void OnChangeMontoAplicado(dynamic valor, CXPTransaccionDetalle item)
+    {
+        var detalle = RegistroPago.CXPTransaccionDetalles.SingleOrDefault(cxpd => cxpd.CompraId == item.CompraId);
+        detalle.MontoAAplicar = valor;
+        detalle.BalanceDespues = detalle.BalanceAntes - valor;
+
+        MontoRestanteAplicar = MontoRestanteAplicar - valor;
+    }
+
+    private void OnChangeMonto(dynamic valor)
+    {
+        MontoRestanteAplicar = valor;
+    }
+
+    private void AplicarMonto()
+    {
+        if (MontoRestanteAplicar > 0)
+        {
+            foreach (var item in RegistroPago.CXPTransaccionDetalles)
+            {
+                if (MontoRestanteAplicar > item.BalanceAntes)
+                {
+                    OnChangeMontoAplicado(item.BalanceAntes, item);
+                }
+                else
+                {
+                    OnChangeMontoAplicado(MontoRestanteAplicar, item);
+                }
+            }
+
+            MontosAplicados = true;
+        }
+    }
+
+    private void RetirarAplicacionMonto()
+    {
+        foreach (var item in RegistroPago.CXPTransaccionDetalles)
+        {
+            MontoRestanteAplicar += item.MontoAAplicar;
+            item.BalanceDespues = item.BalanceAntes;
+            item.MontoAAplicar = 0;
+        }
+
+        MontosAplicados = false;
+    }
+
+    private async Task Registrar()
+    {
+        if (RegistroPago.Monto <= 0)
+        {
+            await IMessage.Alert("El monto debe de ser mayor a cero");
+            return;
+        }
+
+        var itemaplicados = RegistroPago.CXPTransaccionDetalles.Sum(nc => nc.MontoAAplicar);
+
+        if (itemaplicados <= 0)
+        {
+            await IMessage.Alert("El detalle no tiene montos aplicados, debe de aplicar montos a las facturas!");
+            return;
+        }
+
+        if (MontoRestanteAplicar != 0)
+        {
+            await IMessage.Alert("El monto restante aun no esta aplicado completamente, debe aplicar la totalidad del monto!");
+            return;
+        }
+        
+        foreach(var detalle in RegistroPago.CXPTransaccionDetalles.ToList())
+        {
+            if (detalle.Compra.FechaHoraFactura > RegistroPago.Fecha)
+            {
+                await IMessage.Alert("La fecha de la transaccion no puede ser menor a la de las facturas seleccionadas!");
+                return;
+            }
+        }
+
+        IsBusy = true;
+
+        RegistroPago.EmpresaId = Empresa.Id;
+        RegistroPago.SucursalId = Sucursal.Id;
+        RegistroPago.FechaRegistro = DateTime.Now;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var Nueva = new CXPTransaccion();
+
+        Nueva = RegistroPago;
+        Nueva.Cuadre = null;
+
+        foreach (var item in Nueva.CXPTransaccionDetalles.ToList())
+        {
+            item.Compra = null;
+            if (item.MontoAAplicar == 0)
+            {
+                RegistroPago.CXPTransaccionDetalles.Remove(item);
+            }
+        }
+
+        await DbContext.AddAsync(Nueva);
+
+
+        foreach (var item in RegistroPago.CXPTransaccionDetalles)
+        {
+            if (item.MontoAAplicar > 0)
+            {
+                var CXPBalanceCompra = await DbContext.CXPCompraBalances.SingleOrDefaultAsync(cxpvb => cxpvb.CompraId == item.CompraId);
+                CXPBalanceCompra.Balance = CXPBalanceCompra.Balance - item.MontoAAplicar;
+                DbContext.Update(CXPBalanceCompra);
+                
+            }
+        }
+        await DbContext.SaveChangesAsync();
+
+        RegistroPago = new CXPTransaccion();
+        IsBusy = false;
+        await IMessage.Success("Registro exitoso!");
+
+    }
+}

@@ -1,0 +1,283 @@
+﻿@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+<!-- Modal -->
+<div class="modal fade show" id="exampleModal2" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Orden</h5>
+                <button type="button" class="close" @onclick="OnCancel">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="Orden">
+                    <div class="row">
+                        <div class="col-sm-6">
+
+                            <div class="form-group">
+                                <RadzenLabel Text="Tipos de Ordenes:" />
+                                <div>
+                                    <RadzenDropDown TValue="int"
+                                                    Data=@TipoOrdenes
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    @bind-Value="@Orden.TipoOrdenId"
+                                                    Change="OnChangeTipoOrden" />
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <div>Cliente:</div>
+                                <div>
+                                    <RadzenDropDown Data="@Clientes"
+                                                    AllowFiltering="true"
+                                                    AllowClear="true"
+                                                    @bind-Value="Orden.ClienteId"
+                                                    TValue="int?"
+                                                    TextProperty="Nombre"
+                                                    ValueProperty="Id"
+                                                    Change="OnChangeCliente"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div>Cliente:</div>
+                                <div>
+                                    <RadzenTextBox @bind-Value="Orden.NombreCliente" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (Orden.TipoOrdenId == 1)
+                    {
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <RadzenLabel Text="Tel./Celular:" />
+                                    <div>
+                                        <RadzenTextBox @bind-Value="Orden.CelularCliente" />
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <RadzenLabel Text="Sector:" />
+                                    <div>
+                                        <RadzenDropDown AllowClear="true"
+                                                        AllowFiltering="true"
+                                                        FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                        FilterOperator="Radzen.StringFilterOperator.Contains"
+                                                        TValue="int?"
+                                                        Data=@Sectores
+                                                        TextProperty="Nombre"
+                                                        ValueProperty="Id"
+                                                        @bind-Value="@Orden.SectorId"
+                                                        Change="OnChangeSector" />
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <div class="form-group">
+
+                                    <div>Delivery:</div>
+                                    <div>
+                                        <RadzenNumeric TValue="decimal" @bind-Value="Orden.MontoDelivery" Format="0.00" />
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="form-group">
+                                    <div>Direccion:</div>
+                                    <div>
+                                        <RadzenTextArea class="form-control" Style="width:fit-content" Cols="60" @bind-Value="Orden.DireccionCliente" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (Orden.TipoOrdenId == 2)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="form-group">
+                                    <RadzenLabel Text="Tel./Celular:" />
+                                    <div>
+                                        <RadzenTextBox @bind-Value="Orden.CelularCliente" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </EditForm>
+            </div>
+            <div class="modal-footer">
+                <RadzenButton class="btn btn-primary" Click="OnConfirm">Registrar Orden</RadzenButton>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public Orden Orden { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<TipoOrden> TipoOrdenes { get; set; } = new List<TipoOrden>();
+    private List<Sector> Sectores { get; set; } = new List<Sector>();
+
+    private List<Cliente> Clientes { get; set; } = new List<Cliente>();
+
+    public bool IsBusy { get; set; }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarSectores();
+            await CargarTipoOrdenes();
+            await CargarClientes();
+            if (Orden.MesaId == null && Orden.Id == 0)
+            {
+                var Tipolocal = TipoOrdenes.SingleOrDefault(t => t.Id == 3);
+                TipoOrdenes.Remove(Tipolocal);
+
+            }
+            StateHasChanged();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            var EmpresaFromDB = await DbContext.Empresa.Where(e=>e.Id == Empresa.Id).OrderBy(e => e.Id).SingleOrDefaultAsync();
+
+            Orden.MontoDelivery = EmpresaFromDB.MontoMinimoDelivery;
+            IsBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarClientes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Clientes = await DbContext.Clientes.Where(c=>c.EmpresaId == Empresa.Id).OrderBy(e => e.Nombre).ToListAsync();
+
+        IsBusy = false;
+
+    }
+
+    public async Task CargarTipoOrdenes()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoOrdenes = await DbContext.TipoOrdenes.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarSectores()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Sectores = await DbContext.Sectores.ToListAsync();
+            
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task OnChangeTipoOrden()
+    {
+
+        if (Orden.TipoOrdenId != 1)
+        {
+            Orden.MontoDelivery = 0.0m;
+        }
+        else
+        {
+            if (Orden.SectorId != null)
+            {
+                using var DbContext = DbContextFactory.CreateDbContext();
+
+                var SectorFromDb = await DbContext.Sectores.FirstOrDefaultAsync(s => s.Id == Orden.SectorId);
+                Orden.MontoDelivery = SectorFromDb.MontoDelivery;
+            }
+            else
+            {
+                Orden.MontoDelivery = Empresa.MontoMinimoDelivery;
+            }
+        }
+
+    }
+
+    public async Task OnChangeSector()
+    {
+        IsBusy = true;
+
+
+        if (Orden.TipoOrdenId == 1)
+        {
+            if (Orden.SectorId != null)
+            {
+                using var DbContext = DbContextFactory.CreateDbContext();
+
+                var SectorFromDb = await DbContext.Sectores.FirstOrDefaultAsync(s => s.Id == Orden.SectorId);
+                Orden.MontoDelivery = SectorFromDb.MontoDelivery;
+            }
+            else
+            {
+                Orden.MontoDelivery = Empresa.MontoMinimoDelivery;
+            }
+        }
+
+    }
+
+    private void OnChangeCliente()
+    {
+        var ClienteSelected = Clientes.SingleOrDefault(c => c.Id == Orden.ClienteId);
+        if (Orden.ClienteId != null)
+        {
+            Orden.NombreCliente = ClienteSelected.Nombre + " " + ClienteSelected.Apellido;
+            Orden.DireccionCliente = ClienteSelected.Direccion;
+            Orden.CelularCliente = string.IsNullOrEmpty(ClienteSelected.Telefono) ? ClienteSelected.WhatsApp : ClienteSelected.Telefono;
+        
+        }
+        else
+        {
+            Orden.NombreCliente = string.Empty;
+        }
+    }
+
+
+}

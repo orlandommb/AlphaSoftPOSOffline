@@ -1,0 +1,351 @@
+﻿@page "/productos"
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory< ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de Productos</h5>
+        <MudSpacer />
+        <MudTooltip Text="Nuevo Producto">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" OnClick="Nuevo"/>
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="padding:5px;font-size:small">
+    <div class="row">
+        <div class="col-sm-2">
+            <div class="form-group">
+               <MudTextField T="string" Label="Codigo" Margin="Margin.Dense" Variant="Variant.Outlined" @bind-Value="@Codigo" />
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="form-group">
+               <MudTextField T="string" Label="Nombre" Margin="Margin.Dense" Variant="Variant.Outlined" @bind-Value="@Nombre" />
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="form-group">
+                <MudSelect Label="Categoria" 
+                            Margin="Margin.Dense"
+                            Dense="true"
+                            Variant="Variant.Outlined"
+                            Clearable="true"
+                            T="int?"
+                            Value="@CategoriaSeleccionadaId"
+                            ValueChanged="@(async args => await CargarSubCategorias(args))"
+                            OnClearButtonClick="@(async ()=> await OnClearClick())"
+                            AnchorOrigin="Origin.BottomCenter"
+                            TransformOrigin="Origin.TopCenter">
+                            @foreach (var item in Categorias)
+                            {
+                                <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
+                            }
+                </MudSelect>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="form-group">
+                <MudSelect Label="Sub-Categoria" 
+                            Margin="Margin.Dense"
+                            Dense="true"
+                            Variant="Variant.Outlined"
+                            Clearable="true"
+                            T="int?" 
+                            AnchorOrigin="Origin.BottomCenter"
+                            TransformOrigin="Origin.TopCenter"
+                            @bind-Value="SubCategoriaSeleccionadaId">
+                            @foreach (var item in SubCategorias)
+                            {
+                                <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
+                            }
+                </MudSelect>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudCheckBox @bind-Checked="@Activo" Color="Color.Info" CheckedIcon="@Icons.Material.Filled.CheckCircle" UncheckedIcon="@Icons.Material.Filled.RemoveCircle"></MudCheckBox>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudRadioGroup @bind-SelectedOption="@Vista">
+                    <MudRadio Option="1" Dense="true" Size="Size.Small" Color="Color.Info">Tabla</MudRadio>
+                    <MudRadio Option="2" Dense="true" Size="Size.Small" Color="Color.Info">Tejas</MudRadio>
+                </MudRadioGroup>            
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Buscar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarProductos"/>
+                </MudTooltip>            
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard Style="padding:15px;font-size:small">
+        @if (Vista == 1)
+        {
+            <div class="table-responsive-sm" style="width:100%; height:400px; overflow:scroll">
+                <table class="table table-sm" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th scope="col">Codigo</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Categoria</th>
+                            <th scope="col">Sub-Categoria</th>
+                            <th scope="col">Activo</th>
+                            <th scope="col">Existencia</th>
+                            <th scope="col">Costo</th>
+                            <th scope="col">Precio</th>
+                            <th scope="col" style="width:10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @foreach (var item in Productos)
+                        {
+
+                        <tr>
+                            <th scope="row">@item.Codigo</th>
+                            <td>@item.Nombre</td>
+                            <td>@item.Categoria.Nombre</td>
+                            <td>@item.SubCategoria.Nombre</td>
+                            <td>
+                            @if(item.Activo)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Error"/>
+                            }
+                            </td>
+                            @if (item.ManejaExistencia)
+                            {
+                                <td>@(Existencias.SingleOrDefault(e => e.ProductoId == item.Id).Cantidad.ToString())</td>
+                            }
+                            else
+                            {
+                                <td>No maneja existencias.</td>
+                            }
+                            <td>@String.Format("{0:C2}", item.Costo)</td>
+                            <td>@String.Format("{0:C2}", item.Precio)</td>
+                            <td>
+                                <MudTooltip Text="Buscar">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))"/>
+                                </MudTooltip>  
+                            </td>
+                        </tr>
+
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <RadzenDataList WrapItems="true" Data="Productos" TItem="Producto" AllowPaging="true" PageSize="10" Count="Productos.Count" Style="width:100%">
+                <Template Context="Producto">
+                    <RadzenCard Style="height:300px; width:300px">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <RadzenImage Path=""
+                                                     class="img-fluid"
+                                                     alt="Responsive image"
+                                                     Style="max-width:100px; max-height:130px;border: groove; border-color: dodgerblue; border-radius:20px" />
+                                        <div style="margin-top:10px">Costo:</div>
+                                        <b>@Producto.Costo.ToString("C2")</b>
+                                        <div style="margin-top:10px">Precio:</div>
+                                        <b>@Producto.Precio.ToString("C2")</b>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <div style="margin-top:10px">Codigo:</div>
+                                        <b>@Producto.Id</b>
+                                        <div style="margin-top:10px">Nombre:</div>
+                                        <b>@Producto.Nombre</b>
+                                        <div style="margin-top:10px">Existencia:</div>
+                                        <b>@(Existencias.SingleOrDefault(e=>e.ProductoId == Producto.Id).Cantidad.ToString())</b>
+                                        <div style="margin-top:10px">Opciones:</div>
+                                        <RadzenButton Icon="preview" Click="@(() => BtnVistaPreviaClick(Producto.Id))"></RadzenButton>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </RadzenCard>
+                </Template>
+            </RadzenDataList>
+        }
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<Producto> Productos { get; set; } = new List<Producto>();
+    private List<Existencia> Existencias { get; set; } = new List<Existencia>();
+    private List<Categoria> Categorias { get; set; } = new List<Categoria>();
+    private List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+
+
+    private int? CategoriaSeleccionadaId { get; set; }
+    private int? SubCategoriaSeleccionadaId { get; set; }
+
+
+    private bool Activo { get; set; } = true;
+    private string Codigo { get; set; }
+    private string Nombre { get; set; }
+
+    private bool IsBusy { get; set; } = false;
+    private int Vista { get; set; } = 1;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarCategorias();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarProductos()
+    {
+        IsBusy = true;
+        Productos = new List<Producto>();
+        Existencias = new List<Existencia>();
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+        var Lista = await DbContext.Productos
+        .Include(p => p.Categoria)
+        .Include(p => p.SubCategoria)
+        .Include(p => p.ImpuestoTipo)
+        .Include(p => p.Impuesto)
+        .Where(p => p.Activo == Activo &&
+        (Nombre == null || p.Nombre.Contains(Nombre)) &&
+            (Codigo == null || p.Id == Convert.ToInt32(Codigo)) &&
+            (CategoriaSeleccionadaId == null || p.CategoriaId == CategoriaSeleccionadaId) &&
+            (SubCategoriaSeleccionadaId == null || p.SubCategoriaId == SubCategoriaSeleccionadaId))
+        .ToListAsync();
+
+        foreach (var item in Lista)
+        {
+            var cantidad = await DbContext.Existencias.Where(e => e.ProductoId == item.Id).SumAsync(e => e.Cantidad);
+            var Existencia = new Existencia()
+            {
+                ProductoId = item.Id,
+                Cantidad = cantidad,
+            };
+
+            Existencias.Add(Existencia);
+        }
+
+
+        if (Lista == null)
+        {
+            await IMessage.Alert("No hay productos creados!");
+        }
+        else
+        {
+            IsBusy = false;
+            Productos = Lista;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarCategorias()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        var Lista = await DbContext.Categorias.ToListAsync();
+
+
+        if (Lista == null)
+        {
+            await IMessage.Alert("No hay categorias creados!");
+        }
+        else
+        {
+            IsBusy = false;
+            Categorias = Lista;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnClearClick()
+    {
+        CategoriaSeleccionadaId = null;
+        await CargarSubCategorias(null);
+    }
+
+    public async Task CargarSubCategorias(int? Id)
+    {
+        if (Id == null)
+        {
+            SubCategorias = new List<SubCategoria>();
+            return;
+        }
+        CategoriaSeleccionadaId = Id;
+
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+        
+        SubCategorias = await DbContext.SubCategorias
+        .Where(p => p.CategoriaId == Id)
+        .ToListAsync();
+
+        IsBusy = false;
+            
+    }
+
+
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/productos/vista/" + Id);
+    }
+
+
+    private void Nuevo()
+    {
+        NavManager.NavigateTo("/productos/crear");
+    }
+}

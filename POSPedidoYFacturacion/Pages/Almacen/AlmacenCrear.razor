@@ -1,0 +1,152 @@
+﻿@page "/almacenes/crear/{Id:int?}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+@inject ProtectedLocalStorage LocalStorage
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+
+
+    <RadzenCard>
+        <h3>Registro de Almacen</h3>
+    </RadzenCard>
+
+    @if(IsBusy)
+    {
+        <div class="middle-box">
+            <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+        </div>
+    }
+    else
+    {
+    <RadzenCard>
+        <EditForm Model="Almacen" OnValidSubmit="CrearAlmacen">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div>Nombre:</div>
+                        <div>
+                            <InputText @bind-Value="Almacen.Nombre" />
+                            <ValidationMessage For="@(() => Almacen.Nombre)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Descripcion:</div>
+                        <div>
+                            <InputText @bind-Value="Almacen.Descripcion" />
+                            <ValidationMessage For="@(() => Almacen.Descripcion)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Activo:</div>
+                        <div>
+                            <InputCheckbox @bind-Value="Almacen.Activo" />
+                            <ValidationMessage For="@(() => Almacen.Activo)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div>Es de Ventas:</div>
+                        <div>
+                            <InputCheckbox @bind-Value="Almacen.EsDeVentas" />
+                            <ValidationMessage For="@(() => Almacen.EsDeVentas)" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success" />
+        </EditForm>
+    </RadzenCard>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Empresa Empresa { get; set; } = new Empresa();
+
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+
+    public Almacen Almacen { get; set; } = new Almacen();
+
+    private bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        await CargarAlmacen();
+    }
+
+    public async Task CargarAlmacen()
+    {
+        IsBusy = true;
+        if (Id != null)
+        {
+            using var DbContext = DbContextFactory.CreateDbContext();
+
+            Almacen = await DbContext.Almacenes.SingleOrDefaultAsync(c => c.Id == Id);
+        }
+        IsBusy = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CrearAlmacen()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        if (Almacen.Id == 0)
+        {
+            Almacen.EmpresaId = Empresa.Id;
+            Almacen.SucursalId = Sucursal.Id;
+            await DbContext.AddAsync(Almacen);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Registro Exitoso!");
+            Almacen = new Almacen();
+        }
+        else
+        {
+            var Item = await DbContext.Almacenes.SingleOrDefaultAsync(c => c.Id == Almacen.Id);
+
+            Item.Nombre = Almacen.Nombre;
+            Item.Descripcion = Almacen.Descripcion;
+            Item.Activo = Almacen.Activo;
+            Item.EsDeVentas = Almacen.EsDeVentas;
+
+            DbContext.Update(Item);
+            await DbContext.SaveChangesAsync();
+            await IMessage.Success("Modificacion Exitoso!");
+            Almacen = new Almacen();
+        }
+        IsBusy = false;
+    }
+}

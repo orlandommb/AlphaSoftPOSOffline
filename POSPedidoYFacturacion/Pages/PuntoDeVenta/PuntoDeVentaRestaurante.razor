@@ -1,0 +1,360 @@
+﻿@page "/posrestaurante"
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@layout MainLayout
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@attribute [Authorize(Roles = "SuperAdmin,Admin,Cajero/a")]
+@inject ProtectedLocalStorage LocalStorage
+@implements IDisposable
+
+<RadzenCard Style="padding: 5px">
+
+    <div class="row">
+        <div class="col-sm-12">
+            <RadzenCard Style="height: 70px">
+                <MudToolBar style="padding: 5px">
+                    <MudBadge Content="@(Mesas.Where(m=>m.Ordenes.Count > 0).Count())" Color="Color.Error" Overlap="true">
+                        <MudChip Label="true" Color="Color.Error">Mesas Ocupadas </MudChip>
+                    </MudBadge>
+                    <MudBadge Content="@(Mesas.Where(m=>m.Ordenes.Count == 0).Count())" Color="Color.Success" Overlap="true">
+                        <MudChip Label="true" Color="Color.Success">Mesas Libres</MudChip>
+                    </MudBadge>
+                    <MudChip Label="true"> Total: @(Mesas.SelectMany(m=>m.Ordenes).Where(o=>o.MesaId != null && o.TipoOrdenId == 3).Sum(o=>o.Total).ToString("C2")) </MudChip>
+                    <MudSpacer />
+                    <MudTooltip Text="Factura Rapida" Style="margin:5px">
+                        <MudIconButton OnClick="FacturaRapida" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.Receipt" Color="Color.Info" ></MudIconButton>
+                    </MudTooltip>
+                    <MudTooltip Text="Orden Para llevar o Delivery" Style="margin:5px">
+                        <MudIconButton OnClick="RegistrarOrden" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.Note" Color="Color.Info" ></MudIconButton>
+                    </MudTooltip>
+                    <MudTooltip Text="Orden Para llevar o Delivery" Style="margin:5px">
+                        <MudIconButton OnClick="DrawerToggle" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.MenuOpen" Color="Color.Info" ></MudIconButton>
+                    </MudTooltip>
+                </MudToolBar>
+            </RadzenCard>
+            
+            <RadzenCard Style="height: 80px; padding:5px; margin-top:5px">
+                <h5 style="margin:auto">Areas</h5>
+                <MudContainer Style="padding:5px;overflow-x: auto; overflow-y: hidden; white-space: nowrap">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="async ()=> await SelectArea(null)">Todas</MudButton>
+                    @foreach (var area in Areas)
+                    {
+                        <MudButton Style="margin-left:5px" Variant="Variant.Outlined" Color="Color.Info" OnClick="async ()=> await SelectArea(area.Id)">@area.Nombre</MudButton>
+                    }
+                </MudContainer>
+            </RadzenCard>
+            <RadzenCard Style="padding: 5px; margin-top:5px">
+                <h5 style="margin:auto">Mesas</h5>
+                @if (CargandoMesas)
+                {
+                    <div class="middle-box">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+                    </div>
+                }
+                else
+                {
+                    <div class="row" style="height: 550px; padding :10px">
+                        <ul class="mesas">
+
+                            @foreach (var mesa in Mesas)
+                            {
+                                <RadzenCard class="mesa" Style="@(mesa.Ordenes.Count() == 1 ? "background-color: orange; padding:5px" : "padding:5px")" @onclick="@(() => SeleccionarMesa(mesa))">
+                                    <li class="mesa-info">
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <h6 style="margin:auto;align-self:center">@mesa.Nombre</h6>
+                                                @if (mesa.Ordenes.Count() == 1)
+                                                {
+                                                    <div style="margin-top:1px">Cliente:</div>
+                                                    <b>@(mesa.Ordenes.FirstOrDefault().NombreCliente)</b>
+                                                    <div style="margin-top:1px">Total Actual:</div>
+                                                    <b>@(mesa.Ordenes.FirstOrDefault().Total.ToString("C2"))</b>
+                                                }
+                                            </div>
+                                        </div>
+                                    </li>
+                                </RadzenCard>
+                            }
+
+                        </ul>
+                    </div>
+                }
+            </RadzenCard>
+
+            @*<RadzenCard Style="height:70px;padding:5px; font-size:small">
+                <div class="row">
+
+                </div>
+            </RadzenCard>*@
+        </div>
+        <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Breakpoint="Breakpoint.Sm" Elevation="1" Anchor="Anchor.Right" Variant="DrawerVariant.Responsive">
+
+            <RadzenCard style="height:100%; width:100%; padding:5px">
+                <RadzenCard style="padding:5px; margin-top:5px">
+                    <div class="row">
+                        <h5 style="margin:auto">Delivery</h5><br/>
+                        <h5 style="margin:auto">Total: @(OrdenesPendientes.Where(o=>o.TipoOrdenId == 1).Sum(o=>o.Total).ToString("C2"))</h5>
+                    </div>
+                </RadzenCard>
+                <div class="row">
+                    <RadzenCard Style="width:100%; margin:15px; padding:15px; height: 280px; overflow: scroll">
+                        @foreach (var orden in OrdenesPendientes.Where(o => o.TipoOrdenId == 1))
+                        {
+                            <RadzenCard class="orden" Style="padding:5px" @onclick="@(()=> SeleccionarOrden(orden))">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="row" style="font-size:small">
+                                            <div class="col-sm-12">
+                                                <div style="margin-top:1px">Cliente:</div>
+                                                <b>@orden.NombreCliente</b>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="font-size:small">
+                                            
+                                            <div class="col-sm-6">
+                                                <div style="margin-top:1px">Fecha:</div>
+                                                <b>@orden.FechaPedido.ToString("d")</b>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <div style="margin-top:1px">Importe:</div>
+                                                <b>@orden.Total.ToString("C2")</b>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </RadzenCard>
+                        }
+                    </RadzenCard>
+                </div>
+                <RadzenCard style="padding:5px; margin-top:5px">
+                    <div class="row">
+                        <h5 style="margin:auto">Para Llevar</h5><br/>
+                        <h5 style="margin:auto">Total: @(OrdenesPendientes.Where(o=>o.TipoOrdenId == 2).Sum(o=>o.Total).ToString("C2"))</h5>
+                    </div>
+                </RadzenCard>
+                <div class="row">
+                    <RadzenCard Style="width: 100%; margin: 15px; padding: 15px; height: 280px; overflow: scroll ">
+                        @foreach (var orden in OrdenesPendientes.Where(o => o.TipoOrdenId == 2))
+                        {
+                            <RadzenCard class="orden" Style="padding:5px" @onclick="@(()=> SeleccionarOrden(orden))">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="row" style="font-size:small">
+                                            <div class="col-sm-12">
+                                                <div style="margin-top:1px">Cliente:</div>
+                                                <b>@orden.NombreCliente</b>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="font-size:small">
+                                            <div class="col-sm-6">
+                                                <div style="margin-top:1px">Fecha:</div>
+                                                <b>@orden.FechaPedido.ToString("d")</b>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <div style="margin-top:1px">Importe:</div>
+                                                <b>@orden.Total.ToString("C2")</b>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </RadzenCard>
+                        }
+                    </RadzenCard>
+                </div>
+            </RadzenCard>
+        </MudDrawer>
+    </div>
+</RadzenCard>
+
+@*@if (MostrarModalOpcion)
+    {
+        <PopupActionModal
+    }*@
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public List<Area> Areas { get; set; } = new List<Area>();
+    public List<Mesa> Mesas { get; set; } = new List<Mesa>();
+    public List<Orden> OrdenesPendientes { get; set; } = new List<Orden>();
+
+    public int? AreaId { get; set; }
+
+    public bool CargandoMesas { get; set; } = false;
+    public bool MostrarModalOpcion { get; set; } = false;
+
+    public Orden Orden { get; set; } = new Orden();
+
+    public bool disposed { get; set; } = false;
+    bool _drawerOpen = false;
+
+    protected override void OnInitialized()
+    {
+        NavManager.LocationChanged += HandleLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarAreas();
+            await CargarMesas(null);
+            await CargarOrdenes();
+            StateHasChanged();
+        }
+    }
+
+    private void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        _drawerOpen = false;
+    }
+
+    public void Dispose()
+    {
+        _drawerOpen = false;
+        disposed = true;
+    }
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarAreas()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Areas = await DbContext.Areas.Where(a=>a.EmpresaId == Empresa.Id && a.SucursalId == Sucursal.Id).ToListAsync();
+
+    }
+
+    public async Task CargarOrdenes()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        OrdenesPendientes = await DbContext.Ordenes.Include(o => o.TipoOrden)
+                                               .Include(o => o.Usuario)
+                                               .Include(o => o.Sector)
+                                               .Include(o => o.Usuario)
+                                               .Include(o => o.OrdenDetalles)
+                                               .Where(o => o.EmpresaId == Empresa.Id && o.SucursalId == Sucursal.Id && o.Facturado == false && o.Nulo == false && o.TipoOrdenId != 3).ToListAsync();
+
+    }
+
+    public void RegistrarOrden()
+    {
+        _drawerOpen = false;
+        NavManager.NavigateTo($"/registrodeorden/{Uri.EscapeDataString(NavManager.Uri)}");
+
+    }
+
+    public async Task CargarMesas(int? AreaId)
+    {
+        CargandoMesas = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Mesas = await DbContext.Mesas
+        .Include(m=>m.Ordenes.Where(o=>o.Facturado == false && o.Nulo == false && o.TipoOrdenId == 3))
+        .Include(m=>m.Area)
+        .Where(m => m.Area.EmpresaId == Empresa.Id && m.Area.SucursalId == Sucursal.Id && (AreaId == null || m.AreaId == AreaId)).OrderBy(m => m.AreaId).ToListAsync();
+
+
+        CargandoMesas = false;
+    }
+
+    public async Task SelectArea(int? Id)
+    {
+        await CargarMesas(Id);
+    }
+
+    public async Task SeleccionarMesa(Mesa mesa)
+    {
+        _drawerOpen = false;
+        if (mesa.Ordenes.Count() == 1)
+        {
+            var result = await IMessage.Dialog("Que desea hacer ?", "Facturar", "Cargar Orden");
+            if (result == 1)
+            {
+                FacturarOrden((int)mesa.Ordenes.SingleOrDefault().MesaId, "Mesa");
+            }
+            else if (result == 2)
+            {
+                CargarOrden(mesa.Ordenes.SingleOrDefault().Id, "Mesa");
+            }
+        }
+        else
+        {
+            NavManager.NavigateTo($"/registrodeorden/Mesa/{mesa.Id}/{Uri.EscapeDataString(NavManager.Uri)}");
+        }
+    }
+
+    public async Task SeleccionarOrden(Orden Orden)
+    {
+        _drawerOpen = false;
+        var result = await IMessage.Dialog("Que desea hacer ?", "Facturar", "Cargar Orden");
+        if (result == 1)
+        {
+            FacturarOrden(Orden.Id, "Orden");
+        }
+        else if (result == 2)
+        {
+            CargarOrden(Orden.Id, "Orden");
+        }
+
+    }
+
+
+    public void CargarOrden(int Id, string TipoParametro)
+    {
+        _drawerOpen = false;
+        if (TipoParametro == "Mesa")
+        {
+            NavManager.NavigateTo($"/registrodeorden/{Id}/{Uri.EscapeDataString(NavManager.Uri)}");
+        }
+        else if (TipoParametro == "Orden")
+        {
+            NavManager.NavigateTo($"/registrodeorden/{Id}/{Uri.EscapeDataString(NavManager.Uri)}");
+        }
+
+    }
+
+    public void FacturarOrden(int Id, string TipoParametro)
+    {
+        _drawerOpen = false;
+        if (TipoParametro == "Mesa")
+        {
+            NavManager.NavigateTo($"/puntodeventa/factmesa/{Id}/{Uri.EscapeDataString(NavManager.Uri)}");
+        }
+        else if (TipoParametro == "Orden")
+        {
+            NavManager.NavigateTo($"/puntodeventa/factorden/{Id}/{Uri.EscapeDataString(NavManager.Uri)}");
+        }
+    }
+
+    public void FacturaRapida()
+    {
+        _drawerOpen = false;
+        NavManager.NavigateTo($"/puntodeventa/{Uri.EscapeDataString(NavManager.Uri)}");
+    }
+
+}

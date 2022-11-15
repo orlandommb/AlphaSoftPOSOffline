@@ -1,0 +1,206 @@
+@page "/ajustesinventario"
+@attribute [Authorize(Roles = "Admin,SuperAdmin,Enc. Almacen")]
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory< ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de Ajustes de Inventario</h5>
+        <MudSpacer />
+        <MudTooltip Text="Nuevo Ajuste de Inventario">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="NuevoAjuste" />
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="padding:5px;font-size:small; border-radius: 20px">
+    <div class="row">
+        <div class="col-sm-2">
+            <div class="form-group">
+               <MudTextField T="string" Label="Codigo" @bind-Value="@Codigo" />
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <MudDateRangePicker Label="Desde - Hasta" Editable="true" @bind-DateRange="@Fecha" />
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <MudSelect Label="Tipo de Ajuste" Clearable="true"
+                            T="int?" AnchorOrigin="Origin.TopCenter"
+                            TransformOrigin="Origin.BottomCenter"
+                            @bind-Value="TipoAjusteSeleccionadoId">
+                            @foreach (var item in TiposAjuste)
+                            {
+                                <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
+                            }
+                </MudSelect>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Nulo">
+                    <MudCheckBox @bind-Checked="@Nulo" Color="Color.Info" CheckedIcon="@Icons.Material.Filled.CheckCircle" UncheckedIcon="@Icons.Material.Filled.RemoveCircle"></MudCheckBox>
+                </MudTooltip>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Buscar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarAjustes"/>
+                </MudTooltip>            
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard Style="padding:15px;font-size:small">
+            <div class="table-responsive-sm" style="width:100%; height:400px; overflow:scroll">
+                <table class="table table-sm" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th scope="col">Codigo</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Usuario</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Monto</th>
+                            <th scope="col" style="width:10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @foreach (var item in Ajustes)
+                        {
+
+                        <tr>
+                            <th scope="row">@item.Id</th>
+                            <td>@item.AjusteInventarioTipo.Nombre</td>
+                            <td>@item.Fecha.ToString("d")</td>
+                            <td>@item.Usuario.UserName</td>
+                            <td>
+                            @if(item.Nulo)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Error"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+                            }
+                            </td>
+                            <td>@String.Format("{0:C2}", item.Total)</td>
+                            <td>
+                                <MudTooltip Text="Ver Datos">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))"/>
+                                </MudTooltip>  
+                            </td>
+                        </tr>
+
+                        }
+                    </tbody>
+                </table>
+            </div>
+    </RadzenCard>
+}
+
+@code{
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<AjusteInventario> Ajustes { get; set; } = new List<AjusteInventario>();
+    private List<AjusteInventarioTipo> TiposAjuste { get; set; } = new List<AjusteInventarioTipo>();
+
+
+    private int? TipoAjusteSeleccionadoId { get; set; }
+
+    private DateRange Fecha = new DateRange(DateTime.Now.AddDays(-1), DateTime.Now);
+    private bool Nulo { get; set; } = false;
+    private string Codigo { get; set; }
+
+    private bool IsBusy { get; set; } = false;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarTipos();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarAjustes()
+    {
+        IsBusy = true;
+        Ajustes = new List<AjusteInventario>();
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Ajustes = await DbContext.AjustesInventario
+        .Include(p => p.AjusteInventarioTipo)
+        .Include(p => p.Usuario)
+        .Where(p => p.EmpresaId == Empresa.Id && p.SucursalId == Sucursal.Id && 
+            p.Fecha >= Fecha.Start && p.Fecha <= Fecha.End &&
+            p.Nulo == Nulo &&
+            (string.IsNullOrWhiteSpace(Codigo) || p.Id == Convert.ToInt32(Codigo)) &&
+            (TipoAjusteSeleccionadoId == null || p.AjusteInventarioTipoId == TipoAjusteSeleccionadoId))
+        .ToListAsync();
+
+            IsBusy = false;
+            StateHasChanged();
+        
+    }
+
+    public async Task CargarTipos()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+        TiposAjuste = await DbContext.AjusteInventarioTipos.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+        
+    }
+
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/ajustesinventario/vista/" + Id);
+    }
+
+
+    void NuevoAjuste()
+    {
+        NavManager.NavigateTo("/ajustesinventario/crear");
+    }
+}

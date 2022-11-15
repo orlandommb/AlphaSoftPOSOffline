@@ -1,0 +1,300 @@
+@page "/clientes/vista/{Id:int}"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+@inject ProtectedLocalStorage LocalStorage
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+
+
+<RadzenCard>
+    <h3>Vista de Cliente</h3>
+</RadzenCard>
+<RadzenCard>
+    <MudTabs Color="Color.Info">
+        <MudTabPanel Text="Datos">
+            <RadzenCard>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div>Nombre:</div>
+                            <div>
+                                <RadzenLabel Text="@Cliente.Nombre" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div>Apellido:</div>
+                            <div>
+                                <RadzenLabel Text="@Cliente.Apellido" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div>Tipo Identificacion:</div>
+                            <div>
+                                <RadzenLabel Text="@Cliente.TipoIdentificacion" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div>No. Identificacion:</div>
+                            <div>
+                                <RadzenLabel Text="@Cliente.NoIdentificacion" />
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div>Balance a Credito:</div>
+                            <div>
+                                <RadzenLabel Text="@Balance.ToString("C2")" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div>Credito Abierto:</div>
+                            <div>
+                                <RadzenCheckBox Disabled=true class="form-control"
+                                    @bind-Value="Cliente.CreditoAbierto" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div>Limite de Credito:</div>
+                            <div>
+                                <RadzenNumeric Disabled=true class="form-control" @bind-Value="Cliente.LimiteCredito"
+                                    Format="0.00" TValue="decimal" />
+                            </div>
+                        </div>
+
+                        @*<div class="form-group">
+                            <div>Email:</div>
+                            <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.Email" />
+                            <ValidationMessage For="@(() => Suplidor.Email)" />
+                            </div>
+                            </div>
+                            <div class="form-group">
+                            <div>WhatsApp:</div>
+                            <div>
+                            <InputText class="form-control" @bind-Value="Suplidor.WhatsApp" />
+                            <ValidationMessage For="@(() => Suplidor.WhatsApp)" />
+                            </div>
+                            </div>
+                            <div class="form-group">
+                            <div>Condiciones:</div>
+                            <div>
+                            <InputSelect @bind-Value="Suplidor.Condiciones" TValue="int" DisplayName="Condiciones">
+                            <option value="0">0 Dias</option>
+                            <option value="30">30 Dias</option>
+                            <option value="60">60 Dias</option>
+                            <option value="90">90 Dias</option>
+                            <option value="120">120 Dias</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => Suplidor.Condiciones)" />
+                            </div>
+                            </div>*@
+
+
+                    </div>
+                </div>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Edit" OnClick="EditarCliente">
+                    Editar</MudButton>
+
+            </RadzenCard>
+        </MudTabPanel>
+        <MudTabPanel Text="Historial de Transacciones">
+            <div class="table-responsive-sm" style="overflow: scroll;height:400px">
+                <table class="table table-sm" style="position:relative">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">No.Factura</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Cuadre</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Almacen</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Fecha</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Usuario</th>
+                            <th scope="col" style="width:16.66%; position: sticky; top: 0; background-color: dodgerblue">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @foreach (var cxcbal in Balances.OrderBy(cxcb => cxcb.Venta.FechaFinalizado).ToList())
+                        {
+                            <tr style="background-color: lightblue;">
+                                <th scope="row">@cxcbal.VentaId</th>
+                                <th scope="row">@cxcbal.Venta.CuadreId</th>
+                                <th scope="row">@cxcbal.Venta.Almacen.Nombre</th>
+                                <th scope="row">@cxcbal.Venta.FechaFinalizado.Value.ToString("d")</th>
+                                <th scope="row">@cxcbal.Venta.Usuario.UserName</th>
+                                <th scope="row">@cxcbal.Venta.Total.ToString("C2")</th>
+                            </tr>
+                            <tr>
+                            <td colspan="6">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                            <th scope="col" style="width:16.66%"></th>
+                                        </tr>
+                                            @foreach (var mov in Movimientos.Where(cxctd => cxctd.VentaId == cxcbal.VentaId).OrderBy(cxctd => cxctd.CXCTransaccion.Fecha).ToList())
+                                            {
+                                                switch (mov.CXCTransaccion.CXCTransaccionTipoId)
+                                                {
+                                                    case 1:
+                                                        <tr style="@(mov.CXCTransaccion.Nulo ? "color: red;" : "")">
+                                                            <td>
+                                                            </td>
+                                                            <th scope="row">NC</th>
+                                                            <td>@mov.CXCTransaccion.Fecha.ToString("d")</td>
+                                                            <td>@mov.CXCTransaccion.Usuario.UserName</td>
+                                                            <td>@("- " + mov.MontoAAplicar.ToString("C2"))</td>
+                                                            <td>@mov.BalanceDespues.ToString("C2")</td>
+                                                        </tr>
+                                                        break;
+                                                    case 2:
+                                                        <tr style="@(mov.CXCTransaccion.Nulo ? "color: red;" : "")">
+                                                            <td>
+                                                            </td>
+                                                            <th scope="row">ND</th>
+                                                            <td>@mov.CXCTransaccion.Fecha.ToString("d")</td>
+                                                            <td>@mov.CXCTransaccion.Usuario.UserName</td>
+                                                            <td>@("+ " + mov.MontoAAplicar.ToString("C2"))</td>
+                                                            <td>@mov.BalanceDespues.ToString("C2")</td>
+                                                        </tr>
+                                                        break;
+                                                    case 3:
+                                                        <tr style="@(mov.CXCTransaccion.Nulo ? "color: red;" : "")">
+                                                            <td>
+                                                            </td>
+                                                            <th scope="row">RI</th>
+                                                            <td>@mov.CXCTransaccion.Fecha.ToString("d")</td>
+                                                            <td>@mov.CXCTransaccion.Usuario.UserName</td>
+                                                            <td>@("- " + mov.MontoAAplicar.ToString("C2"))</td>
+                                                            <td>@mov.BalanceDespues.ToString("C2")</td>
+                                                        </tr>
+                                                        break;
+                                                }
+
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </MudTabPanel>
+    </MudTabs>
+</RadzenCard>
+
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public Cliente Cliente { get; set; } = new Cliente();
+
+    public decimal Balance { get; set; }
+
+    public List<CXCVentaBalance> Balances { get; set; } = new List<CXCVentaBalance>();
+    public List<CXCTransaccionDetalle> Movimientos { get; set; } = new List<CXCTransaccionDetalle>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarCliente(Id);
+            StateHasChanged();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+    private async Task CargarCliente(int Id)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Cliente = await DbContext.Clientes.SingleOrDefaultAsync(p => p.Id == Id);
+        await CargarBalance(Cliente.Id);
+    }
+
+
+    private async Task CargarBalance(int Id)
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Balances = await DbContext.CXCVentaBalances
+        .Include(cxcv => cxcv.Venta)
+        .ThenInclude(v => v.Cliente)
+        .Include(cxcv => cxcv.Venta)
+        .ThenInclude(v => v.TipoFactura)
+        .Include(cxcv => cxcv.Venta)
+        .ThenInclude(v => v.Usuario)
+        .Include(cxcv => cxcv.Venta)
+        .ThenInclude(v => v.Almacen)
+        .Where(cxcv => cxcv.Venta.EmpresaId == Empresa.Id && 
+        cxcv.Venta.SucursalId == Sucursal.Id &&
+        cxcv.Venta.TipoFacturaId == 1 &&
+        cxcv.Venta.ClienteId == Id)
+        .ToListAsync();
+
+        Balance = Balances.Sum(b => b.Balance);
+
+        await CargarMovimientos();
+    }
+
+    private async Task CargarMovimientos()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+        foreach (var cxcventa in Balances)
+        {
+            var movs = await DbContext.CXCTransaccionDetalles
+            .Include(cxctd => cxctd.CXCTransaccion)
+            .ThenInclude(cxct => cxct.Usuario)
+            .Where(cxctd => cxctd.VentaId == cxcventa.VentaId).ToListAsync();
+
+            Movimientos.AddRange(movs);
+        }
+
+        StateHasChanged();
+    }
+
+
+    private void EditarCliente()
+    {
+
+        if (Cliente.Id != 0)
+        {
+            NavManager.NavigateTo($"/clientes/crear/{Cliente.Id}");
+
+        }
+
+    }
+
+}

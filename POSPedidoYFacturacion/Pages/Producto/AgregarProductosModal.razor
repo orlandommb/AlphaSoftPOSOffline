@@ -1,0 +1,249 @@
+﻿@inject IMessage IMessage
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory 
+
+<!-- Modal -->
+<div class="modal fade show" id="exampleModal2" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Orden</h5>
+                <button type="button" class="close" @onclick="OnCancel">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <RadzenCard Style="box-shadow: 5px 10px 18px #888888; border-radius: 20px; padding:5px; height:70px; font-size:small">
+                    <div class="row">
+                        <div class="col-10">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <RadzenLabel Text="Nombre:" />
+                                        <div>
+                                            <RadzenTextBox @bind-Value="@NombreProducto" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <RadzenLabel Text="Categoria:" />
+                                        <div>
+                                            <RadzenDropDown AllowClear="true"
+                                                            AllowFiltering="true"
+                                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                            FilterOperator="Radzen.StringFilterOperator.Contains"
+                                                            Data="@Categorias"
+                                                            TValue="int?"
+                                                            TextProperty="Nombre"
+                                                            ValueProperty="Id"
+                                                            @bind-Value="@CategoriaSeleccionadaId"
+                                                            Change="@(async () => await CargarSubCategorias(CategoriaSeleccionadaId))" />
+
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <RadzenLabel Text="Sub-Categoria:" />
+                                        <div>
+                                            <RadzenDropDown AllowClear="true"
+                                                            AllowFiltering="true"
+                                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                            FilterOperator="Radzen.StringFilterOperator.Contains"
+                                                            TValue="int?"
+                                                            Data=@SubCategorias
+                                                            TextProperty="Nombre"
+                                                            ValueProperty="Id"
+                                                            @bind-Value="@SubCategoriaSeleccionadaId" />
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <div></div>
+                                <div>
+                                    <RadzenButton Text="Buscar" ButtonType="Radzen.ButtonType.Submit" Click="CargarProductos" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </RadzenCard>
+                <div style="margin:10px"></div>
+                @if (IsBusy)
+                {
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <RadzenCard Style="padding:5px">
+                        <div class="table-responsive-md" style="overflow:scroll;height:300px; font-size:small">
+                            <table class="table" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Codigo</th>
+                                        <th scope="col">Nombre</th>
+                                        <th scope="col">Activo</th>
+                                        <th scope="col">Categoria</th>
+                                        <th scope="col">Sub-Categoria</th>
+                                        <th scope="col">Costo</th>
+                                        <th scope="col">Precio</th>
+                                        <th scope="col" style="width:10%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Productos)
+                                    {
+                                        <tr>
+                                            <th scope="row">@item.Codigo</th>
+                                            <td>@item.Nombre</td>
+                                            <td>@item.Activo</td>
+                                            <td>@item.Categoria.Nombre</td>
+                                            <td>@item.SubCategoria.Nombre</td>
+                                            <td>@String.Format("{0:C2}", item.Costo)</td>
+                                            <td>@String.Format("{0:C2}", item.Precio)</td>
+                                            <td>
+                                                <RadzenButton Icon="preview" Click="@(() =>  SeleccionarProducto(item))"></RadzenButton>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </RadzenCard>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public CompraDetalle Detalle { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+
+    private List<Producto> Productos { get; set; } = new List<Producto>();
+    private List<Categoria> Categorias { get; set; } = new List<Categoria>();
+    private List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+
+    private int? CategoriaSeleccionadaId { get; set; }
+    private int? SubCategoriaSeleccionadaId { get; set; }
+
+    private string NombreProducto { get; set; }
+
+    public bool IsBusy { get; set; } = false;
+
+    public bool Cerrar { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCategorias();
+        await CargarProductos();
+
+        @*CantidadModalChange(Detalle.Cantidad);*@
+    }
+
+    @*private void CantidadModalChange(dynamic value)
+    {
+        Detalle.Importe = Detalle.Costo * value;
+    }*@
+
+private void SeleccionarProducto(Producto producto)
+{
+    Detalle = new CompraDetalle()
+    {
+        Producto = producto,
+        ProductoId = producto.Id,
+        Nombre = producto.Nombre,
+        Cantidad = 1,
+        Costo = producto.Costo
+    };
+}
+
+public async Task CargarProductos()
+{
+
+    IsBusy = true;
+    using var DbContext = DbContextFactory.CreateDbContext();
+    var Lista = await DbContext.Productos
+        .Include(p => p.Categoria)
+        .Include(p => p.SubCategoria)
+        .Where(p => p.Activo == true &&
+        (NombreProducto == null || p.Nombre.Contains(NombreProducto)) &&
+            (CategoriaSeleccionadaId == null || p.CategoriaId == CategoriaSeleccionadaId) &&
+            (SubCategoriaSeleccionadaId == null || p.SubCategoriaId == SubCategoriaSeleccionadaId))
+        .ToListAsync();
+
+
+    if (Lista == null)
+    {
+        await IMessage.Alert("No hay productos creados!");
+    }
+    else
+    {
+        IsBusy = false;
+        Productos = Lista;
+        StateHasChanged();
+    }
+}
+
+
+public async Task CargarCategorias()
+{
+    IsBusy = true;
+    using var DbContext = DbContextFactory.CreateDbContext();
+
+    var Lista = await DbContext.Categorias.ToListAsync();
+
+
+    if (Lista == null)
+    {
+        await IMessage.Alert("No hay categorias creados!");
+    }
+    else
+    {
+        IsBusy = false;
+        Categorias = Lista;
+        StateHasChanged();
+    }
+}
+
+
+public async Task CargarSubCategorias(int? Id)
+{
+    if (Id == null)
+    {
+        return;
+    }
+    IsBusy = true;
+    using var DbContext = DbContextFactory.CreateDbContext();
+
+    var Lista = await DbContext.SubCategorias
+    .Where(p => p.CategoriaId == Id)
+    .ToListAsync();
+
+
+    if (Lista == null)
+    {
+        await IMessage.Alert("No hay sub-categorias creadas!");
+    }
+    else
+    {
+        IsBusy = false;
+        SubCategorias = Lista;
+        StateHasChanged();
+    }
+}
+
+}

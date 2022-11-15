@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<xct:Popup
+    xmlns:xct="http://xamarin.com/schemas/2020/toolkit"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Dto="clr-namespace:Shared.DTOs;assembly=Shared" xmlns:combobox="clr-namespace:Syncfusion.XForms.ComboBox;assembly=Syncfusion.SfComboBox.XForms" xmlns:vm="clr-namespace:ASCamarerosApp.ViewModels"
+    x:Class="ASCamarerosApp.Views.OrdenDatosPopupPage"
+    x:TypeArguments="Dto: OrdenDTO"
+    Size="390,400"
+    IsLightDismissEnabled="False"
+    
+    >
+
+    <xct:Popup.BindingContext>
+        <vm:OrdenDatosViewModel />
+    </xct:Popup.BindingContext>
+
+    <xct:Popup.Content>
+        <StackLayout Margin="10" Padding="10">
+            <Label Text="DATOS DE ORDEN" HorizontalOptions="Center" VerticalOptions="Center" VerticalTextAlignment="Center" HorizontalTextAlignment="Center"/>
+                <combobox:SfComboBox x:Name="clientecombo" Text="Seleccionar un Cliente" DataSource="{Binding Clientes}" AllowFiltering="True"  SelectedValue="{Binding Orden.ClienteId}" SelectedValuePath="Id" DisplayMemberPath="Nombre" TextSize="Large">
+                    <combobox:SfComboBox.Behaviors>
+                        <xct:EventToCommandBehavior EventName="ValueChanged" Command="{Binding OnClienteChangedCommand}" CommandParameter="{Binding Source={x:Reference clientecombo}, Path=Text}" /> 
+                    </combobox:SfComboBox.Behaviors>
+                    <combobox:SfComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackLayout Orientation="Horizontal" Padding="5">
+                                <Label Text="{Binding Nombre}" HorizontalTextAlignment="Center" FontSize="Large"/>
+                                <Label Text="{Binding Apellido}" HorizontalTextAlignment="Center" FontSize="Large"/>
+                                <Label Text="{Binding NoIdentificacion}" HorizontalTextAlignment="Center" FontSize="Large"/>
+                            </StackLayout>
+                        </DataTemplate>
+                    </combobox:SfComboBox.ItemTemplate>
+                </combobox:SfComboBox>
+                <combobox:SfComboBox x:Name="tipoordencombo" Text="Seleccionar un Tipo de Orden" DataSource="{Binding TipoOrdenes}"  SelectedValue="{Binding Orden.TipoOrdenId}" SelectedValuePath="Id" DisplayMemberPath="Nombre" TextSize="Large">
+                    <combobox:SfComboBox.Behaviors>
+                        <xct:EventToCommandBehavior EventName="ValueChanged" Command="{Binding OnTipoOrdenChangedCommand}" /> 
+                    </combobox:SfComboBox.Behaviors>
+                </combobox:SfComboBox>
+                <Entry Text="{Binding Orden.NombreCliente}" IsReadOnly="{Binding IsReadOnly}" FontSize="Large" Placeholder="Nombre de Cliente"/>
+            <Button VerticalOptions="EndAndExpand" x:Name="BtnAceptar" Text="Aceptar" Clicked="BtnAceptar_Clicked"/>
+        </StackLayout>
+    </xct:Popup.Content>
+</xct:Popup>

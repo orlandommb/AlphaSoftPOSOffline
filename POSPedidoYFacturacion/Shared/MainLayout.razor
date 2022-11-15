@@ -1,0 +1,162 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager NavManager
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthProv
+@inject ProtectedLocalStorage LocalStorage
+
+<MudThemeProvider Theme="MyCustomTheme"/>
+
+<MudLayout>
+    <MudAppBar Elevation="1" Style="background-color:dodgerblue">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        @if (Empresa != null)
+        {
+            <RadzenImage Path="@Empresa.Logo" Style="min-height: 50px; max-height: 70px; min-width: 70px; max-width: 100px; margin: auto;margin-top:10px;margin-bottom:10px; border-radius:50px" Click="GoHome" />
+            <MudText Typo="Typo.h5" Class="ml-3">@Empresa.Nombre</MudText>
+        }
+        <MudSpacer />
+        <RadzenProfileMenu Style="background-color:transparent;padding:2px; width:165px">
+            <Template>
+                <MudChip Style="border-style: solid; border-color:white; width:165px; height:60px; color:white" Icon="@Icons.Material.Filled.Person" Color="Color.Inherit">@UserName</MudChip>
+            </Template>
+            <ChildContent>
+                <RadzenProfileMenuItem Text="Mi Cuenta" Path="/Identity/Account/Manage" Icon="account_circle"></RadzenProfileMenuItem>
+                <form method="post" action="Identity/Account/LogOut" style="width:100%">
+                    <MudButton Style="width:100%" EndIcon="@Icons.Material.Filled.Logout" Color="Color.Error" ButtonType="MudBlazor.ButtonType.Submit">Cerrar Sesion</MudButton>
+                </form>
+            </ChildContent>
+        </RadzenProfileMenu>
+        @* <MudMenu @ref="@MudMenu" FullWidth="true" EndIcon="@Icons.Material.Outlined.KeyboardArrowDown" Dense="true" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+            <ActivatorContent>
+                <MudChip Style="border-style: solid; border-color:white; width:150px" Icon="@Icons.Material.Filled.Person" Color="Color.Info" Size="Size.Large">@UserName</MudChip>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem OnClick="NavegarManage">Mi Cuenta</MudMenuItem>
+                <MudMenuItem Style="font-size:small">
+                    <form method="post" action="Identity/Account/LogOut" style="width:100%">
+                        <MudButton Style="width:100%" Size="Size.Small" EndIcon="@Icons.Material.Filled.Logout" Color="Color.Error" ButtonType="MudBlazor.ButtonType.Submit">Cerrar Sesion</MudButton>
+                    </form>
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu> *@
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="1">
+        <MudDrawerContainer>
+            <MudDrawerHeader Style="@(_drawerOpen ? "padding:2px; width:100%; margin-bottom:10px" : "padding:2px; width:100%")">
+                    <MudPaper Class="rounded-xl" MinHeight="50px" MaxHeight="@(_drawerOpen ? "100%": "50px")" Width="100%" Elevation="2">
+                        @if(_drawerOpen)
+                        {
+                            <div class="col-12" style="text-align:center">
+                                <img src="AlphaSoftLogo.png" style="height:100px; width:100px" alt="Responsive image"/>
+                                <MudText Typo="Typo.h6" Class="px-4">AlphaSoftPOS</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">by AlphaSoft Development</MudText>
+                            </div>
+                        }
+                        else
+                        {
+                            <img src="AlphaSoftLogo.png" class="img responsive"  style="height:50px; width:50px" alt="Responsive image"/>
+                        }
+                    </MudPaper>
+                </MudDrawerHeader>
+            <NavMenu />
+        </MudDrawerContainer>
+    </MudDrawer>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+
+
+@code{
+
+    public string Logo { get; set; } = "";
+    public string UserName { get; set; }
+    public Empresa Empresa { get; set; } = new Empresa();
+    public Sucursal Sucursal { get; set; } = new Sucursal();
+
+    bool _drawerOpen = true;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+
+        var AuthState = await AuthProv.GetAuthenticationStateAsync();
+        UserName = AuthState.User.Identity.Name;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarUsuario();
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarUsuario()
+    {
+        var AuthState = await AuthProv.GetAuthenticationStateAsync();
+        UserName = AuthState.User.Identity.Name;
+    }
+    
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            using var DbContext = DbContextFactory.CreateDbContext();
+            Empresa = await DbContext.Empresa.OrderBy(e => e.Id).SingleOrDefaultAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private void GoHome()
+    {
+        NavManager.NavigateTo("/");
+    }
+    
+    private void NavegarManage()
+    {
+        NavManager.NavigateTo("/Identity/Account/Manage");
+    }
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    MudTheme MyCustomTheme = new MudTheme()
+    {
+
+        LayoutProperties = new LayoutProperties()
+        {
+            DrawerMiniWidthLeft = "52px",
+            
+        },
+
+        Typography = new Typography()
+        {
+            Default = new Default()
+            {
+                FontFamily = new[] { "Poppins", "Helvetica", "Arial", "sans-serif" },
+                FontSize = ".600rem"
+            }
+        }
+    };
+
+}

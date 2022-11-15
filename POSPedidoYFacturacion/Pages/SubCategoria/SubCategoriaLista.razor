@@ -1,0 +1,171 @@
+﻿@page "/subcategorias"
+
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+
+
+@inject NavigationManager NavManager
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de SubCategorias</h5>
+        <MudSpacer />
+        <MudTooltip Text="Nuevo Sub-Categoria">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="Nuevo" />
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="box-shadow: 5px 10px 18px #888888; border-radius: 20px">
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="form-group">
+                <RadzenLabel Text="Nombre:" />
+                <div>
+                    <RadzenTextBox @bind-Value="@Nombre" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="form-group">
+                <RadzenLabel Text="Categoria:" />
+                <div>
+                    <RadzenDropDown AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="Radzen.StringFilterOperator.Contains"
+                                    Data="@Categorias"
+                                    TValue="int?"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    @bind-Value="@CategoriaSeleccionadaId" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="form-group">
+                <RadzenButton Text="Buscar" ButtonType="Radzen.ButtonType.Submit" Click="CargarSubCategorias" />
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <RadzenCard>
+
+        <div class="table-responsive-sm" style="width:100%height:400px; overflow:scroll">
+            <table class="table table-sm" >
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Categoria</th>
+                        <th scope="col" style="width:10%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    @foreach (var item in SubCategorias)
+                    {
+
+                        <tr>
+                            <th scope="row">@item.Id</th>
+                            <td>@item.Nombre</td>
+                            <td>@item.Categoria.Nombre</td>
+                            <td>
+                                <RadzenButton Icon="preview" Click="@(() => BtnEditarClick(item.Id))"></RadzenButton>
+                            </td>
+                        </tr>
+
+                    }
+                </tbody>
+            </table>
+        </div>
+
+
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public List<Categoria> Categorias { get; set; } = new List<Categoria>();
+    public List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+
+    public bool IsBusy { get; set; } = false;
+
+    public string Nombre { get; set; }
+
+    private int? CategoriaSeleccionadaId { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarCategorias();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarCategorias(){
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Categorias = await DbContext.Categorias.Where(c=>c.EmpresaId == Empresa.Id).ToListAsync();
+        StateHasChanged();
+    }
+
+    public async Task CargarSubCategorias()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        SubCategorias = await DbContext.SubCategorias.Include(s => s.Categoria)
+        .Where(c => c.Categoria.EmpresaId == Empresa.Id && (Nombre == null || c.Nombre == Nombre) && (CategoriaSeleccionadaId == null || c.CategoriaId == CategoriaSeleccionadaId))
+        .ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public void BtnEditarClick(int Id)
+    {
+        NavManager.NavigateTo("/subcategorias/crear/" + Id);
+    }
+
+    public void Nuevo()
+    {
+        NavManager.NavigateTo("/subcategorias/crear");
+    }
+}

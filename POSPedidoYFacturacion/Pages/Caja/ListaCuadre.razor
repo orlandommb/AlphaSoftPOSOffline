@@ -1,0 +1,154 @@
+﻿@page "/cuadres"
+@attribute [Authorize(Roles = "Admin,SuperAdmin,SupervisorCaja")]
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+
+<RadzenCard>
+    <h3>Lista de Cuadres</h3>
+</RadzenCard>
+
+
+<RadzenCard>
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="form-group">
+                <MudDateRangePicker Editable="true" Label="Elija el rango de fecha" Variant="Variant.Outlined" Color="Color.Info" @bind-DateRange="DateRange" />
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="form-group">
+                <MudTextField @bind-Value="@NumeroCuadre" Label="Codigo" Variant="Variant.Outlined"></MudTextField>            
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="form-group">
+                <MudCheckBox @bind-Checked="@Cerrado" Size="Size.Large" Color="Color.Info" Label="Cerrado" CheckedIcon="@Icons.Material.Outlined.Lock" UncheckedIcon="@Icons.Material.Filled.LockOpen"></MudCheckBox>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="form-group">
+                <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="@(async ()=> await CargarCuadres())"/>
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+
+<RadzenCard>
+    <div class="table-responsive-sm w-auto" style="width:100%; overflow:scroll">
+            <table class="table table-sm" style="width:100%">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Fecha de Apertura</th>
+                        <th scope="col">Fecha de Cierre</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Monto en Efectivo</th>
+                        <th scope="col">Fondo de Caja</th>
+                        <th scope="col">Monto de Ingresos</th>
+                        <th scope="col">Total de Ventas</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Cuadres)
+                    {
+                        <tr>
+                            <th scope="row">@item.Id</th>
+                            <td>@String.Format("{0:d}", item.FechaApertura)</td>
+                            <td>@String.Format("{0:d}", item.FechaCierre)</td>
+                            <td>@(item.Cerrado == true ? "Cerrado":"Abierto")</td>
+                            <td>@String.Format("{0:C2}", item.MontoEfectivo)</td>
+                            <td>@String.Format("{0:C2}", item.FondoCaja)</td>
+                            <td>@String.Format("{0:C2}", item.RecibosIngresos.Sum(ri=>ri.Monto))</td>
+                            <td>@String.Format("{0:C2}", item.Ventas.Sum(v=>v.Total))</td>
+                            <td>
+                                <AuthorizeView Roles="SuperAdmin,Admin,Cajero/a">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Preview" OnClick="@(() => BtnVistaPreviaClick(item.Id))"/>
+                                </AuthorizeView>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+</RadzenCard>
+
+<MudOverlay Visible="@IsBusy" DarkBackground="true" Absolute="true">
+    <MudProgressCircular Color="Color.Info" Indeterminate="true" />
+</MudOverlay>
+
+@code {
+    
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private bool IsBusy { get; set; }
+    private bool Cerrado { get; set; } = true;
+    private string NumeroCuadre { get; set; }
+    private DateRange DateRange = new DateRange(DateTime.Now.AddDays(-1), DateTime.Now);
+
+    private List<Cuadre> Cuadres { get; set; } = new List<Cuadre>();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarCuadres()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Cuadres = await DbContext.Cuadres
+            .Include(p => p.Desgloses)
+            .Include(p => p.Usuario)
+            .Include(p => p.Empresa)
+            .Include(p => p.Sucursal)
+            .Include(p => p.Desgloses)
+            .Include(p => p.Ventas)
+            .Include(p => p.RecibosIngresos)
+            .Where(
+            p => p.EmpresaId == Empresa.Id && 
+                        p.SucursalId == Sucursal.Id && 
+                        p.FechaApertura >= DateRange.Start &&
+                        (p.FechaCierre == null || p.FechaCierre <= DateRange.End) &&
+                        p.Cerrado == Cerrado &&
+                        (NumeroCuadre == null || p.Id == Convert.ToInt32(NumeroCuadre))
+                        ).ToListAsync();
+
+        IsBusy = false;
+
+    }
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/cuadres/vista/" + Id);
+    }
+
+}

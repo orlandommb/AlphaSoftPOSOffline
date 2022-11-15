@@ -1,0 +1,225 @@
+﻿@page "/ordenes"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+<MudPaper>
+    <MudToolBar>
+        <h5>Lista de Ordenes</h5>
+        <MudSpacer />
+        <MudTooltip Text="Nueva Orden">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="Nuevo" />
+        </MudTooltip>
+    </MudToolBar>
+</MudPaper>
+
+<RadzenCard Style="padding:15px; font-size:small">
+    <div class="row">
+        <div class="col-sm-3">
+            <div class="form-group">
+                <MudDateRangePicker Label="Desde - Hasta" Editable="true" @bind-DateRange="@Fecha" />
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <label>Nombre</label>
+                <div>
+                    <RadzenTextBox @bind-Value="@Nombre" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-group">
+                <label>Tipos de ordenes: </label>
+                <div>
+                    <RadzenDropDown AllowClear="true" AllowFiltering="true"
+                        FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                        FilterOperator="Radzen.StringFilterOperator.Contains" Data="@TiposOrdenes" TValue="int?"
+                        TextProperty="Nombre" ValueProperty="Id" @bind-Value="@TipoOrdenSeleccionada" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <label>Nulo:</label>
+                <div>
+                    <RadzenCheckBox @bind-Value="Nulo" Name="Activo" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <label>Facturado:</label>
+                <div>
+                    <RadzenCheckBox @bind-Value="Facturado" Name="Facturado" />
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="form-group">
+                <MudTooltip Text="Buscar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarOrdenes"/>
+                </MudTooltip>            
+            </div>
+        </div>
+    </div>
+</RadzenCard>
+<div style="margin:10px"></div>
+@if (IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard>
+    <div class="row">
+        <div class="table-responsive-sm" style="width:100%;height:400px; overflow:scroll">
+            <table class="table table-sm" >
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Celular</th>
+                        <th scope="col">Fecha Pedido</th>
+                        <th scope="col">Fecha Finalizado</th>
+                        <th scope="col">Usuario</th>
+                        <th scope="col">Sub-Total</th>
+                        <th scope="col">Descuento</th>
+                        <th scope="col">Delivery</th>
+                        <th scope="col">Total</th>
+                        <th scope="col" style="width:10%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Ordenes)
+                        {
+                            <tr>
+                                <th scope="row">@item.Id</th>
+                                <td>@item.TipoOrden.Nombre</td>
+                                <td>@item.NombreCliente</td>
+                                <td>@item.CelularCliente</td>
+                                <td>@item.FechaPedido</td>
+                                <td>@item.FechaFinalizado</td>
+                                <td>@item.Usuario.UserName</td>
+                                <td>@String.Format("{0:C2}", item.SubTotal)</td>
+                                <td>@String.Format("{0:C2}", item.Descuento)</td>
+                                <td>@String.Format("{0:C2}", item.MontoDelivery)</td>
+                                <td>@String.Format("{0:C2}", item.Total)</td>
+                                <td>
+                                    <RadzenButton Icon="preview" Click="@(() => BtnVistaPreviaClick(item.Id))"></RadzenButton>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </RadzenCard>
+}
+
+@code {
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    private List<Orden> Ordenes { get; set; } = new List<Orden>();
+    private List<TipoOrden> TiposOrdenes { get; set; } = new List<TipoOrden>();
+    private List<SubCategoria> SubCategorias { get; set; } = new List<SubCategoria>();
+
+    private int? TipoOrdenSeleccionada { get; set; }
+
+    private bool Nulo { get; set; } = false;
+    private bool Facturado { get; set; } = false;
+
+    private string Codigo { get; set; }
+    private string Nombre { get; set; }
+    private DateRange Fecha = new DateRange(DateTime.Now.AddDays(-1), DateTime.Now);
+    private bool IsBusy { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTipoOrdenes();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+        }
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarOrdenes()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        Ordenes = await DbContext.Ordenes
+        .Include(p => p.OrdenDetalles)
+        .Include(p => p.TipoOrden)
+        .Include(p => p.Usuario)
+        .Where(p => p.EmpresaId == Empresa.Id && p.SucursalId == Sucursal.Id && 
+        p.FechaPedido >= Fecha.Start &&
+        p.FechaPedido <= Fecha.End &&
+        p.Nulo == Nulo &&
+        p.Facturado == Facturado &&
+        (Nombre == null || p.NombreCliente.Contains(Nombre)) &&
+        (Codigo == null || p.Id == Convert.ToInt32(Codigo)) &&
+        (TipoOrdenSeleccionada == null || p.TipoOrdenId == TipoOrdenSeleccionada))
+        .OrderBy(o => o.FechaPedido)
+        .ToListAsync();
+
+        
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+    public async Task CargarTipoOrdenes()
+    {
+        IsBusy = true;
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TiposOrdenes = await DbContext.TipoOrdenes.ToListAsync();
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+
+
+
+    public void BtnVistaPreviaClick(int Id)
+    {
+        NavManager.NavigateTo("/ordenes/vista/" + Id);
+    }
+
+
+    private void Nuevo()
+    {
+        NavManager.NavigateTo("/registrodeorden");
+    }
+}

@@ -1,0 +1,111 @@
+@inject IMessage IMessage
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavManager
+
+
+<MudOverlay Visible="true" DarkBackground="true">
+    <div class="modal fade show" id="modalFormaPago" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Ingrese Numero de Factura a Devolver</h5>
+                    <button type="button" class="close" @onclick="OnCancel">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                        <MudTextField @bind-Value="NoFactura" Label="No. Factura:" Variant="Variant.Outlined"></MudTextField>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <MudButton Disabled="@_processing" OnClick="Procesar" Variant="Variant.Filled" Color="Color.Primary">
+                        @if (_processing)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                            <MudText Class="ms-2">Processing</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Realizar Devolucion</MudText>
+                        }
+                    </MudButton>
+                </div>
+            </div>
+        </div>
+    </div>
+</MudOverlay>
+
+
+@code {
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool _processing = false;
+
+    private string NoFactura { get; set; }
+
+
+
+    async Task Procesar()
+    {
+        _processing = true;
+
+        if (string.IsNullOrWhiteSpace(NoFactura))
+        {
+            await IMessage.Alert("Debe ingresar el numero de factura a devolver");
+            _processing = false;
+            return;
+        }
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        var Venta = await DbContext.Ventas
+        .Include(x => x.VentaDetalles)
+        .Include(v=>v.Devoluciones)
+        .ThenInclude(v=>v.DevolucionDetalles)
+        .FirstOrDefaultAsync(x => x.Id.ToString().Contains(NoFactura));
+
+        if (Venta == null)
+        {
+            await IMessage.Alert("No se encontro la factura");
+            _processing = false;
+            return;
+        }
+
+        if(Venta.Nulo)
+        {
+            await IMessage.Alert("La factura ya fue anuada!");
+            _processing = false;
+            return;
+        }
+        if(Venta.TipoFacturaId == 1)
+        {
+            if((await DbContext.CXCVentaBalances.FirstOrDefaultAsync(x=>x.VentaId==Venta.Id)).Balance <= 0)
+            {
+                await IMessage.Alert("La factura a credito ya fue pagada!");
+                _processing = false;
+                return;
+            }
+        }
+
+        var CantidadDevuelta = Venta.Devoluciones.Select(dv=>dv.DevolucionDetalles.Sum(dd=>dd.Cantidad)).Sum();
+        var CantidadVendida = Venta.VentaDetalles.Sum(vd=>vd.Cantidad);
+        var CantidadRestante = CantidadVendida - CantidadDevuelta;
+
+        if(CantidadRestante == 0)
+        {
+            await IMessage.Alert("La factura ya fue devuelta completamente!");
+            _processing = false;
+            return;
+        }
+
+        _processing = false;
+        NavManager.NavigateTo($"/devolucionesdeventa/registro/venta/{Venta.Id}");
+
+        
+    }
+}

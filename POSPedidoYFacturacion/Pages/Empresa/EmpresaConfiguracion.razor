@@ -1,0 +1,161 @@
+﻿@page "/empresa"
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject ProtectedLocalStorage LocalStorage
+
+<h3>Configuracion de Empresa</h3>
+<RadzenTabs>
+    <Tabs>
+        <RadzenTabsItem Text="Datos de Empresa">
+            <RadzenCard>
+                <EditForm Model="Empresa" OnValidSubmit="Salvar">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label>Nombre de la Empresa</label>
+                                <div>
+                                    <RadzenTextBox class="form-control" @bind-Value="Empresa.Nombre" Placeholder="Nombre de Empresa" />
+                                    <ValidationMessage For="(()=> Empresa.Nombre)" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Direccion de la Empresa</label>
+                                <div>
+                                    <RadzenTextBox class="form-control" @bind-Value="Empresa.Direccion" Placeholder="Direccion de Empresa" />
+                                    <ValidationMessage For="(()=> Empresa.Direccion)" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Telefono de la Empresa</label>
+                                <div>
+                                    <RadzenTextBox class="form-control" @bind-Value="Empresa.Telefono" Placeholder="Telefono de Empresa" />
+                                    <ValidationMessage For="(()=> Empresa.Telefono)" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label>Logo de la Empresa</label>
+                                <div>
+                                    <RadzenFileInput @bind-Value=@Empresa.Logo Style="width:200px" TValue="string"
+                                                     Error=@(args => OnError(args, "Logo de empresa")) />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" ButtonType="Radzen.ButtonType.Submit" Icon="save" />
+                </EditForm>
+            </RadzenCard>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Controles">
+            <EditForm Model="Empresa" OnValidSubmit="Salvar">
+                <div class="form-group">
+                    <label>Utilizar POS para restaurantes?</label>
+                    <div>
+                        <RadzenCheckBox @bind-Value=@Empresa.UsarPOSRestaurant TValue="bool" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Imprimir Logo en Factura?</label>
+                    <div>
+                        <RadzenCheckBox @bind-Value=@Empresa.ImprimirLogoEnFactura TValue="bool" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Imprimir Logo en Orden?</label>
+                    <div>
+                        <RadzenCheckBox @bind-Value=@Empresa.ImprimirLogoEnOrden TValue="bool" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Monto Minimo de Delivery</label>
+                    <div>
+                        <RadzenNumeric @bind-Value=@Empresa.MontoMinimoDelivery TValue="decimal" Format="0.00" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Orden Predeterminada</label>
+                    <div>
+                        <RadzenDropDown @bind-Value=@Empresa.TipoOrdenPredeterminada TValue="int" Data="TipoOrdenes" ValueProperty="Id" TextProperty="Nombre" />
+                    </div>
+                </div>
+                <RadzenButton ButtonStyle="ButtonStyle.Success" ButtonType="Radzen.ButtonType.Submit" Icon="save" />
+            </EditForm>
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+
+@code {
+    public Empresa Empresa { get; set; } = new Empresa();
+    public List<TipoOrden> TipoOrdenes { get; set; } = new List<TipoOrden>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarTipoOrdenes();
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            
+            using var DbContext = DbContextFactory.CreateDbContext();
+            var EmpresafromDb = await DbContext.Empresa.OrderBy(e => e.Id).SingleOrDefaultAsync(c=>c.Id == result.Value.Id);
+            if (EmpresafromDb == null)
+            {
+                Empresa = new Empresa();
+            }
+            else
+            {
+                Empresa = EmpresafromDb;
+            }
+            StateHasChanged();
+        }
+    }
+
+    async Task CargarTipoOrdenes()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        TipoOrdenes = await DbContext.TipoOrdenes.ToListAsync();
+
+    }
+
+    async void OnError(UploadErrorEventArgs args, string name)
+    {
+        await IMessage.Alert($"{args.Message}");
+    }
+
+    private async Task Salvar()
+    {
+        using var DbContext = DbContextFactory.CreateDbContext();
+
+        if (Empresa.Id == 0)
+        {
+            await DbContext.AddAsync(Empresa);
+            await DbContext.SaveChangesAsync();
+
+            await IMessage.Success("Configuracion registrada con exito!");
+        }
+        else
+        {
+            DbContext.Update(Empresa);
+            await DbContext.SaveChangesAsync();
+
+            await IMessage.Success("Configuracion modificada con exito!");
+        }
+    }
+}

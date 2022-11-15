@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="ASCamarerosApp.Views.ConnectionInfoPage"
+             Title="Configuracion de Conexion">
+    <ContentPage.Content>
+        <StackLayout VerticalOptions="Center"
+                     Padding="15">
+            <StackLayout HorizontalOptions="FillAndExpand"
+                         Padding="10"
+                         BackgroundColor="DodgerBlue">
+                <Label Text="Descripcion" HorizontalOptions="Center"/>
+                <Entry x:Name="TxtDescripcion" HorizontalOptions="FillAndExpand"/>
+            </StackLayout>
+            <Grid BackgroundColor="DodgerBlue" Padding="10">
+                
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <Label Grid.Column="0" Grid.Row="0" Text="Protocol" />
+            <Picker Grid.Column="0" Grid.Row="1" x:Name="pckrProtocol">
+                <Picker.Items>
+                    <x:String>http://</x:String>
+                    <x:String>https://</x:String>
+                </Picker.Items>
+            </Picker>
+            <Label Grid.Column="1"
+                   Grid.Row="0"
+                   Text="IP or Http Adress"
+                   />
+            <Entry Grid.Column="1"
+                   Grid.Row="1"
+                   x:Name="txtIpOrHttpAdress"
+                   />
+            <Label Grid.Column="2"
+                   Grid.Row="0"
+                   Text="Port"
+                   />
+            <Entry Grid.Column="2"
+                   Grid.Row="1"
+                   x:Name="txtPort"
+                   />
+            </Grid>
+
+            <Button x:Name="BtnAddConnectionToList" Text="Add" Clicked="BtnAddConnectionToList_Clicked"/>
+
+            <ListView x:Name="ConnectionListView"
+                      ItemsSource="{Binding ListaConnections}"
+                      ItemTapped="ConnectionListView_ItemTapped">
+                <ListView.Header>
+                    <Grid BackgroundColor="DodgerBlue">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20"/>
+                            <RowDefinition Height="20"/>
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               HorizontalOptions="Center"
+                               TextColor="White"
+                               Text="Lista de Conexiones"/>
+                        <Label Grid.Row="1"
+                               HorizontalOptions="Center"
+                               TextColor="White"
+                               Text="{Binding ListaConnections.Count, StringFormat='{0} Conexiones'}"/>
+                    </Grid>
+
+                </ListView.Header>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1*"/>
+                                    <ColumnDefinition Width="3*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="20"/>
+                                </Grid.RowDefinitions>
+
+                                <Label Grid.Column="0"
+                                       Text="{Binding Descripcion}"
+                                       VerticalTextAlignment="Center"
+                                       />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Connection}"
+                                       FontSize="Caption"
+                                       VerticalTextAlignment="Center"
+                                       />
+                                <Label Grid.Column="2"
+                                       Text="{Binding Activa}"
+                                       />
+                                <!--<Switch Grid.Column="2"
+                                       IsToggled="{Binding Activa}"
+                                       />-->
+                            
+                            </Grid>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <Button 
+                x:Name="BtnGuardarOpciones"
+                Text="Guardar"
+                ImageSource="browserSaveConfig.png" 
+                Clicked="BtnGuardarOpciones_Clicked" 
+                HeightRequest="50"/>
+            
+            <Button 
+                x:Name="BtnCheckearConexion"
+                Text="Check"
+                ImageSource="browsercheckconnection.png"
+                Clicked="BtnCheckearConexion_Clicked" 
+                HeightRequest="50"/>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>

@@ -1,0 +1,92 @@
+@page "/inventario/reporte_inventario_general"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+@using Syncfusion.Blazor.Grids
+<RadzenCard>
+    <h5>Reporte de Inventario</h5>
+</RadzenCard>
+@if(IsBusy)
+{
+    <div class="middle-box">
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </div>
+}
+else
+{
+    <RadzenCard>
+        <SfGrid DataSource="@Existencias" Toolbar="@(new List<object>() {"Print"})" EnableVirtualization="true" Height="600px" AllowGrouping="true" AllowSorting="true" style="width: 100%;">
+            <GridGroupSettings ShowDropArea="false" EnableLazyLoading="true" Columns="@group"/>
+            <GridColumns>
+                <GridColumn Field="Producto.Codigo" HeaderText="Codigo" Width="100px"></GridColumn>
+                <GridColumn Field="Producto.Nombre" HeaderText="Producto" Width="200px"></GridColumn>
+                <GridColumn Field="Almacen.Nombre" HeaderText="Almacen" Width="200px"></GridColumn>
+                <GridColumn Field="Producto.Categoria.Nombre" HeaderText="Categoria" Width="200px"></GridColumn>
+                <GridColumn Field="Cantidad" HeaderText="Cantidad" Width="200px" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right"></GridColumn>
+            </GridColumns>
+        </SfGrid>
+    </RadzenCard>
+}
+@code{
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+    public string[] group = (new string[] { "Producto.Nombre" });
+    private List<Existencia> Existencias { get; set; } = new List<Existencia>();
+
+    private bool IsBusy { get; set; } = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarExistencias();
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarExistencias()
+    {
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Existencias = await DbContext.Existencias
+            .Include(e => e.Almacen)
+            .Include(e => e.Producto)
+            .ThenInclude(p => p.Categoria)
+            .Include(e => e.Producto)
+            .ThenInclude(p => p.SubCategoria)
+            .Where(e => e.Producto.EmpresaId == Empresa.Id && 
+            e.Producto.Activo == true &&
+            e.Producto.ManejaExistencia == true )
+            .ToListAsync();
+
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+}
