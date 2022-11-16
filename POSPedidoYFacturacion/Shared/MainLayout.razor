@@ -93,8 +93,9 @@
             await CargarEmpresa();
             await CargarSucursal();
             await CargarUsuario();
-            StateHasChanged();
         }
+
+        StateHasChanged();
     }
 
     private async Task CargarUsuario()

@@ -594,6 +594,7 @@ else
         Venta.SubTotal = Venta.VentaDetalles.Sum(ve => ve.Importe);
         Venta.Descuento = Venta.VentaDetalles.Sum(ve => ve.Descuento);
         Venta.Total = Venta.SubTotal + Venta.Delivery + Venta.Impuesto;
+        Venta.MontoDevuelta = Venta.MontoEfectivo - Venta.Total;
     }
 
     public async Task CargarCategorias()
@@ -624,13 +625,13 @@ else
         IsBusy = true;
 
         using var DbContext = DbContextFactory.CreateDbContext();
-        
+
         SubCategorias = await DbContext.SubCategorias
         .Where(p => p.CategoriaId == Id)
         .ToListAsync();
 
         IsBusy = false;
-            
+
     }
 
     public async Task SeleccionarProducto(Producto Item)
@@ -721,7 +722,7 @@ else
     {
         using var DbContext = DbContextFactory.CreateDbContext();
         var Producto = await DbContext.Productos.SingleOrDefaultAsync(p => p.EmpresaId == Empresa.Id && p.Codigo == Codigo);
-        
+
         if(Producto == null)
         {
             return;
@@ -754,7 +755,7 @@ else
                 return;
             }
         }
-        
+
         if (Detalle.Importe < 0)
         {
             return;
@@ -810,7 +811,7 @@ else
             Detalle = new VentaDetalle();
         }
     }
-    
+
     public void MostrarModalDevolucion()
     {
         if (ShowModalFacturaDevolucion == false)
@@ -818,7 +819,7 @@ else
             ShowModalFacturaDevolucion = true;
         }
     }
-    
+
     public void CerrarModalDevolucion()
     {
         if (ShowModalFacturaDevolucion == true)
@@ -879,10 +880,10 @@ else
     {
         using var DbContext = DbContextFactory.CreateDbContext();
         Almacen = await DbContext.Almacenes.SingleOrDefaultAsync(a => a.EmpresaId == Empresa.Id && a.SucursalId == Sucursal.Id && a.EsDeVentas == true);
-        
+
         Venta.Almacen = Almacen;
         Venta.AlmacenId = Almacen.Id;
-        
+
         StateHasChanged();
     }
 
@@ -1123,7 +1124,7 @@ else
                     return;
                 }
             }
-            
+
         }
 
         IsBusy = true;
@@ -1249,6 +1250,7 @@ else
 
 
             Venta = new Venta();
+            Venta.TipoFacturaId = 2;
             OrdenesImportadas = new List<Orden>();
 
             MostrarFormaPago = false;
