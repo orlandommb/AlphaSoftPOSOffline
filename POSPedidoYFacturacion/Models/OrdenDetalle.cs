@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace POSPedidoYFacturacion.Models
@@ -21,11 +22,11 @@ namespace POSPedidoYFacturacion.Models
         public string NombreProducto { get; set; }
 
         public int Cantidad { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Descuento { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Precio { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Importe { get; set; }
 
     }

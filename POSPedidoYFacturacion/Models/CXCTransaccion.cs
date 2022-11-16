@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -49,7 +50,7 @@ namespace POSPedidoYFacturacion.Models
 
         [ForeignKey("CXCTransaccionTipoDocumentoId")]
         public CXCTransaccionTipoDocumento CXCTransaccionTipoDocumento { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Monto { get; set; }
 
         public bool Nulo { get; set; }

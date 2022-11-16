@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -54,12 +55,15 @@ namespace POSPedidoYFacturacion.Models
         public Sector Sector { get; set; }
 
         public string DireccionCliente { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal MontoDelivery { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal SubTotal { get; set; }
+        [Precision(precision: 18, scale: 2)]
         public decimal Descuento { get; set; }
+        [Precision(precision: 18, scale: 2)]
         public decimal Impuesto { get; set; }
+        [Precision(precision: 18, scale: 2)]
         public decimal Total { get; set; }
 
         public List<OrdenDetalle> OrdenDetalles { get; set; } = new List<OrdenDetalle>();

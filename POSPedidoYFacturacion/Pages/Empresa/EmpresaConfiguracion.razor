@@ -75,9 +75,39 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Monto Minimo de Delivery</label>
+                    <label>Utilizar Delivery</label>
                     <div>
-                        <RadzenNumeric @bind-Value=@Empresa.MontoMinimoDelivery TValue="decimal" Format="0.00" />
+                        <RadzenCheckBox @bind-Value=@Empresa.UtilizarDelivery TValue="bool" />
+                    </div>
+                </div>
+                @if(Empresa.UtilizarDelivery)
+                {
+                    <div class="form-group">
+                        <label>Monto Minimo de Delivery</label>
+                        <div>
+                            <RadzenNumeric @bind-Value=@Empresa.MontoMinimoDelivery TValue="decimal" Format="0.00" />
+                        </div>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Utilizar Mano de Obra</label>
+                    <div>
+                        <RadzenCheckBox @bind-Value=@Empresa.UtilizarManoDeObra TValue="bool" />
+                    </div>
+                </div>
+                @if (Empresa.UtilizarManoDeObra)
+                {
+                    <div class="form-group">
+                        <label>Monto Mano de Obra</label>
+                        <div>
+                            <RadzenNumeric @bind-Value=@Empresa.MontoManoObra TValue="decimal" Format="0.00" />
+                        </div>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Porciento de Descuento</label>
+                    <div>
+                        <RadzenNumeric @bind-Value=@Empresa.PorcientoDescuento TValue="decimal" Format="0.00" />
                     </div>
                 </div>
                 <div class="form-group">

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -70,23 +71,28 @@ namespace POSPedidoYFacturacion.Models
         public bool Nulo { get; set; }
 
         [Required]
+        [Precision(precision: 18, scale: 2)]
         public decimal SubTotal { get; set; }
 
         [DisplayFormat(DataFormatString = "{0:C}")]
         [Display(Name = "Impuesto Total")]
+        [Precision(precision: 18, scale: 2)]
         public decimal Impuesto { get; set; }
 
         [DisplayFormat(DataFormatString = "{0:C}")]
         [Display(Name = "Descuento Total")]
+        [Precision(precision: 18, scale: 2)]
         public decimal Descuento { get; set; }
 
         [Required]
         [DisplayFormat(DataFormatString = "{0:C}")]
         [Display(Name = "Total")]
+        [Precision(precision: 18, scale: 2)]
         public decimal Total { get; set; }
 
         [DisplayFormat(DataFormatString = "{0:C2}")]
         [Display(Name = "Efectivo")]
+        [Precision(precision: 18, scale: 2)]
         public decimal EfectivoMonto { get; set; }
 
         //[DisplayFormat(DataFormatString = "{0:C2}")]

@@ -239,16 +239,32 @@ else
                                         <td></td>
                                         <td><b>@Venta.Descuento.ToString("C2")</b></td>
                                     </tr>
-                                    <tr class="total">
-                                        <td><b>Delivery:</b></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td><b>@Venta.Delivery.ToString("C2")</b></td>
-                                    </tr>
+                                    @if(Empresa.UtilizarDelivery)
+                                    {
+                                        <tr class="total">
+                                            <td><b>Delivery:</b></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><b>@Venta.Delivery.ToString("C2")</b></td>
+                                        </tr>
+                                    }
+                                    @if(Empresa.UtilizarManoDeObra)
+                                    {
+                                        <tr class="total">
+                                            <td><b>Mano de Obra:</b></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><b>@Venta.MontoManoObra.ToString("C2")</b></td>
+                                        </tr>
+                                    }
                                     <tr class="total">
 
                                         <td><b>Impuesto:</b></td>
@@ -593,7 +609,7 @@ else
     {
         Venta.SubTotal = Venta.VentaDetalles.Sum(ve => ve.Importe);
         Venta.Descuento = Venta.VentaDetalles.Sum(ve => ve.Descuento);
-        Venta.Total = Venta.SubTotal + Venta.Delivery + Venta.Impuesto;
+        Venta.Total = Venta.SubTotal + Venta.Delivery + Venta.MontoManoObra + Venta.Impuesto;
         Venta.MontoDevuelta = Venta.MontoEfectivo - Venta.Total;
     }
 

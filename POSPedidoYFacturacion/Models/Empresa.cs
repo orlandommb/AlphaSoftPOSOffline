@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -17,10 +18,18 @@ namespace POSPedidoYFacturacion.Models
         public bool UsarPOSRestaurant { get; set; }
         public bool ImprimirLogoEnOrden { get; set; }
         public bool ImprimirLogoEnFactura { get; set; }
-        [Column(TypeName ="decimal(18, 2)")]
+        [Precision(precision: 18, scale: 2)]
         public decimal MontoMinimoDelivery { get; set; }
         public int TipoOrdenPredeterminada { get; set; }
         public DateTime FechaVencimientoServicio { get; set; }
+        public bool UtilizarDelivery { get; set; }
+        public bool UtilizarManoDeObra { get; set; }
+        [Precision(precision: 18, scale: 2)]
+        public decimal MontoManoObra { get; set; }
+
+        [Precision(precision: 18, scale: 2)]
+        public decimal PorcientoDescuento { get; set; }
+
 
     }
 }

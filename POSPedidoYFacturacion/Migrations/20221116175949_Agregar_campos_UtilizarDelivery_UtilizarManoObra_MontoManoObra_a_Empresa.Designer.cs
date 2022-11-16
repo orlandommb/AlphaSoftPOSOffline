@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using POSPedidoYFacturacion.Data;
 
@@ -11,9 +12,10 @@ using POSPedidoYFacturacion.Data;
 namespace POSPedidoYFacturacion.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20221116175949_Agregar_campos_UtilizarDelivery_UtilizarManoObra_MontoManoObra_a_Empresa")]
+    partial class Agregar_campos_UtilizarDelivery_UtilizarManoObra_MontoManoObra_a_Empresa
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1009,10 +1011,6 @@ namespace POSPedidoYFacturacion.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal>("PorcientoDescuento")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("Telefono")
                         .HasColumnType("nvarchar(max)");
 
@@ -1073,7 +1071,6 @@ namespace POSPedidoYFacturacion.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<decimal>("Valor")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -1125,11 +1122,9 @@ namespace POSPedidoYFacturacion.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("PosicionX")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("PosicionY")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("SucursalId")
@@ -1406,7 +1401,6 @@ namespace POSPedidoYFacturacion.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<decimal>("MontoDelivery")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Nombre")
@@ -1759,10 +1753,6 @@ namespace POSPedidoYFacturacion.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("MontoEfectivo")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("MontoManoObra")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 

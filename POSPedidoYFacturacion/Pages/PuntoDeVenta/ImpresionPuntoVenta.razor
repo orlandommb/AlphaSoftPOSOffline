@@ -143,11 +143,22 @@
                 <td></td>
                 <td>@Venta.Descuento.ToString("C2")</td>
             </tr>
-            <tr class="total">
-                <td>Delivery:</td>
-                <td></td>
-                <td>@Venta.Delivery.ToString("C2")</td>
-            </tr>
+            @if (Empresa.UtilizarDelivery) 
+            {
+                <tr class="total">
+                    <td>Delivery:</td>
+                    <td></td>
+                    <td>@Venta.Delivery.ToString("C2")</td>
+                </tr>
+            }
+            @if (Empresa.UtilizarManoDeObra)
+            {
+                <tr class="total">
+                    <td>Delivery:</td>
+                    <td></td>
+                    <td>@Venta.MontoManoObra.ToString("C2")</td>
+                </tr>
+            }
             <tr class="total">
 
                 <td>Impuesto:</td>

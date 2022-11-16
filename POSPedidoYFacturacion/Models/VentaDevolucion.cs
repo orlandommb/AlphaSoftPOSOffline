@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace POSPedidoYFacturacion.Models
 {
@@ -48,13 +49,13 @@ namespace POSPedidoYFacturacion.Models
         public bool Nulo { get; set; }
         public bool Facturado { get; set; }
         public DateTime Fecha { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal SubTotal { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Descuento { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Impuesto { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Total { get; set; }
 
         public string Motivo { get; set; }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -23,9 +24,9 @@ namespace POSPedidoYFacturacion.Models
         public int Cantidad { get; set; }
 
         public string Nombre { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Descuento { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal ITBIS { get; set; }
 
         //[Display(Name = "Tipo de ITBIS")]
@@ -35,9 +36,11 @@ namespace POSPedidoYFacturacion.Models
         //public virtual TipoITBIS TipoITBIS { get; set; }
 
         [Required]
+        [Precision(precision: 18, scale: 2)]
         public decimal Costo { get; set; }
 
         [Required]
+        [Precision(precision: 18, scale: 2)]
         public decimal Importe { get; set; }
     }
 }

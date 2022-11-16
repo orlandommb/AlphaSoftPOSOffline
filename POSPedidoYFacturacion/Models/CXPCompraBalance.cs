@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -13,7 +14,7 @@ namespace POSPedidoYFacturacion.Models
 
         [ForeignKey("CompraId")]
         public Compra Compra { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Balance { get; set; }
     }
 }

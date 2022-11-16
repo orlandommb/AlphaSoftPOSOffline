@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -25,9 +26,9 @@ namespace POSPedidoYFacturacion.Models
 
         [ForeignKey(nameof(UsuarioId))]
         public Usuario Usuario { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal FondoCaja { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal MontoEfectivo { get; set; }
 
 

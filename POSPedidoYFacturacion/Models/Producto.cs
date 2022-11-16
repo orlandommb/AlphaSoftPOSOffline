@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace POSPedidoYFacturacion.Models
 {
@@ -54,9 +55,9 @@ namespace POSPedidoYFacturacion.Models
 
         [ForeignKey("ImpuestoId")]
         public Impuesto Impuesto { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Costo { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Precio { get; set; }
 
         public List<Existencia> Existencias { get; set; } = new List<Existencia>();

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -18,11 +19,11 @@ namespace POSPedidoYFacturacion.Models
 
         [ForeignKey("VentaId")]
         public Venta Venta { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal BalanceAntes { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal MontoAAplicar { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal BalanceDespues { get; set; }
     }
 }

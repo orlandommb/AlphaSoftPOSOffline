@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace POSPedidoYFacturacion.Models
 {
@@ -49,7 +50,7 @@ namespace POSPedidoYFacturacion.Models
 
         [Display(Name = "Nulo")]
         public bool Nulo { get; set; }
-
+        [Precision(precision: 18, scale: 2)]
         public decimal Total { get; set; }
 
         public List<AjusteInventarioDetalle> AjusteDetalles { get; set; } = new List<AjusteInventarioDetalle>(); 
