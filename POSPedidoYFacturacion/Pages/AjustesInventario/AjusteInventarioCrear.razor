@@ -48,7 +48,7 @@
                 </div>
                 <div class="col-sm-3">
                     <div class="form-group">
-                        <MudIconButton Icon="@Icons.Material.Filled.Save" Variant="Variant.Outlined" Color="Color.Info" OnClick="Crear"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Save" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="Crear"/>
                     </div>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                 <MudTextField @bind-Value="Detalle.Importe" Label="Importe"/>
             </div>
             <div class="col-sm-">
-                <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(()=>AgregarDetalle(Detalle))"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="@(()=>AgregarDetalle(Detalle))"/>
             </div>
         </div>
     </RadzenCard>
@@ -97,8 +97,8 @@
                                 <td>@item.Costo</td>
                                 <td>@item.Importe</td>
                                 <td>
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(()=>EditarDetalle(item))"/>
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="Variant.Outlined" Color="Color.Error" OnClick="@(()=>EliminarDetalle(item))"/>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="@(()=>EditarDetalle(item))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="MudBlazor.Variant.Outlined" Color="Color.Error" OnClick="@(()=>EliminarDetalle(item))"/>
                                 </td>
                             </tr>
                         }

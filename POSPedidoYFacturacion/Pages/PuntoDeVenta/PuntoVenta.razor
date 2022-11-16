@@ -19,7 +19,7 @@
 {
     <div class="middle-box">
         <h3>Debe abrir un cuadre antes de empezar a facturar!</h3>
-        <MudButton Style="margin:auto" StartIcon="@Icons.Material.Filled.AttachMoney" Color="Color.Info" Variant="Variant.Outlined" Link="/aperturacuadre" >Abrir Cuadre</MudButton>
+        <MudButton Style="margin:auto" StartIcon="@Icons.Material.Filled.AttachMoney" Color="Color.Info" Variant="MudBlazor.Variant.Outlined" Link="/aperturacuadre" >Abrir Cuadre</MudButton>
     </div>
 }
 else
@@ -27,18 +27,18 @@ else
     <RadzenCard Style="padding:5px">
         <MudPaper>
             <MudToolBar Dense="true">
-                <MudTextField T="string" ReadOnly="true" Text="@($"{CuadreAbierto.FechaApertura.ToString("d")} ")" Label="Cuadre" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
-                <MudTextField T="string" ReadOnly="true" Text="@($"{CuadreAbierto.Usuario.UserName} ")" Label="Cajero" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+                <MudTextField T="string" ReadOnly="true" Text="@($"{CuadreAbierto.FechaApertura.ToString("d")} ")" Label="Cuadre" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+                <MudTextField T="string" ReadOnly="true" Text="@($"{CuadreAbierto.Usuario.UserName} ")" Label="Cajero" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
                 <RadzenLabel  />
                 <MudSpacer />
                 <MudTooltip Text="Importar ordenes">
-                    <MudIconButton Style="height: auto" OnClick="AbrirImportarOrdenes" Color="Color.Info" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Add"/>
+                    <MudIconButton Style="height: auto" OnClick="AbrirImportarOrdenes" Color="Color.Info" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Filled.Add"/>
                 </MudTooltip>
                 <MudTooltip Text="Devolucion">
-                    <MudIconButton Style="height: auto" OnClick="MostrarModalDevolucion" Color="Color.Info" Variant="Variant.Outlined" Icon="@Icons.Filled.AssignmentReturn"/>
+                    <MudIconButton Style="height: auto" OnClick="MostrarModalDevolucion" Color="Color.Info" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Filled.AssignmentReturn"/>
                 </MudTooltip>
                 <MudTooltip Text="Cancelar Orden">
-                    <MudIconButton Style="height: auto" OnClick="CancelarVenta" Color="Color.Error" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Clear"/>
+                    <MudIconButton Style="height: auto" OnClick="CancelarVenta" Color="Color.Error" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Filled.Clear"/>
                 </MudTooltip>
             </MudToolBar>
         </MudPaper>
@@ -50,12 +50,12 @@ else
                             <div class="row">
                                 <div class="col-sm-2">
                                     <div class="form-group">
-                                        <MudTextField @ref="TextFieldCodigo" AutoFocus="false" T="string" Margin="Margin.Dense" Label="Codigo" Variant="Variant.Outlined" Immediate="true" Value="CodigoProducto" ValueChanged="@(async (args)=> await AgregarProductoEscaneado(args))" />
+                                        <MudTextField @ref="TextFieldCodigo" AutoFocus="false" T="string" Margin="Margin.Dense" Label="Codigo" Variant="MudBlazor.Variant.Outlined" Immediate="true" Value="CodigoProducto" ValueChanged="@(async (args)=> await AgregarProductoEscaneado(args))" />
                                     </div>
                                 </div>
                                 <div class="col-sm-3">
                                     <div class="form-group">
-                                        <MudTextField T="string" Margin="Margin.Dense" Label="Nombre" Variant="Variant.Outlined" @bind-Value="NombreProducto" />
+                                        <MudTextField T="string" Margin="Margin.Dense" Label="Nombre" Variant="MudBlazor.Variant.Outlined" @bind-Value="NombreProducto" />
                                     </div>
                                 </div>
                                 <div class="col-sm-3">
@@ -63,7 +63,7 @@ else
                                         <MudSelect Label="Categoria" 
                                                     Margin="Margin.Dense"
                                                     Dense="true"
-                                                    Variant="Variant.Outlined"
+                                                    Variant="MudBlazor.Variant.Outlined"
                                                     Clearable="true"
                                                     T="int?"
                                                     Value="@CategoriaSeleccionadaId"
@@ -83,7 +83,7 @@ else
                                         <MudSelect Label="Sub-Categoria" 
                                                     Margin="Margin.Dense"
                                                     Dense="true"
-                                                    Variant="Variant.Outlined"
+                                                    Variant="MudBlazor.Variant.Outlined"
                                                     Clearable="true"
                                                     T="int?" 
                                                     AnchorOrigin="Origin.BottomCenter"
@@ -99,7 +99,7 @@ else
                                 <div class="col-sm-1">
                                     <div class="form-group">
                                         <MudTooltip Text="Buscar">
-                                            <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Color="Color.Info" OnClick="CargarProductos" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="CargarProductos" />
                                         </MudTooltip>
                                     </div>
                                 </div>

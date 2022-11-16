@@ -12,13 +12,13 @@
         <h5>Vista de Orden</h5>
         <MudSpacer />
         <MudTooltip Text="Editar">
-            <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Color="Color.Info" OnClick="(()=>EditarOrden(Orden.Id))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="(()=>EditarOrden(Orden.Id))" />
         </MudTooltip>
         <MudTooltip Text="Anular">
-            <MudIconButton Icon="@Icons.Material.Filled.Clear" Variant="Variant.Outlined" Color="Color.Error" OnClick="AnularOrden" />
+            <MudIconButton Icon="@Icons.Material.Filled.Clear" Variant="MudBlazor.Variant.Outlined" Color="Color.Error" OnClick="AnularOrden" />
         </MudTooltip>
         <MudTooltip Text="Imprimir">
-            <MudIconButton Icon="@Icons.Material.Filled.Print" Variant="Variant.Outlined" Color="Color.Secondary" OnClick="(()=> ImprimirOrden(Orden.Id))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Print" Variant="MudBlazor.Variant.Outlined" Color="Color.Secondary" OnClick="(()=> ImprimirOrden(Orden.Id))" />
         </MudTooltip>
     </MudToolBar>
 </MudPaper>

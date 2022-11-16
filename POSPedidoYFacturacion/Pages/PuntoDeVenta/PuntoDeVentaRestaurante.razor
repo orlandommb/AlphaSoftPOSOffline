@@ -22,13 +22,13 @@
                     <MudChip Label="true"> Total: @(Mesas.SelectMany(m=>m.Ordenes).Where(o=>o.MesaId != null && o.TipoOrdenId == 3).Sum(o=>o.Total).ToString("C2")) </MudChip>
                     <MudSpacer />
                     <MudTooltip Text="Factura Rapida" Style="margin:5px">
-                        <MudIconButton OnClick="FacturaRapida" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.Receipt" Color="Color.Info" ></MudIconButton>
+                        <MudIconButton OnClick="FacturaRapida" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Outlined.Receipt" Color="Color.Info" ></MudIconButton>
                     </MudTooltip>
                     <MudTooltip Text="Orden Para llevar o Delivery" Style="margin:5px">
-                        <MudIconButton OnClick="RegistrarOrden" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.Note" Color="Color.Info" ></MudIconButton>
+                        <MudIconButton OnClick="RegistrarOrden" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Outlined.Note" Color="Color.Info" ></MudIconButton>
                     </MudTooltip>
                     <MudTooltip Text="Orden Para llevar o Delivery" Style="margin:5px">
-                        <MudIconButton OnClick="DrawerToggle" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.MenuOpen" Color="Color.Info" ></MudIconButton>
+                        <MudIconButton OnClick="DrawerToggle" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Outlined.MenuOpen" Color="Color.Info" ></MudIconButton>
                     </MudTooltip>
                 </MudToolBar>
             </RadzenCard>
@@ -36,10 +36,10 @@
             <RadzenCard Style="height: 80px; padding:5px; margin-top:5px">
                 <h5 style="margin:auto">Areas</h5>
                 <MudContainer Style="padding:5px;overflow-x: auto; overflow-y: hidden; white-space: nowrap">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="async ()=> await SelectArea(null)">Todas</MudButton>
+                    <MudButton Variant="MudBlazor.Variant.Outlined" Color="Color.Secondary" OnClick="async ()=> await SelectArea(null)">Todas</MudButton>
                     @foreach (var area in Areas)
                     {
-                        <MudButton Style="margin-left:5px" Variant="Variant.Outlined" Color="Color.Info" OnClick="async ()=> await SelectArea(area.Id)">@area.Nombre</MudButton>
+                        <MudButton Style="margin-left:5px" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="async ()=> await SelectArea(area.Id)">@area.Nombre</MudButton>
                     }
                 </MudContainer>
             </RadzenCard>

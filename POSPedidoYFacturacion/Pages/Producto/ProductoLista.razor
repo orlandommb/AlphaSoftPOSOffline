@@ -11,7 +11,7 @@
         <h5>Lista de Productos</h5>
         <MudSpacer />
         <MudTooltip Text="Nuevo Producto">
-            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" OnClick="Nuevo"/>
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="MudBlazor.Variant.Outlined" OnClick="Nuevo"/>
         </MudTooltip>
     </MudToolBar>
 </MudPaper>
@@ -20,12 +20,12 @@
     <div class="row">
         <div class="col-sm-2">
             <div class="form-group">
-               <MudTextField T="string" Label="Codigo" Margin="Margin.Dense" Variant="Variant.Outlined" @bind-Value="@Codigo" />
+               <MudTextField T="string" Label="Codigo" Margin="Margin.Dense" Variant="MudBlazor.Variant.Outlined" @bind-Value="@Codigo" />
             </div>
         </div>
         <div class="col-sm-2">
             <div class="form-group">
-               <MudTextField T="string" Label="Nombre" Margin="Margin.Dense" Variant="Variant.Outlined" @bind-Value="@Nombre" />
+                <MudTextField T="string" Label="Nombre" Margin="Margin.Dense" Variant="MudBlazor.Variant.Outlined" @bind-Value="@Nombre" />
             </div>
         </div>
         <div class="col-sm-2">
@@ -33,7 +33,7 @@
                 <MudSelect Label="Categoria" 
                             Margin="Margin.Dense"
                             Dense="true"
-                            Variant="Variant.Outlined"
+                           Variant="MudBlazor.Variant.Outlined"
                             Clearable="true"
                             T="int?"
                             Value="@CategoriaSeleccionadaId"
@@ -53,7 +53,7 @@
                 <MudSelect Label="Sub-Categoria" 
                             Margin="Margin.Dense"
                             Dense="true"
-                            Variant="Variant.Outlined"
+                           Variant="MudBlazor.Variant.Outlined"
                             Clearable="true"
                             T="int?" 
                             AnchorOrigin="Origin.BottomCenter"
@@ -82,7 +82,7 @@
         <div class="col-sm-1">
             <div class="form-group">
                 <MudTooltip Text="Buscar">
-                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarProductos"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="MudBlazor.Variant.Outlined" OnClick="CargarProductos"/>
                 </MudTooltip>            
             </div>
         </div>
@@ -147,7 +147,7 @@ else
                             <td>@String.Format("{0:C2}", item.Precio)</td>
                             <td>
                                 <MudTooltip Text="Buscar">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))"/>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="MudBlazor.Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))" />
                                 </MudTooltip>  
                             </td>
                         </tr>

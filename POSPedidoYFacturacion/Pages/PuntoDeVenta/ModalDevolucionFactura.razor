@@ -17,13 +17,13 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                        <MudTextField @bind-Value="NoFactura" Label="No. Factura:" Variant="Variant.Outlined"></MudTextField>
+                                <MudTextField @bind-Value="NoFactura" Label="No. Factura:" Variant="MudBlazor.Variant.Outlined"></MudTextField>
                                 </div>
                             </div>
                         </div>
                 </div>
                 <div class="modal-footer">
-                    <MudButton Disabled="@_processing" OnClick="Procesar" Variant="Variant.Filled" Color="Color.Primary">
+                    <MudButton Disabled="@_processing" OnClick="Procesar" Variant="MudBlazor.Variant.Filled" Color="Color.Primary">
                         @if (_processing)
                         {
                             <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>

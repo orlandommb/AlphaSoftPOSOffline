@@ -11,7 +11,7 @@
         <h5>Lista de Ajustes de Inventario</h5>
         <MudSpacer />
         <MudTooltip Text="Nuevo Ajuste de Inventario">
-            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Info" OnClick="NuevoAjuste" />
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="NuevoAjuste" />
         </MudTooltip>
     </MudToolBar>
 </MudPaper>
@@ -51,7 +51,7 @@
         <div class="col-sm-1">
             <div class="form-group">
                 <MudTooltip Text="Buscar">
-                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="CargarAjustes"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Search" Variant="MudBlazor.Variant.Outlined" OnClick="CargarAjustes"/>
                 </MudTooltip>            
             </div>
         </div>
@@ -103,7 +103,7 @@ else
                             <td>@String.Format("{0:C2}", item.Total)</td>
                             <td>
                                 <MudTooltip Text="Ver Datos">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))"/>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="MudBlazor.Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))" />
                                 </MudTooltip>  
                             </td>
                         </tr>
