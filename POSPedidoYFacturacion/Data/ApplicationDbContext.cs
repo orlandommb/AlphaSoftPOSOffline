@@ -18,6 +18,7 @@ namespace POSPedidoYFacturacion.Data
 
         public DbSet<Orden> Ordenes { get; set; }
         public DbSet<OrdenDetalle> OrdenDetalles { get; set; }
+        public DbSet<OrdenDetalleHistorial> OrdenDetalleHistoriales { get; set; }
         //DbSet<Cuenta> Cuentas { get; set; }
         public DbSet<Empresa> Empresa { get; set; }
         public DbSet<Sucursal> Sucursales { get; set; }

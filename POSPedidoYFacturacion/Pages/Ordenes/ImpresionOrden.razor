@@ -1,4 +1,4 @@
-﻿@page "/imprimirorden/{Id:int}"
+﻿@page "/imprimirorden/{Id:int}/{reimpresion:bool?}"
 
 @attribute [Authorize]
 
@@ -48,7 +48,12 @@
                 <tr style="text-align:center">
                     <td style="font-size:30px" colspan="3">Orden</td>
                 </tr>
-
+                @if(reimpresion)
+                {
+                    <tr style="text-align:center">
+                        <td style="font-size:30px" colspan="3">RE-IMPRESION</td>
+                    </tr>
+                }
                 <tr style="text-align:center">
                     <td style="font-size:20px" colspan="3">@Orden.TipoOrden.Nombre.ToString()</td>
                 </tr>
@@ -195,11 +200,14 @@
 @code {
     [Parameter]
     public int Id { get; set; }
+    [Parameter]
+    public bool reimpresion { get; set; } = false;
 
     public bool IsBusy { get; set; } = false;
 
     private Orden Orden { get; set; } = new Orden();
     private Empresa Empresa { get; set; } = new Empresa();
+    
 
     protected override async Task OnParametersSetAsync()
     {

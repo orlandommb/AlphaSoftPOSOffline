@@ -199,6 +199,7 @@
     private int? SubCategoriaSeleccionadaId { get; set; }
 
     private string Nombre { get; set; }
+    private Usuario Usuario {get; set;}
 
     protected override async Task OnInitializedAsync()
     {
@@ -243,6 +244,7 @@
             await CargarSucursal();
             await CargarCategorias();
             await CargarProductos();
+            await GetUsuario();
         }
     }
     private async Task CargarEmpresa()
@@ -264,6 +266,15 @@
             Sucursal = result.Value;
             StateHasChanged();
         }
+    }
+
+    private async Task GetUsuario()
+    {
+        var AState = await AuthStateProv.GetAuthenticationStateAsync();
+        var User = AState.User;
+        Usuario = await UserManager.FindByNameAsync(User.Identity.Name);
+        
+        
     }
 
     public async Task CargarProductos()
@@ -378,17 +389,15 @@
                     }
 
                 }
-                var AState = await AuthStateProv.GetAuthenticationStateAsync();
-                var User = AState.User;
-                var Usuario = await UserManager.FindByNameAsync(User.Identity.Name);
+                
 
                 Orden.EmpresaId = Empresa.Id;
                 Orden.SucursalId = Sucursal.Id;
                 Orden.FechaPedido = DateTime.Now;
                 Orden.Usuario = null;
+                Orden.UsuarioId = Usuario.Id;
                 Orden.TipoOrden = null;
                 Orden.Sector = null;
-                Orden.UsuarioId = Usuario.Id;
                 Orden.SubTotal = Orden.OrdenDetalles.Sum(od => od.Precio * od.Cantidad);
                 Orden.Descuento = Orden.OrdenDetalles.Sum(od => od.Descuento);
                 Orden.Total = Orden.OrdenDetalles.Sum(od => od.Importe) + Orden.MontoDelivery;
@@ -398,6 +407,20 @@
                 foreach (var item in OrdenNueva.OrdenDetalles)
                 {
                     item.Producto = null;
+                    var Historial = new OrdenDetalleHistorial()
+                    {
+                        Fecha = DateTime.Now,
+                        UsuarioId = Usuario.Id,
+                        Accion = "Agregado",
+                        ProductoId = item.ProductoId,
+                        NombreProducto = item.NombreProducto,
+                        Cantidad = item.Cantidad,
+                        Precio = item.Precio,
+                        Descuento = item.Descuento,
+                        Importe = item.Importe
+
+                    };
+                    OrdenNueva.OrdenDetalleHistoriales.Add(Historial);
                 }
 
                 await DbContext.AddAsync(OrdenNueva);
@@ -471,6 +494,23 @@
 
                     //Borramos todos los detalles removidos en la lista de detalles removidos de la Base de Datos.
                     DbContext.OrdenDetalles.RemoveRange(DetallesRemovidos);
+                    @foreach (var item in DetallesRemovidos)
+                    {
+                        var Historial =  new OrdenDetalleHistorial()
+                        {
+                            UsuarioId = Usuario.Id,
+                            OrdenId = OrdenFromDb.Id,
+                            Fecha = DateTime.Now,
+                            Accion = $"Eliminado",
+                            ProductoId = item.ProductoId,
+                            NombreProducto = item.NombreProducto,
+                            Cantidad = item.Cantidad,
+                            Precio = item.Precio,
+                            Descuento = item.Descuento,
+                            Importe = item.Importe
+                        };
+                        await DbContext.AddAsync(Historial);
+                    }
 
                 }
 
@@ -489,21 +529,52 @@
                     {
                         //lo insertamos.
                         await DbContext.AddAsync(item);
+                        var Historial =  new OrdenDetalleHistorial()
+                        {
+                            UsuarioId = Usuario.Id,
+                            OrdenId = OrdenFromDb.Id,
+                            Fecha = DateTime.Now,
+                            Accion = $"Agregado",
+                            ProductoId = item.ProductoId,
+                            NombreProducto = item.NombreProducto,
+                            Cantidad = item.Cantidad,
+                            Precio = item.Precio,
+                            Descuento = item.Descuento,
+                            Importe = item.Importe
+                        };
+                        await DbContext.AddAsync(Historial);
                     }
                     else
                     {
                         //Consultamos el detalle de la lista de Detalles Antiguos, donde el producto y la compra sean igual al detalle de la compra enviada.
                         var detalle = OrdenFromDb.OrdenDetalles.Where(od => od.ProductoId == item.ProductoId && od.OrdenId == item.OrdenId).SingleOrDefault();
 
-                        //Asignamos los datos a actualizar al detalle consultado
-                        detalle.NombreProducto = item.NombreProducto;
-                        detalle.Cantidad = item.Cantidad;
-                        detalle.Descuento = item.Descuento;
-                        detalle.Precio = item.Precio;
-                        detalle.Importe = item.Importe;
-
-                        //actualizamos los datos en la base de datos.
-                        DbContext.Update(detalle);
+                        if(item.ProductoId != detalle.ProductoId || item.Cantidad != detalle.Cantidad || item.Precio != detalle.Precio || item.Descuento != detalle.Descuento  || item.Importe != detalle.Importe )
+                        {
+                            //Asignamos los datos a actualizar al detalle consultado
+                            detalle.NombreProducto = item.NombreProducto;
+                            detalle.Cantidad = item.Cantidad;
+                            detalle.Descuento = item.Descuento;
+                            detalle.Precio = item.Precio;
+                            detalle.Importe = item.Importe;
+                            
+                            //actualizamos los datos en la base de datos.
+                            DbContext.Update(detalle);
+                            var Historial =  new OrdenDetalleHistorial()
+                            {
+                                UsuarioId = Usuario.Id,
+                                OrdenId = OrdenFromDb.Id,
+                                Fecha = DateTime.Now,
+                                Accion = $"Modificado",
+                                ProductoId = item.ProductoId,
+                                NombreProducto = item.NombreProducto,
+                                Cantidad = item.Cantidad,
+                                Precio = item.Precio,
+                                Descuento = item.Descuento,
+                                Importe = item.Importe
+                            };
+                            await DbContext.AddAsync(Historial);
+                        }
                     }
 
                 }
@@ -519,7 +590,7 @@
                 var result = await JSRuntime.Confirmar("Desea imprimir esta orden?");
                 if (result)
                 {
-                    await JSRuntime.AbrirNuevaPagina($"imprimirorden/{OrdenFromDb.Id}");
+                    await JSRuntime.AbrirNuevaPagina($"imprimirorden/{OrdenFromDb.Id}/{true}");
                 }
 
             }

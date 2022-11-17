@@ -153,45 +153,51 @@
                 </div>
             </div>
         </RadzenCard>
-
-        <RadzenCard style="padding:15px">
-
-            <div class="row">
-                <div style="margin:10px"></div>
-
-
-                <div class="table-responsive">
-                    <table class="table table-sm" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th scope="col">Codigo</th>
-                                <th scope="col">Producto</th>
-                                <th scope="col">Cantidad</th>
-                                <th scope="col">Precio</th>
-                                <th scope="col">Descuento</th>
-                                <th scope="col">Importe</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                            @foreach (var item in Orden.OrdenDetalles)
-                            {
-
-                                <tr>
-                                    <th scope="row">@item.Producto.Codigo</th>
-                                    <td>@item.NombreProducto</td>
-                                    <td>@item.Cantidad</td>
-                                    <td>@String.Format("{0:C2}", item.Precio)</td>
-                                    <td>@String.Format("{0:C2}", item.Descuento)</td>
-                                    <td>@String.Format("{0:C2}", item.Importe)</td>
-                                </tr>
-
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </RadzenCard>
+        <MudTable Items="Orden.OrdenDetalles" T="OrdenDetalle" Dense="true" Height="300px" FixedHeader="true">
+            <HeaderContent>
+                <MudTh scope="col">Codigo</MudTh>
+                <MudTh scope="col">Producto</MudTh>
+                <MudTh scope="col">Cantidad</MudTh>
+                <MudTh scope="col">Precio</MudTh>
+                <MudTh scope="col">Descuento</MudTh>
+                <MudTh scope="col">Importe</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Producto.Codigo</MudTd>
+                <MudTd>@context.NombreProducto.ToString()</MudTd>
+                <MudTd>@context.Cantidad.ToString()</MudTd>
+                <MudTd>@context.Precio.ToString("C2")</MudTd>
+                <MudTd>@context.Descuento.ToString("C2")</MudTd>
+                <MudTd>@context.Importe.ToString("C2")</MudTd>
+            </RowTemplate>
+        </MudTable>
+        <MudPaper>
+            <h5 style="text-align: center;">Historial</h5>
+        </MudPaper>
+        <MudTable Items="Orden.OrdenDetalleHistoriales" T="OrdenDetalleHistorial" FixedHeader="true" Dense="true" Height="300px">
+            <HeaderContent>
+                <MudTh scope="col">No.</MudTh>
+                <MudTh scope="col">Usuario</MudTh>
+                <MudTh scope="col">Fecha</MudTh>
+                <MudTh scope="col">Accion</MudTh>
+                <MudTh scope="col">Producto</MudTh>
+                <MudTh scope="col">Cantidad</MudTh>
+                <MudTh scope="col">Precio</MudTh>
+                <MudTh scope="col">Descuento</MudTh>
+                <MudTh scope="col">Importe</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Id</MudTd>
+                <MudTd>@context.Usuario.UserName</MudTd>
+                <MudTd>@context.Fecha</MudTd>
+                <MudTd>@context.Accion.ToString()</MudTd>
+                <MudTd>@context.NombreProducto.ToString()</MudTd>
+                <MudTd>@context.Cantidad.ToString()</MudTd>
+                <MudTd>@context.Precio.ToString("C2")</MudTd>
+                <MudTd>@context.Descuento.ToString("C2")</MudTd>
+                <MudTd>@context.Importe.ToString("C2")</MudTd>
+            </RowTemplate>
+        </MudTable>
     }
 
 </RadzenCard>
@@ -219,6 +225,10 @@
             .Include(o => o.OrdenDetalles)
             .ThenInclude(od => od.Producto)
             .Include(o => o.Sector)
+            .Include(o=>o.OrdenDetalleHistoriales)
+            .ThenInclude(odh=>odh.Usuario)
+            .Include(o=>o.OrdenDetalleHistoriales)
+            .ThenInclude(odh=>odh.Producto)
             .SingleOrDefaultAsync(o => o.Id == Id);
         IsBusy = false;
     }
@@ -258,7 +268,7 @@
 
     private async void ImprimirOrden(int Id)
     {
-        await IJSRuntime.AbrirNuevaPagina($"imprimirorden/{Id}");
+        await IJSRuntime.AbrirNuevaPagina($"imprimirorden/{Id}/{true}");
     }
 
     private async Task EditarOrden(int Id)

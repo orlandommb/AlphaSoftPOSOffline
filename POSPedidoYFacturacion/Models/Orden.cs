@@ -67,5 +67,6 @@ namespace POSPedidoYFacturacion.Models
         public decimal Total { get; set; }
 
         public List<OrdenDetalle> OrdenDetalles { get; set; } = new List<OrdenDetalle>();
+        public List<OrdenDetalleHistorial> OrdenDetalleHistoriales { get; set; } = new List<OrdenDetalleHistorial>();
     }
 }

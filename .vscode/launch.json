@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/POSPedidoYFacturacion/bin/Debug/net5.0/POSPedidoYFacturacion.dll",
+            "program": "${workspaceFolder}/POSPedidoYFacturacion/bin/Debug/net6.0/POSPedidoYFacturacion.dll",
             "args": [],
             "cwd": "${workspaceFolder}/POSPedidoYFacturacion",
             "stopAtEntry": false,
