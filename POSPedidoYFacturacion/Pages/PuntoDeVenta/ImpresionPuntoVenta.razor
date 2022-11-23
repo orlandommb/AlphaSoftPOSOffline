@@ -27,7 +27,7 @@
             @if (Empresa.Id != 0)
             {
                 <tr class="top">
-                    <td class="title" colspan="3" style="text-align: center;">
+                    <td class="title" colspan="4" style="text-align: center;">
                         @if (Empresa.ImprimirLogoEnOrden)
                             {
                                 <img src="@(string.IsNullOrEmpty(Empresa.Logo) ? "AlphaSoftLogo.png" : @Empresa.Logo)" style="width: 100%; max-width: 200px; height: 200px; text-align:center" />
@@ -37,22 +37,22 @@
 
 
                 <tr style="text-align:center">
-                    <td colspan="3" style="font-size:30px">@Empresa.Nombre.ToString()</td>
+                    <td colspan="4" style="font-size:30px">@Empresa.Nombre.ToString()</td>
                 </tr>
                 <tr style="text-align:center">
-                    <td colspan="3">Direccion:@Empresa.Direccion.ToString()</td>
+                    <td colspan="4">Direccion:@Empresa.Direccion.ToString()</td>
                 </tr>
                 <tr style="text-align:center">
-                    <td colspan="3"><RadzenIcon Icon="phone" /> @Empresa.Telefono.ToString()</td>
+                    <td colspan="4"><RadzenIcon Icon="phone" /> @Empresa.Telefono.ToString()</td>
                 </tr>
             }
 
             <tr style="text-align:center">
-                <td style="font-size:30px" colspan="3">Factura</td>
+                <td style="font-size:30px" colspan="4">Factura</td>
             </tr>
 
             <tr style="text-align:center">
-                <td style="font-size:20px" colspan="3">@Venta.TipoFactura.Nombre</td>
+                <td style="font-size:20px" colspan="4">@Venta.TipoFactura.Nombre</td>
             </tr>
 
             <tr class="information">
@@ -101,12 +101,14 @@
             </tr>
 
             <tr class="heading" style="border-top: 2px solid black">
-                <td colspan="3">Producto</td>
+                <td colspan="4">Producto</td>
+                
             </tr>
 
             <tr class="heading" style="border-bottom: 2px solid black">
                 <td>Cant.</td>
                 <td>Precio</td>
+                <td>Desc.</td>
                 <td>Total</td>
             </tr>
 
@@ -115,12 +117,13 @@
             @foreach (var item in Venta.VentaDetalles)
             {
                 <tr class="item" style="border-top: 2px solid black">
-                    <td colspan="3">@item.Producto.Nombre</td>
-
+                    <td colspan="4">@item.Producto.Nombre</td>
+                    
                 </tr>
                 <tr style="border-bottom: 2px solid black">
                     <td>@item.Cantidad</td>
                     <td>@item.Precio.ToString("C2")</td>
+                    <td>@item.Descuento.ToString("C2")</td>
                     <td>@item.Importe.ToString("C2")</td>
                 </tr>
             }
@@ -130,16 +133,18 @@
             </tr>
 
             <tr style="margin-top:10px" class="heading">
-                <td class="title" colspan="3">Totales</td>
+                <td class="title" colspan="4">Totales</td>
             </tr>
 
             <tr class="total">
                 <td>Sub-Total:</td>
                 <td></td>
+                <td></td>
                 <td>@Venta.SubTotal.ToString("C2")</td>
             </tr>
             <tr class="total">
                 <td>Descuento:</td>
+                <td></td>
                 <td></td>
                 <td>@Venta.Descuento.ToString("C2")</td>
             </tr>
@@ -148,13 +153,15 @@
                 <tr class="total">
                     <td>Delivery:</td>
                     <td></td>
+                    <td></td>
                     <td>@Venta.Delivery.ToString("C2")</td>
                 </tr>
             }
             @if (Empresa.UtilizarManoDeObra)
             {
                 <tr class="total">
-                    <td>Delivery:</td>
+                    <td>Mano de Obra:</td>
+                    <td></td>
                     <td></td>
                     <td>@Venta.MontoManoObra.ToString("C2")</td>
                 </tr>
@@ -163,11 +170,13 @@
 
                 <td>Impuesto:</td>
                 <td></td>
+                <td></td>
                 <td>@Venta.Impuesto.ToString("C2")</td>
             </tr>
             <tr class="total">
 
                 <td>Total:</td>
+                <td></td>
                 <td></td>
                 <td>@Venta.Total.ToString("C2")</td>
             </tr>
@@ -179,17 +188,20 @@
             <tr class="heading">
                 <td>Metodo de Pago</td>
                 <td></td>
+                <td></td>
                 <td>#</td>
             </tr>
 
             <tr class="total">
                 <td>Efectivo</td>
                 <td></td>
+                <td></td>
                 <td>@Venta.MontoEfectivo.ToString("C2")</td>
             </tr>
 
             <tr class="total">
                 <td>Devuelta</td>
+                <td></td>
                 <td></td>
                 <td>@(Venta.MontoDevuelta.ToString("C2"))</td>
             </tr>
@@ -199,21 +211,21 @@
             </tr>
 
             <tr style="text-align:center; margin-top:10px">
-                <td colspan="3">Le atendio @Venta.Usuario.UserName</td>
+                <td colspan="4">Le atendio @Venta.Usuario.UserName</td>
             </tr>
 
             <tr style="text-align:center; margin-top:10px; font-size:small">
-                <td colspan="3">
+                <td colspan="4">
                     Desarrollado y Distribuido por:
                 </td>
             </tr>
             <tr style="text-align:center; margin-top:10px;">
-                <td colspan="3">
+                <td colspan="4">
                     <RadzenImage Path="AlphaSoftLogo.png" Style="height:50px;width:50px" />
                 </td>
             </tr>
             <tr style="text-align:center;">
-                <td colspan="3">
+                <td colspan="4">
                     <RadzenLabel style="font-size: small" Text="@("@alphasoftdev")" />
                 </td>
             </tr>

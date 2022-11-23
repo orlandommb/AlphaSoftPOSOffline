@@ -44,9 +44,16 @@ namespace POSPedidoYFacturacion
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddDbContextFactory<ApplicationDbContext>(options =>
+            services.AddDbContextFactory<ApplicationDbContext>(options => 
+            {
                 options.UseSqlServer(
-                    Configuration.GetConnectionString("SQLServerConnection"), opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+                    Configuration.GetConnectionString("SQLServerConnection"), opt => 
+                    {
+                        opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                        opt.CommandTimeout(120);
+                    });
+                options.EnableSensitiveDataLogging();
+            });
 
             services.AddScoped(p => p.GetRequiredService<IDbContextFactory<ApplicationDbContext>>().CreateDbContext());
 

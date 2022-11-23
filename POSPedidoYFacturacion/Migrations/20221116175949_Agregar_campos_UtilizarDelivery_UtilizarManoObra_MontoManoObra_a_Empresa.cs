@@ -22,7 +22,7 @@ namespace POSPedidoYFacturacion.Migrations
                 table: "Empresa",
                 type: "bit",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
 
             migrationBuilder.AddColumn<bool>(
                 name: "UtilizarManoDeObra",

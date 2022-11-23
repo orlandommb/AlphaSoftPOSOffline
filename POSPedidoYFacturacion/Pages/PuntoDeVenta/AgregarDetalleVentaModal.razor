@@ -117,15 +117,23 @@
             {
                 await IMessage.Alert("No hay existencias suficientes para este producto");
                 return;
-            }
+            } 
         }
 
-        Detalle.Importe = Detalle.Precio * value;
+        CalcularDescuentoPorciento();
+        CalcularImporte();
+        StateHasChanged();
     }
 
     private void DescuentoModalChange(dynamic value)
     {
-        Detalle.Importe -= value;
+        if(value == 0)
+        {
+            Detalle.Importe = Detalle.Cantidad * Detalle.Precio;
+            return;
+        }
+        Detalle.Descuento = ((MontoPorcentaje / 100) * Detalle.Precio) * Detalle.Cantidad;
+        StateHasChanged();
     }
 
     private void CalcularDescuentoPorciento()
@@ -134,6 +142,13 @@
         var Descuento = Porcentaje * Detalle.Precio;
         Detalle.Descuento = Descuento;
         DescuentoModalChange(Descuento);
+        CalcularImporte();
+    }
+
+    private void CalcularImporte()
+    {
+        Detalle.Importe = Detalle.Cantidad * Detalle.Precio - Detalle.Descuento;
+        StateHasChanged();
     }
 }
 

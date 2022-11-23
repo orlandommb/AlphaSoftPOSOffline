@@ -607,9 +607,9 @@ else
 
     public void CalcularTotales()
     {
-        Venta.SubTotal = Venta.VentaDetalles.Sum(ve => ve.Importe);
+        Venta.SubTotal = Venta.VentaDetalles.Sum(ve => ve.Cantidad * ve.Precio);
         Venta.Descuento = Venta.VentaDetalles.Sum(ve => ve.Descuento);
-        Venta.Total = Venta.SubTotal + Venta.Delivery + Venta.MontoManoObra + Venta.Impuesto;
+        Venta.Total = Venta.SubTotal - Venta.Descuento + Venta.Delivery + Venta.MontoManoObra + Venta.Impuesto;
         Venta.MontoDevuelta = Venta.MontoEfectivo - Venta.Total;
     }
 
