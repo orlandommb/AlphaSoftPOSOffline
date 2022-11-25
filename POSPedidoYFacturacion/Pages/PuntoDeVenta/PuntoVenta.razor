@@ -451,7 +451,17 @@ else
                     </EditForm>
                 </div>
                 <div class="modal-footer">
-                    <RadzenButton Icon="save" Click="RegistrarFactura" />
+                    <MudButton StartIcon="@Icons.Material.Filled.Save" Disabled="IsBusy" OnClick="RegistrarFactura" >
+                        @if(IsBusy)
+                        {
+                            <MudProgressCircular Indeterminate="true" />
+                            <MudText Typo="Typo.caption">Registrando por favor espere !</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.caption">Registrar</MudText>
+                        }
+                    </MudButton>
                 </div>
             </div>
         </div>
@@ -1103,18 +1113,20 @@ else
 
     private async Task RegistrarFactura()
     {
-
+        IsBusy = true;
         using var DbContext = DbContextFactory.CreateDbContext();
 
         if (Venta.TipoFacturaId == 1 && Venta.ClienteId == null)
         {
             await IMessage.Alert("Se marco esta venta como factura credito y no selecciono un cliente, debe seleccionar un cliente!");
+            IsBusy = false;
             return;
         }
 
         if (Venta.TipoFacturaId == 2 && Venta.MontoDevuelta < 0)
         {
             await IMessage.Alert("El monto a pagar no esta completo, se debe de pagar la factura completa, favor revisar!");
+            IsBusy = false;
             return;
         }
 
@@ -1124,6 +1136,7 @@ else
             if(!Cliente.CreditoAbierto)
             {
                 await IMessage.Alert($"El Cliente {Venta.Cliente.Nombre} tiene el credito cerrado!");
+                IsBusy = false;
                 return;
             }
             else
@@ -1137,13 +1150,13 @@ else
                 if(Cliente.LimiteCredito <= Balance + Venta.Total)
                 {
                     await IMessage.Alert($"El Cliente {Cliente.Nombre} ha alcanzado el limite de Credito, para mas informacion contacte a su supervisor!");
+                    IsBusy = false;
                     return;
                 }
             }
 
         }
 
-        IsBusy = true;
 
         var VentaNueva = new Venta();
 

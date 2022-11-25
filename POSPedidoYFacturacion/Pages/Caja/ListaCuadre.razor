@@ -136,8 +136,8 @@
             .Where(
             p => p.EmpresaId == Empresa.Id && 
                         p.SucursalId == Sucursal.Id && 
-                        p.FechaApertura >= DateRange.Start &&
-                        (p.FechaCierre == null || p.FechaCierre <= DateRange.End) &&
+                        p.FechaApertura.Date >= DateRange.Start.Value.Date &&
+                        (p.FechaCierre == null || p.FechaCierre.Value.Date <= DateRange.End.Value.Date) &&
                         p.Cerrado == Cerrado &&
                         (NumeroCuadre == null || p.Id == Convert.ToInt32(NumeroCuadre))
                         ).ToListAsync();

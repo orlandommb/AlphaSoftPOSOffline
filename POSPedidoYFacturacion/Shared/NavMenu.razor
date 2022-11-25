@@ -19,7 +19,9 @@ else
                     {
                         <MudNavLink Icon="@Icons.Material.Filled.PointOfSale" Href="puntodeventa">Punto de Venta</MudNavLink>
                     }
-                    <MudNavLink Icon="@Icons.Material.Filled.MonetizationOn" Href="cuadres">Lista de Cuadres</MudNavLink>
+                    <AuthorizeView Context="contextlistacuadres" Roles="Admin,SuperAdmin,SupervisorCajero">
+                        <MudNavLink Icon="@Icons.Material.Filled.MonetizationOn" Href="cuadres">Lista de Cuadres</MudNavLink>
+                    </AuthorizeView>
                 </MudNavGroup>
             </AuthorizeView>
             <AuthorizeView Roles="Admin,SuperAdmin">

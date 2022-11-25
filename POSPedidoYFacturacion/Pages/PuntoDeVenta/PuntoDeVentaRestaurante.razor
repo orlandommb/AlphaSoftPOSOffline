@@ -22,13 +22,26 @@
                     <MudChip Label="true"> Total: @(Mesas.SelectMany(m=>m.Ordenes).Where(o=>o.MesaId != null && o.TipoOrdenId == 3).Sum(o=>o.Total).ToString("C2")) </MudChip>
                     <MudSpacer />
                     <MudTooltip Text="Factura Rapida" Style="margin:5px">
-                        <MudIconButton OnClick="FacturaRapida" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Outlined.Receipt" Color="Color.Info" ></MudIconButton>
+                        <MudButton OnClick="FacturaRapida" Variant="MudBlazor.Variant.Outlined" StartIcon="@Icons.Material.Outlined.Receipt" Color="Color.Info">
+                            <MudText Typo="Typo.caption">Factura Rapida</MudText>
+                        </MudButton>
                     </MudTooltip>
-                    <MudTooltip Text="Orden Para llevar o Delivery" Style="margin:5px">
-                        <MudIconButton OnClick="RegistrarOrden" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Outlined.Note" Color="Color.Info" ></MudIconButton>
+                    <MudTooltip Text="Registrar Ordenes Para Llevar o Delivery" Style="margin:5px">
+                        <MudButton OnClick="RegistrarOrden" Variant="MudBlazor.Variant.Outlined" StartIcon="@Icons.Material.Outlined.Note" Color="Color.Info" >
+                            <MudText Typo="Typo.caption">Registrar Ordenes</MudText>
+                        </MudButton>
                     </MudTooltip>
-                    <MudTooltip Text="Orden Para llevar o Delivery" Style="margin:5px">
-                        <MudIconButton OnClick="DrawerToggle" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Outlined.MenuOpen" Color="Color.Info" ></MudIconButton>
+                    <MudTooltip Text="Mostrar Orden Para llevar o Delivery" Style="margin:5px">
+                        <MudButton OnClick="DrawerToggle" Variant="MudBlazor.Variant.Outlined" StartIcon="@Icons.Material.Outlined.MenuOpen" Color="Color.Info" >
+                            @if(_drawerOpen)
+                            {
+                                <MudText Typo="Typo.caption">Ocultar Ordenes</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption">Mostrar Ordenes</MudText>
+                            }
+                        </MudButton>
                     </MudTooltip>
                 </MudToolBar>
             </RadzenCard>
@@ -54,29 +67,29 @@
                 else
                 {
                     <div class="row" style="height: 550px; padding :10px">
-                        <ul class="mesas">
+                        <MudGrid Spacing="1">
 
                             @foreach (var mesa in Mesas)
                             {
-                                <RadzenCard class="mesa" Style="@(mesa.Ordenes.Count() == 1 ? "background-color: orange; padding:5px" : "padding:5px")" @onclick="@(() => SeleccionarMesa(mesa))">
-                                    <li class="mesa-info">
-                                        <div class="row">
-                                            <div class="col-sm-12">
-                                                <h6 style="margin:auto;align-self:center">@mesa.Nombre</h6>
-                                                @if (mesa.Ordenes.Count() == 1)
-                                                {
-                                                    <div style="margin-top:1px">Cliente:</div>
-                                                    <b>@(mesa.Ordenes.FirstOrDefault().NombreCliente)</b>
-                                                    <div style="margin-top:1px">Total Actual:</div>
-                                                    <b>@(mesa.Ordenes.FirstOrDefault().Total.ToString("C2"))</b>
-                                                }
+                                <MudItem >
+                                        <MudPaper Style="@(mesa.Ordenes.Count() == 1 ? "background-color: orange; padding:5px" : "padding:5px")" @onclick="@(() => SeleccionarMesa(mesa))" Height="125px" Width="125px">
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <h6 style="margin:auto;align-self:center">@mesa.Nombre</h6>
+                                                    @if (mesa.Ordenes.Count() == 1)
+                                                    {
+                                                        <div style="margin-top:1px">Cliente:</div>
+                                                        <b>@(mesa.Ordenes.FirstOrDefault().NombreCliente)</b>
+                                                        <div style="margin-top:1px">Total Actual:</div>
+                                                        <b>@(mesa.Ordenes.FirstOrDefault().Total.ToString("C2"))</b>
+                                                    }
+                                                </div>
                                             </div>
-                                        </div>
-                                    </li>
-                                </RadzenCard>
+                                        </MudPaper>
+                                </MudItem>
                             }
 
-                        </ul>
+                        </MudGrid>
                     </div>
                 }
             </RadzenCard>
@@ -87,7 +100,7 @@
                 </div>
             </RadzenCard>*@
         </div>
-        <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Breakpoint="Breakpoint.Sm" Elevation="1" Anchor="Anchor.Right" Variant="DrawerVariant.Responsive">
+        <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Width="400px" Breakpoint="Breakpoint.Sm" Elevation="1" Anchor="Anchor.Right" Variant="DrawerVariant.Responsive">
 
             <RadzenCard style="height:100%; width:100%; padding:5px">
                 <RadzenCard style="padding:5px; margin-top:5px">
@@ -228,6 +241,7 @@
         if (result.Success)
         {
             Empresa = result.Value;
+            _drawerOpen = Empresa.MostrarOrdenesParaLlevarDeliveryPorDefecto;
             StateHasChanged();
         }
     }
@@ -289,7 +303,7 @@
 
     public async Task SeleccionarMesa(Mesa mesa)
     {
-        _drawerOpen = false;
+        
         if (mesa.Ordenes.Count() == 1)
         {
             var result = await IMessage.Dialog("Que desea hacer ?", "Facturar", "Cargar Orden");
@@ -306,11 +320,13 @@
         {
             NavManager.NavigateTo($"/registrodeorden/Mesa/{mesa.Id}/{Uri.EscapeDataString(NavManager.Uri)}");
         }
+
+        _drawerOpen = false;
     }
 
     public async Task SeleccionarOrden(Orden Orden)
     {
-        _drawerOpen = false;
+        
         var result = await IMessage.Dialog("Que desea hacer ?", "Facturar", "Cargar Orden");
         if (result == 1)
         {
@@ -320,7 +336,7 @@
         {
             CargarOrden(Orden.Id, "Orden");
         }
-
+        _drawerOpen = false;
     }
 
 

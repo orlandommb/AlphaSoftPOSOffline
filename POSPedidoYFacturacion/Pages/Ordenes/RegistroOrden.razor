@@ -15,6 +15,22 @@
 @inject IJSRuntime JSRuntime
 @inject ProtectedLocalStorage LocalStorage
 
+<MudToolBar>
+    <h5>Registro de Orden</h5>
+    <MudSpacer/>
+    @if(IsBusy)
+    {
+        <MudProgressCircular Indeterminate="true" Size="Size.Small"/>
+    }
+    else
+    {
+        if(@Orden.Mesa != null)
+        {
+            <h5>Mesa: @Orden.Mesa.Nombre</h5>
+        }
+    }
+    <MudSpacer/>
+</MudToolBar>
 <RadzenCard Style="height:fit-content(); min-height:600px; padding:5px; font-size:small">
     <EditForm Model="Orden">
         <DataAnnotationsValidator />
@@ -207,9 +223,11 @@
 
         if (Id != null)
         {
+            IsBusy = true;
             using var DbContext = DbContextFactory.CreateDbContext();
 
             var OrdenModificar = await DbContext.Ordenes
+                .Include(o=>o.Mesa)
                 .Include(o => o.TipoOrden)
                 .Include(o => o.Sector)
                 .Include(o => o.Usuario)
@@ -218,13 +236,19 @@
                 .SingleOrDefaultAsync(o => o.Id == Id);
 
             EstadoOrden.CargarOrden(OrdenModificar);
+            IsBusy= false;
         }
 
         if (MesaId != null)
         {
+            IsBusy = true;
+            using var DbContext = DbContextFactory.CreateDbContext();
             EstadoOrden.Orden.MesaId = MesaId;
+            EstadoOrden.Orden.Mesa = await DbContext.Mesas.SingleOrDefaultAsync(o=>o.Id == MesaId);
+            
 
             Orden.TipoOrdenId = 3;
+            IsBusy = false;
         }
 
         if (MesaId == null && Id == null)
@@ -393,6 +417,7 @@
 
                 Orden.EmpresaId = Empresa.Id;
                 Orden.SucursalId = Sucursal.Id;
+                Orden.Mesa = null;
                 Orden.FechaPedido = DateTime.Now;
                 Orden.Usuario = null;
                 Orden.UsuarioId = Usuario.Id;

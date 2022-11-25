@@ -29,6 +29,8 @@ namespace POSPedidoYFacturacion.Models
 
         [Precision(precision: 18, scale: 2)]
         public decimal PorcientoDescuento { get; set; }
+        
+        public bool MostrarOrdenesParaLlevarDeliveryPorDefecto { get; set; }
 
 
     }

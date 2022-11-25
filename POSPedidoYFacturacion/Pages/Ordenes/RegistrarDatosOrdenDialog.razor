@@ -153,6 +153,7 @@
                 var Tipolocal = TipoOrdenes.SingleOrDefault(t => t.Id == 3);
                 TipoOrdenes.Remove(Tipolocal);
 
+
             }
             StateHasChanged();
         }
@@ -168,6 +169,7 @@
             var EmpresaFromDB = await DbContext.Empresa.Where(e=>e.Id == Empresa.Id).OrderBy(e => e.Id).SingleOrDefaultAsync();
 
             Orden.MontoDelivery = EmpresaFromDB.MontoMinimoDelivery;
+            Orden.TipoOrdenId = Empresa.TipoOrdenPredeterminada;
             IsBusy = false;
             StateHasChanged();
         }

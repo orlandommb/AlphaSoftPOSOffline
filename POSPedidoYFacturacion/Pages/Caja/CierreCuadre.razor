@@ -65,166 +65,216 @@ else
                 </div>
             </RadzenCard>
             <EditForm Model="Cuadre">
-                <div class="row">
-                    <div class="col-sm-8">
-                        <RadzenCard Style="padding:5px">
-                            <h5>Desglose</h5>
+                    <MudTabs >
+                        <MudTabPanel Text="Detalles">
                             <div class="row">
-                                <div class="col-sm-6">
-                                    <div class="table-responsive-sm">
-                                        <table class="table table-sm" style="width:100%">
-                                            <thead>
-                                                <tr>
-                                                    <th colspan="3" scope="col" style="text-align: center">
-                                                        <h5>Billetes</h5>
-                                                    </th>
-                                                </tr>
-                                                <tr>
-                                                    <th scope="col">Valor</th>
-                                                    <th scope="col" style="width:10%">Cantidad</th>
-                                                    <th scope="col">Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-
-                                                @foreach (var item in Cuadre.Desgloses.Where(d => d.Denominacion.TipoMonedaId == 1))
-                                                {
-                                                    <tr>
-                                                        <th scope="row">@item.Denominacion.Valor</th>
-                                                        <td>
-                                                            <RadzenNumeric TValue="int" @bind-Value="item.Cantidad" Change="@(args => ChangeNumericCantidadDesglose(args, item))"></RadzenNumeric>
-                                                        </td>
-                                                        <td>
-
-                                                            <RadzenLabel Text="@((item.Cantidad * item.Denominacion.Valor).ToString("C2"))"></RadzenLabel>
-                                                        </td>
-                                                    </tr>
-
-                                                }
-                                            </tbody>
-                                        </table>
+                                <div class="col-sm-8">
+                                    <h5>Desglose</h5>
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <div class="table-responsive-sm">
+                                                <table class="table table-sm" style="width:100%">
+                                                    <thead>
+                                                        <tr>
+                                                            <th colspan="3" scope="col" style="text-align: center">
+                                                                <h5>Billetes</h5>
+                                                            </th>
+                                                        </tr>
+                                                        <tr>
+                                                            <th scope="col">Valor</th>
+                                                            <th scope="col" style="width:10%">Cantidad</th>
+                                                            <th scope="col">Total</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var item in Cuadre.Desgloses.Where(d => d.Denominacion.TipoMonedaId == 1))
+                                                        {
+                                                            <tr>
+                                                                <th scope="row">@item.Denominacion.Valor</th>
+                                                                <td>
+                                                                    <RadzenNumeric TValue="int" @bind-Value="item.Cantidad" Change="@(args => ChangeNumericCantidadDesglose(args, item))"></RadzenNumeric>
+                                                                </td>
+                                                                <td>
+                                                                    <RadzenLabel Text="@((item.Cantidad * item.Denominacion.Valor).ToString("C2"))"></RadzenLabel>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                            <div class="col-sm-6">
+                                                <div class="table-responsive-sm">
+                                                    <table class="table table-sm" style="width:100%">
+                                                        <thead>
+                                                            <tr>
+                                                                <th colspan="3" scope="col" style="text-align: center">
+                                                                    <h5>Monedas</h5>
+                                                                </th>
+                                                            </tr>
+                                                            <tr>
+                                                                <th scope="col">Valor</th>
+                                                                <th scope="col" style="width:10%">Cantidad</th>
+                                                                <th scope="col">Total</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        @foreach (var item in Cuadre.Desgloses.Where(d => d.Denominacion.TipoMonedaId == 2))
+                                                        {
+                                                            <tr>
+                                                                <th scope="row">@item.Denominacion.Valor</th>
+                                                                <td>
+                                                                    <RadzenNumeric TValue="int" @bind-Value="item.Cantidad" Change="@(args => ChangeNumericCantidadDesglose(args, item))"></RadzenNumeric>
+                                                                </td>
+                                                                <td>
+                                                                    <RadzenLabel Text="@(item.Total.ToString("C2"))"></RadzenLabel>
+                                                                    @*<RadzenLabel Text="@((item.Cantidad * item.Denominacion.Valor).ToString("C2"))"></RadzenLabel>*@
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-sm-6">
-                                    <div class="table-responsive-sm">
-                                        <table class="table table-sm" style="width:100%">
-                                            <thead>
-                                                <tr>
-                                                    <th colspan="3" scope="col" style="text-align: center">
-                                                        <h5>Monedas</h5>
-                                                    </th>
-                                                </tr>
-                                                <tr>
-                                                    <th scope="col">Valor</th>
-                                                    <th scope="col" style="width:10%">Cantidad</th>
-                                                    <th scope="col">Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
+                                <div class="col-sm-4">
+                                    <RadzenCard Style="padding:5px">
+                                        <h5>Efectivo en Caja</h5>
+                                            <div class="row">
+                                                <div class="col-sm-6">
+                                                    <div class="form-group">
+                                                        <label>Total Desglose</label>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Total Ventas</label>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Total Dev. Contado</label>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Total CXC Recibos</label>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Fondo Caja</label>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Total Caja</label>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        @if (Cuadre.MontoEfectivo >= Cuadre.Ventas.Sum(v => v.Total))
+                                                        {
+                                                            <label>Sobrante</label>
+                                                        }
+                                                        else if (Cuadre.MontoEfectivo < Cuadre.Ventas.Sum(v => v.Total))
+                                                        {
+                                                            <label>Faltante</label>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <div class="form-group">
+                                                        <div>
+                                                            <RadzenLabel Text="@(Cuadre.Desgloses.Sum(c => c.Total).ToString("C2"))" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div>
+                                                            <RadzenLabel Text="@(Cuadre.Ventas.Sum(v => v.MontoEfectivo - v.MontoDevuelta).ToString("C2"))" />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="form-group">
+                                                        <div>
+                                                            <RadzenLabel Text="@(Cuadre.Devoluciones.Sum(v => v.Total).ToString("C2"))" />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="form-group">
+                                                        <div>
+                                                            <RadzenLabel Text="@(Cuadre.RecibosIngresos.Where(ri=>ri.CXCTransaccionTipoId == 3).Sum(v => v.Monto).ToString("C2"))" />
+                                                        </div>
+                                                    </div>
 
-                                                @foreach (var item in Cuadre.Desgloses.Where(d => d.Denominacion.TipoMonedaId == 2))
-                                                {
-
-                                                    <tr>
-                                                        <th scope="row">@item.Denominacion.Valor</th>
-                                                        <td>
-                                                            <RadzenNumeric TValue="int" @bind-Value="item.Cantidad" Change="@(args => ChangeNumericCantidadDesglose(args, item))"></RadzenNumeric>
-                                                        </td>
-                                                        <td>
-
-                                                            <RadzenLabel Text="@(item.Total.ToString("C2"))"></RadzenLabel>
-                                                            @*<RadzenLabel Text="@((item.Cantidad * item.Denominacion.Valor).ToString("C2"))"></RadzenLabel>*@
-                                                        </td>
-                                                    </tr>
-
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                    <div class="form-group">
+                                                        <div>
+                                                            <RadzenLabel Text="@(Cuadre.FondoCaja.ToString("C2"))" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div>
+                                                            <RadzenLabel Text="@((Cuadre.Desgloses.Sum(d => d.Total) + Cuadre.FondoCaja).ToString("C2"))" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <div>
+                                                            <RadzenLabel Text="@((Cuadre.MontoEfectivo - Cuadre.Ventas.Sum(d => d.MontoEfectivo - d.MontoDevuelta) - Cuadre.RecibosIngresos.Where(ri=>ri.CXCTransaccionTipoId == 3).Sum(v => v.Monto) + Cuadre.Devoluciones.Sum(v => v.Total)).ToString("C2"))" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <RadzenButton Icon="save" Click="RegistrarCuadre" />
+                                    </RadzenCard>
                                 </div>
                             </div>
-                        </RadzenCard>
-                    </div>
-                    <div class="col-sm-4">
-                        <RadzenCard Style="padding:5px">
-                            <h5>Efectivo en Caja</h5>
-                                <div class="row">
-                                    <div class="col-sm-6">
-                                        <div class="form-group">
-                                            <label>Total Desglose</label>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Total Ventas</label>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Total Dev. Contado</label>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Total CXC Recibos</label>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Fondo Caja</label>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Total Caja</label>
-                                        </div>
-                                        <div class="form-group">
-                                            @if (Cuadre.MontoEfectivo >= Cuadre.Ventas.Sum(v => v.Total))
+                        </MudTabPanel>
+                        <MudTabPanel Text="Ventas">
+                            <RadzenCard>
+                                <div class="table-responsive-sm" style="width:100%;height:400px; overflow:scroll">
+                                    <table class="table table-sm" >
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Id</th>
+                                                <th scope="col">Tipo</th>
+                                                <th scope="col">Tipo Orden</th>
+                                                <th scope="col">Nombre</th>
+                                                <th scope="col">Celular</th>
+                                                <th scope="col">Fecha Finalizado</th>
+                                                <th scope="col">Usuario</th>
+                                                <th scope="col">Sub-Total</th>
+                                                <th scope="col">Descuento</th>
+                                                <th scope="col">Delivery</th>
+                                                <th scope="col">Total</th>
+                                                <th scope="col">Monto Efectivo</th>
+                                                <th scope="col">Devuelta</th>
+                                                <th scope="col" style="width:10%"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in Cuadre.Ventas)
                                             {
-                                                <label>Sobrante</label>
+                                                <tr>
+                                                    <th scope="row">@item.Id</th>
+                                                    <th scope="row">@item.TipoFactura.Nombre</th>
+                                                    @if (item.TipoOrdenId != null)
+                                                    {
+                                                        <td>@(item.TipoOrden.Nombre)</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td>@("Sin pedido")</td>
+                                                    }
+                                                    <td>@item.NombreCliente</td>
+                                                    <td>@item.CelularCliente</td>
+                                                    <td>@item.FechaFinalizado</td>
+                                                    <td>@item.Usuario.UserName</td>
+                                                    <td>@String.Format("{0:C2}", item.SubTotal)</td>
+                                                    <td>@String.Format("{0:C2}", item.Descuento)</td>
+                                                    <td>@String.Format("{0:C2}", item.Delivery)</td>
+                                                    <td>@String.Format("{0:C2}", item.Total)</td>
+                                                    <td>@String.Format("{0:C2}", item.MontoEfectivo)</td>
+                                                    <td>@String.Format("{0:C2}", item.MontoDevuelta)</td>
+                                                    <td>
+                                                        @* <RadzenButton Icon="preview" Click="@(() => BtnVistaPreviaVentaClick(item.Id))"></RadzenButton> *@
+                                                    </td>
+                                                </tr>
                                             }
-                                            else if (Cuadre.MontoEfectivo < Cuadre.Ventas.Sum(v => v.Total))
-                                            {
-                                                <label>Faltante</label>
-                                            }
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <div class="form-group">
-                                            <div>
-                                                <RadzenLabel Text="@(Cuadre.Desgloses.Sum(c => c.Total).ToString("C2"))" />
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <div>
-                                                <RadzenLabel Text="@(Cuadre.Ventas.Sum(v => v.MontoEfectivo - v.MontoDevuelta).ToString("C2"))" />
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="form-group">
-                                            <div>
-                                                <RadzenLabel Text="@(Cuadre.Devoluciones.Sum(v => v.Total).ToString("C2"))" />
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="form-group">
-                                            <div>
-                                                <RadzenLabel Text="@(Cuadre.RecibosIngresos.Where(ri=>ri.CXCTransaccionTipoId == 3).Sum(v => v.Monto).ToString("C2"))" />
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <div>
-                                                <RadzenLabel Text="@(Cuadre.FondoCaja.ToString("C2"))" />
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <div>
-                                                <RadzenLabel Text="@((Cuadre.Desgloses.Sum(d => d.Total) + Cuadre.FondoCaja).ToString("C2"))" />
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <div>
-                                                <RadzenLabel Text="@((Cuadre.MontoEfectivo - Cuadre.Ventas.Sum(d => d.MontoEfectivo - d.MontoDevuelta) - Cuadre.RecibosIngresos.Where(ri=>ri.CXCTransaccionTipoId == 3).Sum(v => v.Monto) + Cuadre.Devoluciones.Sum(v => v.Total)).ToString("C2"))" />
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <RadzenButton Icon="save" Click="RegistrarCuadre" />
-                        </RadzenCard>
-                    </div>
-
-                </div>
+                            </RadzenCard>
+                        </MudTabPanel>
+                    </MudTabs>
             </EditForm>
         </RadzenCard>
     }
@@ -296,6 +346,11 @@ else
         Cuadre = await DbContext.Cuadres
                                 .Include(c => c.Usuario)
                                 .Include(c => c.Ventas.Where(v=>v.Nulo == false && v.TipoFacturaId == 2))
+                                .ThenInclude(c=>c.TipoFactura)
+                                .Include(c => c.Ventas.Where(v=>v.Nulo == false && v.TipoFacturaId == 2))
+                                .ThenInclude(c=>c.TipoOrden)
+                                .Include(c => c.Ventas.Where(v=>v.Nulo == false && v.TipoFacturaId == 2))
+                                .ThenInclude(c=>c.Usuario)
                                 .Include(c => c.RecibosIngresos.Where(v=>v.Nulo == false && v.CXCTransaccionTipoId == 3))
                                 .Include(c => c.Devoluciones.Where(v=>v.Nulo == false && v.Venta.TipoFacturaId == 2))
                                 .ThenInclude(c => c.Venta)
