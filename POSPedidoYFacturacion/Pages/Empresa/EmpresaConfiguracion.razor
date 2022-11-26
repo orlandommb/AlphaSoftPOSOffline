@@ -61,6 +61,15 @@
                         <RadzenCheckBox @bind-Value=@Empresa.UsarPOSRestaurant TValue="bool" />
                     </div>
                 </div>
+                @if(Empresa.UsarPOSRestaurant)
+                {
+                    <div class="form-group">
+                        <label>Mostrar por defecto Ordenes Para Llevar y Delivery</label>
+                        <div>
+                            <RadzenCheckBox @bind-Value=@Empresa.MostrarOrdenesParaLlevarDeliveryPorDefecto TValue="bool" />
+                        </div>
+                    </div>
+                }
                 <div class="form-group">
                     <label>Imprimir Logo en Factura?</label>
                     <div>

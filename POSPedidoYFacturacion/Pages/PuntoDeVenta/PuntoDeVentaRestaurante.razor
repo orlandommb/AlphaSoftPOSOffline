@@ -46,136 +46,133 @@
                 </MudToolBar>
             </RadzenCard>
             
-            <RadzenCard Style="height: 80px; padding:5px; margin-top:5px">
-                <h5 style="margin:auto">Areas</h5>
-                <MudContainer Style="padding:5px;overflow-x: auto; overflow-y: hidden; white-space: nowrap">
-                    <MudButton Variant="MudBlazor.Variant.Outlined" Color="Color.Secondary" OnClick="async ()=> await SelectArea(null)">Todas</MudButton>
-                    @foreach (var area in Areas)
+            <MudPaper Style="padding: 10px">
+                <RadzenCard Style="height: 80px; padding:5px; margin-top:5px">
+                    <h5 style="margin:auto; text-align: center;">Areas</h5>
+                    <MudContainer Style="padding:5px;overflow-x: auto; overflow-y: hidden; white-space: nowrap">
+                        <MudButton Variant="MudBlazor.Variant.Outlined" Color="Color.Secondary" OnClick="async ()=> await SelectArea(null)">Todas</MudButton>
+                        @foreach (var area in Areas)
+                        {
+                            <MudButton Style="margin-left:5px" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="async ()=> await SelectArea(area.Id)">@area.Nombre</MudButton>
+                        }
+                    </MudContainer>
+                </RadzenCard>
+                <RadzenCard Style="padding: 5px; margin-top:5px">
+                    <h5 style="margin:auto; text-align: center;">Mesas</h5>
+                    @if (CargandoMesas)
                     {
-                        <MudButton Style="margin-left:5px" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" OnClick="async ()=> await SelectArea(area.Id)">@area.Nombre</MudButton>
+                        <div class="middle-box">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+                        </div>
                     }
-                </MudContainer>
-            </RadzenCard>
-            <RadzenCard Style="padding: 5px; margin-top:5px">
-                <h5 style="margin:auto">Mesas</h5>
-                @if (CargandoMesas)
-                {
-                    <div class="middle-box">
-                        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
-                    </div>
-                }
-                else
-                {
-                    <div class="row" style="height: 550px; padding :10px">
-                        <MudGrid Spacing="1">
+                    else
+                    {
+                        <div class="row" style="height: 550px; padding :10px">
+                            <MudGrid Spacing="1">
 
-                            @foreach (var mesa in Mesas)
-                            {
-                                <MudItem >
-                                        <MudPaper Style="@(mesa.Ordenes.Count() == 1 ? "background-color: orange; padding:5px" : "padding:5px")" @onclick="@(() => SeleccionarMesa(mesa))" Height="125px" Width="125px">
-                                            <div class="row">
-                                                <div class="col-sm-12">
-                                                    <h6 style="margin:auto;align-self:center">@mesa.Nombre</h6>
-                                                    @if (mesa.Ordenes.Count() == 1)
-                                                    {
+                                @foreach (var mesa in Mesas)
+                                {
+                                    <MudItem >
+                                            <MudPaper Style="@(mesa.Ordenes.Count() == 1 ? "background-color: orange; padding:5px" : "padding:5px")" @onclick="@(() => SeleccionarMesa(mesa))" Height="125px" Width="125px">
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <h6 style="margin:auto;align-self:center">@mesa.Nombre</h6>
+                                                        @if (mesa.Ordenes.Count() == 1)
+                                                        {
+                                                            <div style="margin-top:1px">Cliente:</div>
+                                                            <b>@(mesa.Ordenes.FirstOrDefault().NombreCliente)</b>
+                                                            <div style="margin-top:1px">Total Actual:</div>
+                                                            <b>@(mesa.Ordenes.FirstOrDefault().Total.ToString("C2"))</b>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </MudPaper>
+                                    </MudItem>
+                                }
+
+                            </MudGrid>
+                        </div>
+                    }
+                </RadzenCard>
+
+                <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Width="400px" Breakpoint="Breakpoint.Sm" Elevation="1" Anchor="Anchor.Right" Variant="DrawerVariant.Responsive">
+                    <RadzenCard style="height:100%; width:100%; padding:5px">
+                        <RadzenCard style="padding:5px; margin-top:5px">
+                            <div class="row">
+                                <h5 style="margin:auto; text-align: center;">Delivery</h5><br/>
+                                <h5 style="margin:auto">Total: @(OrdenesPendientes.Where(o=>o.TipoOrdenId == 1).Sum(o=>o.Total).ToString("C2"))</h5>
+                            </div>
+                        </RadzenCard>
+                        <div class="row">
+                            <RadzenCard Style="width:100%; margin:15px; padding:15px; height: 280px; overflow: scroll">
+                                @foreach (var orden in OrdenesPendientes.Where(o => o.TipoOrdenId == 1))
+                                {
+                                    <RadzenCard class="orden" Style="padding:5px" @onclick="@(()=> SeleccionarOrden(orden))">
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <div class="row" style="font-size:small">
+                                                    <div class="col-sm-12">
                                                         <div style="margin-top:1px">Cliente:</div>
-                                                        <b>@(mesa.Ordenes.FirstOrDefault().NombreCliente)</b>
-                                                        <div style="margin-top:1px">Total Actual:</div>
-                                                        <b>@(mesa.Ordenes.FirstOrDefault().Total.ToString("C2"))</b>
-                                                    }
+                                                        <b>@orden.NombreCliente</b>
+                                                    </div>
+                                                </div>
+                                                <div class="row" style="font-size:small">
+                                                    
+                                                    <div class="col-sm-6">
+                                                        <div style="margin-top:1px">Fecha:</div>
+                                                        <b>@orden.FechaPedido.ToString("d")</b>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <div style="margin-top:1px">Importe:</div>
+                                                        <b>@orden.Total.ToString("C2")</b>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </MudPaper>
-                                </MudItem>
-                            }
-
-                        </MudGrid>
-                    </div>
-                }
-            </RadzenCard>
-
-            @*<RadzenCard Style="height:70px;padding:5px; font-size:small">
-                <div class="row">
-
-                </div>
-            </RadzenCard>*@
+                                        </div>
+                                    </RadzenCard>
+                                }
+                            </RadzenCard>
+                        </div>
+                        <RadzenCard style="padding:5px; margin-top:5px">
+                            <div class="row">
+                                <h5 style="margin:auto; text-align: center;">Para Llevar</h5><br/>
+                                <h5 style="margin:auto">Total: @(OrdenesPendientes.Where(o=>o.TipoOrdenId == 2).Sum(o=>o.Total).ToString("C2"))</h5>
+                            </div>
+                        </RadzenCard>
+                        <div class="row">
+                            <RadzenCard Style="width: 100%; margin: 15px; padding: 15px; height: 280px; overflow: scroll ">
+                                @foreach (var orden in OrdenesPendientes.Where(o => o.TipoOrdenId == 2))
+                                {
+                                    <RadzenCard class="orden" Style="padding:5px" @onclick="@(()=> SeleccionarOrden(orden))">
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <div class="row" style="font-size:small">
+                                                    <div class="col-sm-12">
+                                                        <div style="margin-top:1px">Cliente:</div>
+                                                        <b>@orden.NombreCliente</b>
+                                                    </div>
+                                                </div>
+                                                <div class="row" style="font-size:small">
+                                                    <div class="col-sm-6">
+                                                        <div style="margin-top:1px">Fecha:</div>
+                                                        <b>@orden.FechaPedido.ToString("d")</b>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <div style="margin-top:1px">Importe:</div>
+                                                        <b>@orden.Total.ToString("C2")</b>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </RadzenCard>
+                                }
+                            </RadzenCard>
+                        </div>
+                    </RadzenCard>
+                </MudDrawer>
+            </MudPaper>
         </div>
-        <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Width="400px" Breakpoint="Breakpoint.Sm" Elevation="1" Anchor="Anchor.Right" Variant="DrawerVariant.Responsive">
-
-            <RadzenCard style="height:100%; width:100%; padding:5px">
-                <RadzenCard style="padding:5px; margin-top:5px">
-                    <div class="row">
-                        <h5 style="margin:auto">Delivery</h5><br/>
-                        <h5 style="margin:auto">Total: @(OrdenesPendientes.Where(o=>o.TipoOrdenId == 1).Sum(o=>o.Total).ToString("C2"))</h5>
-                    </div>
-                </RadzenCard>
-                <div class="row">
-                    <RadzenCard Style="width:100%; margin:15px; padding:15px; height: 280px; overflow: scroll">
-                        @foreach (var orden in OrdenesPendientes.Where(o => o.TipoOrdenId == 1))
-                        {
-                            <RadzenCard class="orden" Style="padding:5px" @onclick="@(()=> SeleccionarOrden(orden))">
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <div class="row" style="font-size:small">
-                                            <div class="col-sm-12">
-                                                <div style="margin-top:1px">Cliente:</div>
-                                                <b>@orden.NombreCliente</b>
-                                            </div>
-                                        </div>
-                                        <div class="row" style="font-size:small">
-                                            
-                                            <div class="col-sm-6">
-                                                <div style="margin-top:1px">Fecha:</div>
-                                                <b>@orden.FechaPedido.ToString("d")</b>
-                                            </div>
-                                            <div class="col-sm-6">
-                                                <div style="margin-top:1px">Importe:</div>
-                                                <b>@orden.Total.ToString("C2")</b>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </RadzenCard>
-                        }
-                    </RadzenCard>
-                </div>
-                <RadzenCard style="padding:5px; margin-top:5px">
-                    <div class="row">
-                        <h5 style="margin:auto">Para Llevar</h5><br/>
-                        <h5 style="margin:auto">Total: @(OrdenesPendientes.Where(o=>o.TipoOrdenId == 2).Sum(o=>o.Total).ToString("C2"))</h5>
-                    </div>
-                </RadzenCard>
-                <div class="row">
-                    <RadzenCard Style="width: 100%; margin: 15px; padding: 15px; height: 280px; overflow: scroll ">
-                        @foreach (var orden in OrdenesPendientes.Where(o => o.TipoOrdenId == 2))
-                        {
-                            <RadzenCard class="orden" Style="padding:5px" @onclick="@(()=> SeleccionarOrden(orden))">
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <div class="row" style="font-size:small">
-                                            <div class="col-sm-12">
-                                                <div style="margin-top:1px">Cliente:</div>
-                                                <b>@orden.NombreCliente</b>
-                                            </div>
-                                        </div>
-                                        <div class="row" style="font-size:small">
-                                            <div class="col-sm-6">
-                                                <div style="margin-top:1px">Fecha:</div>
-                                                <b>@orden.FechaPedido.ToString("d")</b>
-                                            </div>
-                                            <div class="col-sm-6">
-                                                <div style="margin-top:1px">Importe:</div>
-                                                <b>@orden.Total.ToString("C2")</b>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </RadzenCard>
-                        }
-                    </RadzenCard>
-                </div>
-            </RadzenCard>
-        </MudDrawer>
+        
     </div>
 </RadzenCard>
 

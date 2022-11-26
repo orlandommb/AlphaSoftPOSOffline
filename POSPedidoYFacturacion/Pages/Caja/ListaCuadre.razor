@@ -15,17 +15,17 @@
     <div class="row">
         <div class="col-sm-4">
             <div class="form-group">
-                <MudDateRangePicker Editable="true" Label="Elija el rango de fecha" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" @bind-DateRange="DateRange" />
+                <MudDateRangePicker Editable="true" Label="Elija el rango para la fecha de apertura" Margin="Margin.Dense" Variant="MudBlazor.Variant.Outlined" Color="Color.Info" @bind-DateRange="DateRange" />
             </div>
         </div>
         <div class="col-sm-4">
             <div class="form-group">
-                <MudTextField @bind-Value="@NumeroCuadre" Label="Codigo" Variant="MudBlazor.Variant.Outlined"></MudTextField>
+                <MudTextField @bind-Value="@NumeroCuadre" Label="Codigo" Margin="Margin.Dense" Variant="MudBlazor.Variant.Outlined"></MudTextField>
             </div>
         </div>
         <div class="col-sm-2">
             <div class="form-group">
-                <MudCheckBox @bind-Checked="@Cerrado" Size="Size.Large" Color="Color.Info" Label="Cerrado" CheckedIcon="@Icons.Material.Outlined.Lock" UncheckedIcon="@Icons.Material.Filled.LockOpen"></MudCheckBox>
+                <MudCheckBox @bind-Checked="@Cerrado" Size="Size.Large" Dense="true" Color="Color.Info" Label="Cerrado" CheckedIcon="@Icons.Material.Outlined.Lock" UncheckedIcon="@Icons.Material.Filled.LockOpen"></MudCheckBox>
             </div>
         </div>
         <div class="col-sm-2">
@@ -137,7 +137,8 @@
             p => p.EmpresaId == Empresa.Id && 
                         p.SucursalId == Sucursal.Id && 
                         p.FechaApertura.Date >= DateRange.Start.Value.Date &&
-                        (p.FechaCierre == null || p.FechaCierre.Value.Date <= DateRange.End.Value.Date) &&
+                        p.FechaApertura.Date <= DateRange.End.Value.Date &&
+                        //(p.FechaCierre == null || p.FechaCierre.Value.Date <= DateRange.End.Value.Date) &&
                         p.Cerrado == Cerrado &&
                         (NumeroCuadre == null || p.Id == Convert.ToInt32(NumeroCuadre))
                         ).ToListAsync();
