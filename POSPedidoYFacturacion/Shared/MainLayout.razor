@@ -15,7 +15,7 @@
             <MudText Typo="Typo.h5" Class="ml-3">@Empresa.Nombre</MudText>
         }
         <MudSpacer />
-        <RadzenProfileMenu Style="background-color:transparent;padding:2px; width:165px">
+        @* <RadzenProfileMenu Style="background-color:transparent;padding:2px; width:165px">
             <Template>
                 <MudChip Style="border-style: solid; border-color:white; width:165px; height:60px; color:white" Icon="@Icons.Material.Filled.Person" Color="Color.Inherit">@UserName</MudChip>
             </Template>
@@ -25,10 +25,10 @@
                     <MudButton Style="width:100%" EndIcon="@Icons.Material.Filled.Logout" Color="Color.Error" ButtonType="MudBlazor.ButtonType.Submit">Cerrar Sesion</MudButton>
                 </form>
             </ChildContent>
-        </RadzenProfileMenu>
-        @* <MudMenu @ref="@MudMenu" FullWidth="true" EndIcon="@Icons.Material.Outlined.KeyboardArrowDown" Dense="true" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+        </RadzenProfileMenu> *@
+        <MudMenu FullWidth="true" EndIcon="@Icons.Material.Outlined.KeyboardArrowDown" Dense="true" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
             <ActivatorContent>
-                <MudChip Style="border-style: solid; border-color:white; width:150px" Icon="@Icons.Material.Filled.Person" Color="Color.Info" Size="Size.Large">@UserName</MudChip>
+                <MudChip Style="border-style: solid; border-color:white; max-width:150px" Icon="@Icons.Material.Filled.Person" Color="Color.Info" Size="Size.Large">@UserName</MudChip>
             </ActivatorContent>
             <ChildContent>
                 <MudMenuItem OnClick="NavegarManage">Mi Cuenta</MudMenuItem>
@@ -38,7 +38,7 @@
                     </form>
                 </MudMenuItem>
             </ChildContent>
-        </MudMenu> *@
+        </MudMenu>
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="1">
         <MudDrawerContainer>
@@ -110,8 +110,6 @@
         if (result.Success)
         {
             Empresa = result.Value;
-            using var DbContext = DbContextFactory.CreateDbContext();
-            Empresa = await DbContext.Empresa.OrderBy(e => e.Id).SingleOrDefaultAsync();
             StateHasChanged();
         }
     }
@@ -133,7 +131,8 @@
     
     private void NavegarManage()
     {
-        NavManager.NavigateTo("/Identity/Account/Manage");
+        NavManager.NavigateTo("Identity/Account/Manage", true);
+        //StateHasChanged();
     }
 
     void DrawerToggle()

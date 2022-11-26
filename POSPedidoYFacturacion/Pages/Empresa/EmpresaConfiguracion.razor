@@ -187,12 +187,16 @@
             await DbContext.AddAsync(Empresa);
             await DbContext.SaveChangesAsync();
 
+            await LocalStorage.SetAsync("Empresa", Empresa);
+
             await IMessage.Success("Configuracion registrada con exito!");
         }
         else
         {
             DbContext.Update(Empresa);
             await DbContext.SaveChangesAsync();
+
+            await LocalStorage.SetAsync("Empresa", Empresa);
 
             await IMessage.Success("Configuracion modificada con exito!");
         }
