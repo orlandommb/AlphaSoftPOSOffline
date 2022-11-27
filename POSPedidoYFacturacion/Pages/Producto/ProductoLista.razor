@@ -147,7 +147,7 @@ else
                             <td>@String.Format("{0:C2}", item.Precio)</td>
                             <td>
                                 <MudTooltip Text="Buscar">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="MudBlazor.Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Preview" Variant="MudBlazor.Variant.Outlined" OnClick="@(() => BtnVistaPreviaClick(item.Id))" />
                                 </MudTooltip>  
                             </td>
                         </tr>
@@ -181,7 +181,7 @@ else
                                         <div style="margin-top:10px">Nombre:</div>
                                         <b>@Producto.Nombre</b>
                                         <div style="margin-top:10px">Existencia:</div>
-                                        <b>@(Existencias.SingleOrDefault(e=>e.ProductoId == Producto.Id).Cantidad.ToString())</b>
+                                        <b>@Producto.Existencias.Sum(e => e.Cantidad).ToString()</b>
                                         <div style="margin-top:10px">Opciones:</div>
                                         <RadzenButton Icon="preview" Click="@(() => BtnVistaPreviaClick(Producto.Id))"></RadzenButton>
                                     </div>
@@ -258,12 +258,13 @@ else
         .Include(p => p.SubCategoria)
         .Include(p => p.ImpuestoTipo)
         .Include(p => p.Impuesto)
+        .Include(p => p.Existencias)
         .Where(p => p.Activo == Activo &&
-        (Nombre == null || p.Nombre.Contains(Nombre)) &&
-            (Codigo == null || p.Id == Convert.ToInt32(Codigo)) &&
-            (CategoriaSeleccionadaId == null || p.CategoriaId == CategoriaSeleccionadaId) &&
-            (SubCategoriaSeleccionadaId == null || p.SubCategoriaId == SubCategoriaSeleccionadaId))
-        .ToListAsync();
+                    (Nombre == null || p.Nombre.Contains(Nombre)) &&
+                    (string.IsNullOrWhiteSpace(Codigo) || p.Codigo.Contains(Codigo.Trim())) &&
+                    (CategoriaSeleccionadaId == null || p.CategoriaId == CategoriaSeleccionadaId) &&
+                    (SubCategoriaSeleccionadaId == null || p.SubCategoriaId == SubCategoriaSeleccionadaId)
+        ).ToListAsync();
 
         foreach (var item in Lista)
         {

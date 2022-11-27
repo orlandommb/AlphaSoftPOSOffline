@@ -1180,7 +1180,7 @@ else
             Venta.SucursalId = Sucursal.Id;
             Venta.Cuadre = null;
             Venta.Almacen = await DbContext.Almacenes.SingleOrDefaultAsync(p => p.EmpresaId == Empresa.Id && p.SucursalId == Sucursal.Id && p.EsDeVentas == true);
-
+            Venta.TipoFactura = null;
             Venta.TipoOrden = null;
             Venta.Sector = null;
             Venta.CuadreId = CuadreAbierto.Id;

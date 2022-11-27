@@ -3,67 +3,75 @@
 @inject ProtectedLocalStorage LocalStorage
 <!-- Modal -->
 <MudOverlay Visible="true" DarkBackground="true">
-<div class="modal fade show" id="exampleModal" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Agregar Producto a Orden</h5>
-                <button type="button" class="close" @onclick="OnCancel">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="form-group" style="padding-left:1rem">
-                        <div>Producto:</div>
-                        <div>
-                            <RadzenLabel class="form-control" Text="@Detalle.Producto.Nombre" />
-                        </div>
-                    </div>
+    <div class="modal fade show" id="exampleModal" tabindex="-1" style="display:block" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Agregar Producto a Orden</h5>
+                    <button type="button" class="close" @onclick="OnCancel">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <div>Cantidad</div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="form-group" style="padding-left:1rem">
+                            <div>Producto:</div>
                             <div>
-                                <RadzenNumeric TValue="int" @bind-Value="Detalle.Cantidad" Change="@((args)=>CantidadModalChange(args))" />
+                                <RadzenLabel class="form-control" Text="@Detalle.Producto.Nombre" />
                             </div>
                         </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-2">
+                            <div class="form-group">
+                                <div>Cantidad</div>
+                                <div>
+                                    <RadzenNumeric TValue="int" @bind-Value="Detalle.Cantidad" Change="@((args)=>CantidadModalChange(args))" />
+                                </div>
+                            </div>
 
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <div>Precio:</div>
-                            <div>
-                                <RadzenLabel class="form-control" Text="@Detalle.Producto.Precio.ToString("C2")" />
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="form-group">
+                                <div>Precio:</div>
+                                <div>
+                                    <RadzenLabel class="form-control" Text="@Detalle.Producto.Precio.ToString("C2")" />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <div>Descuento:</div>
-                            <div>
-                                <RadzenNumeric TValue="decimal" @bind-Value="Detalle.Descuento" ShowUpDown="false" Format="0.00" Change="@((args)=>DescuentoModalChange(args))" />
+                        <div class="col-sm-2">
+                            <div class="form-group">
+                                <div>Desc. %:</div>
+                                <div>
+                                    <RadzenNumeric TValue="decimal" @bind-Value="MontoPorcentaje" ShowUpDown="true" Format="0.00" Change="@( ()=> CalcularDescuentoPorciento())" />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <div>Importe:</div>
-                            <div>
-                                <RadzenLabel class="form-control" Text="@Detalle.Importe.ToString("C2")" />
+                        <div class="col-sm-2">
+                            <div class="form-group">
+                                <div>Descuento:</div>
+                                <div>
+                                    <RadzenNumeric TValue="decimal" @bind-Value="Detalle.Descuento" ShowUpDown="false" Format="0.00" Change="@( (args) => DescuentoModalChange(args))" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="form-group">
+                                <div>Importe:</div>
+                                <div>
+                                    <RadzenLabel class="form-control" Text="@Detalle.Importe.ToString("C2")" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <RadzenButton class="btn btn-danger" Click="OnDelete">Eliminar Producto</RadzenButton>
-                <RadzenButton class="btn btn-primary" Click="OnConfirm">Agregar Producto</RadzenButton>
+                <div class="modal-footer">
+                    <RadzenButton class="btn btn-danger" Click="OnDelete">Eliminar Producto</RadzenButton>
+                    <RadzenButton class="btn btn-primary" Click="OnConfirm">Agregar Producto</RadzenButton>
+                </div>
             </div>
         </div>
     </div>
-</div>
 </MudOverlay>
 @code {
 
@@ -127,13 +135,16 @@
 
     private void DescuentoModalChange(dynamic value)
     {
-        if(value == 0)
+        if(value > 0)
+        {
+            Detalle.Descuento = (value * Detalle.Cantidad);
+            MontoPorcentaje = Detalle.Descuento * 100 / (Detalle.Precio * Detalle.Cantidad);
+        }
+        else
         {
             Detalle.Importe = Detalle.Cantidad * Detalle.Precio;
-            return;
         }
-        Detalle.Descuento = ((MontoPorcentaje / 100) * Detalle.Precio) * Detalle.Cantidad;
-        StateHasChanged();
+        CalcularImporte();
     }
 
     private void CalcularDescuentoPorciento()
@@ -141,7 +152,6 @@
         var Porcentaje = (MontoPorcentaje / 100);
         var Descuento = Porcentaje * Detalle.Precio;
         Detalle.Descuento = Descuento;
-        DescuentoModalChange(Descuento);
         CalcularImporte();
     }
 
