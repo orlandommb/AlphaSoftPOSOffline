@@ -26,6 +26,9 @@ namespace POSPedidoYFacturacion.Models
         public string Nombre { get; set; }
         [Precision(precision: 18, scale: 2)]
         public decimal Descuento { get; set; }
+        
+        [Precision(precision: 18, scale: 2)]
+        public decimal PorcentajeDescuento { get; set; }
         [Precision(precision: 18, scale: 2)]
         public decimal ITBIS { get; set; }
 

@@ -210,7 +210,7 @@ else
                 <RadzenCard Style="padding:15px">
                     <div class="row">
                         <div class="col-sm-3">
-                            <MudAutocomplete ResetValueOnEmptyText="true" Dense="true" Margin="Margin.Dense" T="Producto" Label="Producto" Value="@NuevoDetalle.Producto" Immediate="true"
+                            <MudAutocomplete @ref="ProductoSelect" ResetValueOnEmptyText="true" Dense="true" Margin="Margin.Dense" T="Producto" Label="Producto" Value="@NuevoDetalle.Producto" Immediate="true"
                                             SearchFunc="@Search" ToStringFunc="@(e=> e==null?null : $"{e.Codigo} | {e.Nombre}")" 
                                             ValueChanged="@( args=> ProductoSeleccionadoOnChange(args))" />
                         </div>
@@ -218,20 +218,23 @@ else
                             <MudTextField T="int" Label="Cantidad" Immediate="true" Value="NuevoDetalle.Cantidad" ValueChanged="@( args => CantidadChange(args))"/>
                         </div>
                         <div class="col-sm-1">
-                            <MudTextField T="decimal" Label="Descuento" @bind-Value="NuevoDetalle.Descuento"/>
+                            <MudTextField T="decimal" Label="Costo" Immediate="true" Value="NuevoDetalle.Costo" ValueChanged="@(args => CostoChange(args))"/>
+                        </div>
+                        <div class="col-sm-1">
+                            <MudTextField T="decimal" Label="Descuento %" Immediate="true" Value="NuevoDetalle.PorcentajeDescuento" ValueChanged="@(args => CalcularDescuentoPorciento(args))"/>
+                        </div>
+                        <div class="col-sm-1">
+                            <MudTextField T="decimal" Label="Descuento" Immediate="true" Value="NuevoDetalle.Descuento" ValueChanged="@(args => DescuentoChange(args))"/>
+                        </div>
+                        <div class="col-sm-1">
+                            <MudTextField T="decimal" ReadOnly="true" Label="Impuesto" Immediate="true" @bind-Value="NuevoDetalle.ITBIS"/>
                         </div>
                         <div class="col-sm-2">
-                            <MudTextField T="decimal" Label="Costo" @bind-Value="NuevoDetalle.Costo"/>
-                        </div>
-                        <div class="col-sm-2">
-                            <MudTextField T="decimal" ReadOnly="true" Label="Impuesto" @bind-Value="NuevoDetalle.ITBIS"/>
-                        </div>
-                        <div class="col-sm-2">
-                            <MudTextField T="decimal" Label="Importe" @bind-Value="NuevoDetalle.Importe"/>
+                            <MudTextField T="decimal" Label="Importe" Immediate="true" @bind-Value="NuevoDetalle.Importe"/>
                         </div>
                         <div class="col-sm-1">
                             <MudTooltip Text="Agregar">
-                                <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="MudBlazor.Variant.Outlined" OnClick="@(() => AgregarDetalle(NuevoDetalle))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="MudBlazor.Variant.Outlined" OnClick="@(async ()=> await AgregarDetalle(NuevoDetalle))" />
                             </MudTooltip>
                         </div>
                     </div>
@@ -246,6 +249,7 @@ else
                                     <th scope="col">Producto</th>
                                     <th scope="col">Cantidad</th>
                                     <th scope="col">Costo</th>
+                                    <th scope="col">Desc. %</th>
                                     <th scope="col">Descuento</th>
                                     <th scope="col">Impuesto</th>
                                     <th scope="col">Importe</th>
@@ -262,6 +266,7 @@ else
                                             <td>@item.Producto.Nombre</td>
                                             <td>@item.Cantidad</td>
                                             <td>@String.Format("{0:C2}", item.Costo)</td>
+                                            <td>@String.Format("{0:C2}", item.PorcentajeDescuento)</td>
                                             <td>@String.Format("{0:C2}", item.Descuento)</td>
                                             <td>@String.Format("{0:C2}", item.ITBIS)</td>
                                             <td>@String.Format("{0:C2}", item.Importe)</td>
@@ -305,6 +310,8 @@ else
 
     private bool MostrarModal { get; set; }
 
+    private MudAutocomplete<Producto> ProductoSelect;
+
     protected override async Task OnInitializedAsync()
     {
         Compra.CompraDetalles = new List<CompraDetalle>();
@@ -317,6 +324,7 @@ else
             var Usuario = await UserManager.FindByNameAsync(User.Identity.Name);
 
             Compra.UsuarioId = Usuario.Id;
+            Compra.FechaHoraFactura = DateTime.Now;
 
         }
 
@@ -476,67 +484,65 @@ else
 
         CantidadChange(NuevoDetalle.Cantidad);
 
-        switch (ProductoSeleccionado.ImpuestoTipoId)
+        CalcularImpuesto();
+
+        CalcularImporte();
+    }
+
+    private void CalcularDescuentoPorciento(decimal value)
+    {
+        NuevoDetalle.PorcentajeDescuento = value;
+        var PorcentajeDescuento = (NuevoDetalle.PorcentajeDescuento / 100);
+        var Descuento = PorcentajeDescuento * (NuevoDetalle.Costo * NuevoDetalle.Cantidad);
+        NuevoDetalle.Descuento = Descuento;
+        CalcularImpuesto();
+        CalcularImporte();
+    }
+
+    private void DescuentoChange(dynamic value)
+    {
+        if(value > 0)
         {
-            case 1:
-            {
-                NuevoDetalle.ITBIS = 0;
-                break;
-            }
-            case 2:
-            {
-                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
-                var itbis = porcentale * NuevoDetalle.Costo;
-                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * itbis;
-                break;
-            }
-            case 3:
-            {
-                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
-                var CostoBase = NuevoDetalle.Costo / (porcentale + 1);
-                var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
-                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * ItbisIncluido;
-                break;
-            }     
+            NuevoDetalle.Descuento = value;
+            NuevoDetalle.PorcentajeDescuento = NuevoDetalle.Descuento * 100 / (NuevoDetalle.Costo * NuevoDetalle.Cantidad);
+            CalcularImpuesto();
+        }
+        else
+        {
+            NuevoDetalle.Importe = NuevoDetalle.Cantidad * NuevoDetalle.Costo;
+            CalcularImpuesto();
         }
 
+        CalcularImporte();
+    }
+
+    private void CalcularImporte()
+    {
         NuevoDetalle.Importe = NuevoDetalle.Cantidad * NuevoDetalle.Costo;
+        StateHasChanged();
     }
 
     void CantidadChange(dynamic value)
     {
         NuevoDetalle.Cantidad = value;
-        
-        switch (ProductoSeleccionado.ImpuestoTipoId)
-        {
-            case 1:
-            {
-                NuevoDetalle.ITBIS = 0;
-                break;
-            }
-            case 2:
-            {
-                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
-                var itbis = porcentale * NuevoDetalle.Costo;
-                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * itbis;
-                break;
-            }
-            case 3:
-            {
-                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
-                var CostoBase = NuevoDetalle.Costo / (porcentale + 1);
-                var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
-                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * ItbisIncluido;
-                break;
-            }     
-        }
 
-        NuevoDetalle.Importe = NuevoDetalle.Cantidad * NuevoDetalle.Costo;
+        CalcularDescuentoPorciento(NuevoDetalle.PorcentajeDescuento);
+        CalcularImpuesto();
+        CalcularImporte();
+    }
+
+    void CostoChange(decimal value)
+    {
+        NuevoDetalle.Costo = value;
+        CalcularDescuentoPorciento(NuevoDetalle.PorcentajeDescuento);
+        DescuentoChange(NuevoDetalle.Descuento);
+        CalcularImpuesto();
+        CalcularImporte();
     }
 
     void CalcularImpuesto()
     {
-        switch (ProductoSeleccionado.ImpuestoTipoId)
+        switch (NuevoDetalle.Producto.ImpuestoTipoId)
         {
             case 1:
             {
@@ -545,25 +551,29 @@ else
             }
             case 2:
             {
-                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
-                var itbis = porcentale * NuevoDetalle.Costo;
-                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * itbis;
+                var porcentale = (NuevoDetalle.Producto.Impuesto.Valor / 100);
+                var itbis = porcentale * ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento);
+                NuevoDetalle.ITBIS = itbis;
                 break;
             }
             case 3:
             {
-                var porcentale = (ProductoSeleccionado.Impuesto.Valor / 100);
-                var CostoBase = NuevoDetalle.Costo / (porcentale + 1);
-                var ItbisIncluido = NuevoDetalle.Costo - CostoBase;
-                NuevoDetalle.ITBIS = NuevoDetalle.Cantidad * ItbisIncluido;
+                var porcentale = (NuevoDetalle.Producto.Impuesto.Valor / 100);
+                var CostoBase = ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento) / (porcentale + 1);
+                var ItbisIncluido = ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento) - CostoBase;
+                NuevoDetalle.ITBIS = ItbisIncluido;
                 break;
-            }     
+            }
+            default :
+            {
+                break;
+            }      
         }
 
 
     }
 
-    void AgregarDetalle(CompraDetalle ParametroDetalle)
+    async Task AgregarDetalle(CompraDetalle ParametroDetalle)
     {
         if (ParametroDetalle == null)
             return;
@@ -575,6 +585,7 @@ else
             var Item = Compra.CompraDetalles.SingleOrDefault(d => d.ProductoId == ParametroDetalle.ProductoId);
             Item.Cantidad = ParametroDetalle.Cantidad;
             Item.Costo = ParametroDetalle.Costo;
+            Item.PorcentajeDescuento = ParametroDetalle.PorcentajeDescuento;
             Item.Descuento = ParametroDetalle.Descuento;
             Item.ITBIS = ParametroDetalle.ITBIS;
             Item.Importe = ParametroDetalle.Importe;
@@ -587,6 +598,7 @@ else
                 ProductoId = ParametroDetalle.ProductoId,
                 Cantidad = ParametroDetalle.Cantidad,
                 Costo = ParametroDetalle.Costo,
+                PorcentajeDescuento = ParametroDetalle.PorcentajeDescuento,
                 Descuento = ParametroDetalle.Descuento,
                 ITBIS = ParametroDetalle.ITBIS,
                 Importe = ParametroDetalle.Importe
@@ -594,9 +606,14 @@ else
 
             Compra.CompraDetalles.Add(Nuevo);
         }
+        
         CalcularTotales();
-        ProductoSeleccionado = new Producto();
         NuevoDetalle = new CompraDetalle();
+        await ProductoSelect.Clear();
+        await ProductoSelect.BlurAsync();
+        StateHasChanged();
+        await ProductoSelect.FocusAsync();
+        
 
         StateHasChanged();
 
@@ -624,7 +641,7 @@ else
 
     public void CalcularTotales()
     {
-        SubTotal = Compra.CompraDetalles.Sum(FCD => FCD.Importe);
+        SubTotal = Compra.CompraDetalles.Sum(FCD => FCD.Cantidad * FCD.Costo);
         Descuentos = Compra.CompraDetalles.Sum(FCD => FCD.Descuento);
         Impuestos = Compra.CompraDetalles.Sum(FCD => FCD.ITBIS);
         Total = SubTotal - Descuentos + Impuestos;
@@ -685,6 +702,7 @@ else
             CompraNueva = Compra;
             CompraNueva.EmpresaId = Empresa.Id;
             CompraNueva.SucursalId = Sucursal.Id;
+            CompraNueva.TipoFactura = null;
             if(Compra.TipoCompraId == 1)
             {
                 foreach (var item in CompraNueva.CompraDetalles)
@@ -747,46 +765,6 @@ else
                     }
                 }
             }
-
-            @* //
-            //Procesos de Actualizacion de Existencia de los detalles creados y actualizados.
-            //
-
-            //Consultamos los detalles de las Compras de la empresa.
-            var ComprasDetallesActivos = await DbContext.CompraDetalles.Include(c => c.Compra).Include(c => c.Producto).ToListAsync();
-            //Consultamos los detalles de los Ajustes de la empresa.
-            //var AjustesDetallesActivos = await _IAjusteInventarioDetalleRepository.GetAllAsync(ajd => ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId, null, "AjusteInventario", "Productos");
-            //Consultamos los detalles de las Ventas de la empresa.
-            var VentasDetallesActivos = await DbContext.VentaDetalles.Include(c => c.Venta).Include(c => c.Producto).ToListAsync();
-
-            //Por cada detalle en la lista de la Compra envidada.
-            foreach (var Detalle in Compra.CompraDetalles)
-            {
-                if (Detalle.Producto.ManejaExistencia)
-                {
-                    //Consultamos todas las existencia por almacen, donde el producto sea igual al producto del detalle de la compra enviada.
-                    var Existencias = await DbContext.Existencias.Include(e => e.Almacen).Include(e => e.Producto).Where(EPA => EPA.ProductoId == Detalle.ProductoId && EPA.AlmacenId == Compra.AlmacenId).ToListAsync();
-
-                    //Por cada existencia en la Lista de  Existencias consultada.
-                    foreach (var Existencia in Existencias)
-                    {
-
-                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Compra.
-                        var ComprasCantidad = ComprasDetallesActivos.Where(cd => cd.ProductoId == Detalle.ProductoId && cd.Compra.Nulo == false && cd.Compra.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
-                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado del Ajuste.
-                        //var AjustesCantidad = AjustesDetallesActivos.Where(ajd => ajd.ProductosId == Detalle.ProductosId && ajd.AjusteInventario.Nulo == false && ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId && ajd.AjusteInventario.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
-                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Venta.
-                        var VentasCantidad = VentasDetallesActivos.Where(vd => vd.ProductoId == Detalle.ProductoId && vd.Venta.Nulo == false && vd.Venta.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
-
-                        //Sumamos las Cantidades de cada tipo de producto y asignarlas a las cantidades de la existencia.
-                        Existencia.Cantidad = ComprasCantidad - VentasCantidad;
-
-                        //Salvamos los relacion producto por almacen en la tabla existencias.
-                        DbContext.Update(Existencia);
-                        await DbContext.SaveChangesAsync();
-                    }
-                }
-            } *@
 
         }
 
@@ -969,44 +947,6 @@ else
                     } 
 
                 }
-
-                @* //
-                //Procesos de Actualizacion de Existencia de los detalles creados y actualizados.
-                //
-
-                //Consultamos los detalles de las Compras de la empresa.
-                var ComprasDetallesActivos = await DbContext.CompraDetalles.Include(c => c.Compra).Include(c => c.Producto).ToListAsync();
-                //Consultamos los detalles de los Ajustes de la empresa.
-                //var AjustesDetallesActivos = await _IAjusteInventarioDetalleRepository.GetAllAsync(ajd => ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId, null, "AjusteInventario", "Productos");
-                //Consultamos los detalles de las Ventas de la empresa.
-                var VentasDetallesActivos = await DbContext.VentaDetalles.Include(c => c.Venta).Include(c => c.Producto).ToListAsync();
-
-                //Por cada detalle en la lista de la Compra envidada.
-                foreach (var Detalle in Compra.CompraDetalles)
-                {
-
-                    //Consultamos todas las existencia por almacen, donde el producto sea igual al producto del detalle de la compra enviada.
-                    var Existencias = await DbContext.Existencias.Include(e => e.Almacen).Include(e => e.Producto).Where(EPA => EPA.ProductoId == Detalle.ProductoId && EPA.AlmacenId == Compra.AlmacenId).ToListAsync();
-
-                    //Por cada existencia en la Lista de  Existencias consultada.
-                    foreach (var Existencia in Existencias)
-                    {
-
-                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Compra.
-                        var ComprasCantidad = ComprasDetallesActivos.Where(cd => cd.ProductoId == Detalle.ProductoId && cd.Compra.Nulo == false && cd.Compra.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
-                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado del Ajuste.
-                        //var AjustesCantidad = AjustesDetallesActivos.Where(ajd => ajd.ProductosId == Detalle.ProductosId && ajd.AjusteInventario.Nulo == false && ajd.AjusteInventario.EmpresaId == FacturaCompraVM.EmpresaId && ajd.AjusteInventario.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
-                        //Sumar todas las cantidades donde el producto del Detalle de la compra enviada sea igual al producto del detalle consultado de la Venta.
-                        var VentasCantidad = VentasDetallesActivos.Where(vd => vd.ProductoId == Detalle.ProductoId && vd.Venta.Nulo == false && vd.Venta.AlmacenId == Existencia.AlmacenId).Sum(ajd => ajd.Cantidad);
-
-                        //Sumamos las Cantidades de cada tipo de producto y asignarlas a las cantidades de la existencia.
-                        Existencia.Cantidad = ComprasCantidad - VentasCantidad;
-
-                        //Salvamos los relacion producto por almacen en la tabla existencias.
-                        DbContext.Update(Existencia);
-                        await DbContext.SaveChangesAsync();
-                    }
-                } *@
             }
             Compra = new Compra();
             Compra.CompraDetalles = new List<CompraDetalle>();
