@@ -125,6 +125,15 @@
                         <RadzenDropDown @bind-Value=@Empresa.TipoOrdenPredeterminada TValue="int" Data="TipoOrdenes" ValueProperty="Id" TextProperty="Nombre" />
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Vista de Productos por Defecto en el Punto de Venta</label>
+                    <div>
+                        <MudSelect T="int" @bind-Value=@Empresa.VistaDeProductosPorDefectoEnPuntoDeVenta Margin="Margin.Dense" Dense="true" Variant="MudBlazor.Variant.Outlined" >
+                            <MudSelectItem Value="0">Cuadricula</MudSelectItem>
+                            <MudSelectItem Value="1">Lista</MudSelectItem>
+                        </MudSelect>
+                    </div>
+                </div>
                 <RadzenButton ButtonStyle="ButtonStyle.Success" ButtonType="Radzen.ButtonType.Submit" Icon="save" />
             </EditForm>
         </RadzenTabsItem>

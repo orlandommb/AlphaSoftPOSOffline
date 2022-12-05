@@ -31,6 +31,7 @@ namespace POSPedidoYFacturacion.Models
         public decimal PorcientoDescuento { get; set; }
         
         public bool MostrarOrdenesParaLlevarDeliveryPorDefecto { get; set; }
+        public int VistaDeProductosPorDefectoEnPuntoDeVenta { get; set; }
 
 
     }

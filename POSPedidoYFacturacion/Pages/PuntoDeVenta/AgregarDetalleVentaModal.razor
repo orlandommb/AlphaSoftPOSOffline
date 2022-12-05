@@ -43,7 +43,7 @@
                             <div class="form-group">
                                 <div>Desc. %:</div>
                                 <div>
-                                    <RadzenNumeric TValue="decimal" @bind-Value="MontoPorcentaje" ShowUpDown="true" Format="0.00" Change="@( ()=> CalcularDescuentoPorciento())" />
+                                    <RadzenNumeric TValue="decimal" @bind-Value="Detalle.DescuentoPorcentaje" ShowUpDown="true" Format="0.00" Change="@( ()=> CalcularDescuentoPorciento())" />
                                 </div>
                             </div>
                         </div>
@@ -103,7 +103,7 @@
         if (result.Success)
         {
             Empresa = result.Value;
-            MontoPorcentaje = Empresa.PorcientoDescuento;
+            Detalle.DescuentoPorcentaje = Empresa.PorcientoDescuento;
             CalcularDescuentoPorciento();
             StateHasChanged();
         }
@@ -137,8 +137,8 @@
     {
         if(value > 0)
         {
-            Detalle.Descuento = (value * Detalle.Cantidad);
-            MontoPorcentaje = Detalle.Descuento * 100 / (Detalle.Precio * Detalle.Cantidad);
+            Detalle.Descuento = value;
+            Detalle.DescuentoPorcentaje = Detalle.Descuento * 100 / (Detalle.Precio * Detalle.Cantidad);
         }
         else
         {
@@ -149,9 +149,8 @@
 
     private void CalcularDescuentoPorciento()
     {
-        var Porcentaje = (MontoPorcentaje / 100);
-        var Descuento = Porcentaje * Detalle.Precio;
-        Detalle.Descuento = Descuento;
+        var Porcentaje = (Detalle.DescuentoPorcentaje / 100);
+        Detalle.Descuento = Porcentaje * (Detalle.Precio * Detalle.Cantidad);
         CalcularImporte();
     }
 

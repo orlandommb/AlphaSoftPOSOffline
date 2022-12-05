@@ -31,6 +31,13 @@ else
                 <MudTextField T="string" ReadOnly="true" Text="@($"{CuadreAbierto.Usuario.UserName} ")" Label="Cajero" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
                 <RadzenLabel  />
                 <MudSpacer />
+                <MudTooltip Text="Vista">
+                    <MudCheckBox T="int" @bind-Checked="Vista" CheckedIcon="@Icons.Material.Filled.GridView" UncheckedIcon="@Icons.Material.Filled.List">
+                        
+                    </MudCheckBox>
+                </MudTooltip>
+                <MudSpacer />
+                <MudButton StartIcon="@Icons.Material.Filled.Preview" Color="Color.Info" Variant="MudBlazor.Variant.Outlined" OnClick="AbrirAgregarDatos">Datos de Factura</MudButton>
                 <MudTooltip Text="Importar ordenes">
                     <MudIconButton Style="height: auto" OnClick="AbrirImportarOrdenes" Color="Color.Info" Variant="MudBlazor.Variant.Outlined" Icon="@Icons.Material.Filled.Add"/>
                 </MudTooltip>
@@ -43,7 +50,7 @@ else
             </MudToolBar>
         </MudPaper>
         <EditForm Model="Venta">
-            <div class="row">
+            <div class="row g-0">
                 <div class="col-sm-9">
                     <RadzenCard Style="min-height:max-content; padding:5px">
                         <RadzenCard Style="font-size:small; padding:5px">
@@ -105,55 +112,78 @@ else
                                 </div>
                             </div>
                         </RadzenCard>
-                        <RadzenCard Style="height: 500px; overflow:scroll">
-                            @if (IsBusy)
-                            {
-                                <div class="middle-box">
-                                    <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
-                                </div>
-                            }
-                            else
-                            {
-                                <ul class="pizza-cards scrollable">
-
-                                    @foreach (var item in Productos)
-                                    {
-                                        if (Productos != null)
+                        @switch (Vista)
+                        {
+                            case 0:
+                                    <MudPaper Style="height: 510px; overflow-y: scroll">
+                                        @if (IsBusy)
                                         {
-                                            <li style="background-image: url('@item.ImageString')" @onclick="(async () => await SeleccionarProducto(item))">
-                                                <div class="pizza-info">
-                                                    <span class="title">@item.Nombre</span>
-                                                    @if (item.ManejaExistencia)
-                                                    {
-                                                        <span class="stock">@("Existencia: " + item.Existencias.Where(e => e.ProductoId == item.Id).Sum(e=>e.Cantidad).ToString())</span>
-                                                    }
-                                                    <span class="price">@item.Precio.ToString("C2")</span>
-                                                </div>
-                                            </li>
+                                            <div class="middle-box">
+                                                <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+                                            </div>
                                         }
-                                    }
-                                    @* <Virtualize Context="item" Items="Productos" ItemSize="144">
-                                            <li style="background-image: url('@item.ImageString')" @onclick="(async () => await SeleccionarProducto(item))">
-                                                <div class="pizza-info">
-                                                    <span class="title">@item.Nombre</span>
-                                                    @if (item.ManejaExistencia)
+                                        else
+                                        {
+                                            <ul class="pizza-cards scrollable">
+                                                @foreach (var item in Productos)
+                                                {
+                                                    if (Productos != null)
                                                     {
-                                                        <span class="stock">@("Existencia: " + item.Existencias.Where(e => e.ProductoId == item.Id).Sum(e=>e.Cantidad).ToString())</span>
+                                                        <li style="background-image: url('@item.ImageString')" @onclick="(async () => await SeleccionarProducto(item))">
+                                                            <div class="pizza-info">
+                                                                <span class="title">@item.Nombre</span>
+                                                                @if (item.ManejaExistencia)
+                                                                {
+                                                                    <span class="stock">@("Existencia: " + item.Existencias.Where(e => e.ProductoId == item.Id).Sum(e=>e.Cantidad).ToString())</span>
+                                                                }
+                                                                <span class="price">@item.Precio.ToString("C2")</span>
+                                                            </div>
+                                                        </li>
                                                     }
-                                                    <span class="price">@item.Precio.ToString("C2")</span>
-                                                </div>
-                                            </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </MudPaper>
+                                    @* <Virtualize Items="Productos" Context="producto" ItemSize="180">
+                                            <ProductoTejaComponent 
+                                            ImageSrc="@producto.ImageString"
+                                            Nombre="@producto.Nombre" 
+                                            Precio="@producto.Precio.ToString("C2")"
+                                            ExistenciaVisible="@producto.ManejaExistencia"
+                                            Existencia="@(producto.Existencias.Sum(e=>e.Cantidad).ToString())"/>
                                     </Virtualize> *@
-
-                                </ul>
-                            }
-                        </RadzenCard>
-
+                                break;
+                            case 1:
+                                    <MudTable T="Producto" Items="Productos" Height="450px" FixedHeader="true" Dense="true" OnRowClick="@(async args => await SeleccionarProducto(args.Item))" Loading="@IsBusy" LoadingProgressColor="Color.Info">
+                                        <LoadingContent>
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Info"/>
+                                        </LoadingContent>
+                                        <HeaderContent>
+                                            <MudTh scope="row">Codigo</MudTh>
+                                            <MudTh scope="row">Nombre</MudTh>
+                                            <MudTh scope="row">Categoria</MudTh>
+                                            <MudTh scope="row">Sub-Categoria</MudTh>
+                                            <MudTh scope="row">Existencia</MudTh>
+                                            <MudTh scope="row">Precio</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate Context="producto">
+                                            <MudTd>@producto.Codigo</MudTd>
+                                            <MudTd>@producto.Nombre</MudTd>
+                                            <MudTd>@producto.Categoria.Nombre</MudTd>
+                                            <MudTd>@producto.SubCategoria.Nombre</MudTd>
+                                            <MudTd>@producto.Existencias.Sum(e=>e.Cantidad).ToString()</MudTd>
+                                            <MudTd>@producto.Precio.ToString("C2")</MudTd>
+                                        </RowTemplate>
+                                        <PagerContent>
+                                            <MudTablePager RowsPerPageString="Productos Por Pagina" />
+                                        </PagerContent>
+                                    </MudTable>
+                                break;
+                        }
                     </RadzenCard>
                 </div>
                 <div class="col-sm-3">
                     <RadzenCard Style="padding:5px; margin-bottom:10px">
-                        <RadzenButton Text="Datos de Factura" Click="AbrirAgregarDatos" />
                         <RadzenCard Style="padding: 5px; font-size: small;">
                             <div class="row">
                                 <div class="col-sm-6">
@@ -181,7 +211,7 @@ else
                                     @if (Venta.SectorId != null)
                                     {
                                         <div class="form-group">
-                                            <label>Direccion:</label>
+                                            <label>Sector:</label>
                                             <div>
                                                 <label>@Venta.Sector.Nombre</label>
                                             </div>
@@ -199,15 +229,29 @@ else
                         <RadzenCard Style="min-height: fit-content; padding: 5px; font-size: small">
                             <div class="table-responsive-sm" style="overflow:scroll; height:250px; font-size:small">
                                 <table class="table table-sm" style="width:100%">
+                                    <thead>
+                                        <tr style="width: 100%">
+                                            <th scope="row" colspan="5">Producto</th>
+                                        </tr>
+                                        <tr style="width: 100%">
+                                            <th scope="row">Cantidad</th>
+                                            <th scope="row">Precio</th>
+                                            <th scope="row">Desc. %</th>
+                                            <th scope="row">Desc. $</th>
+                                            <th scope="row">Importe</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         @foreach (var item in Venta.VentaDetalles)
                                         {      
                                                     <tr style="width: 100%" @onclick="(()=>SeleccionarDetalle(item))">
-                                                        <th scope="row" colspan="3">@item.NombreProducto</th>
+                                                        <th scope="row" colspan="5">@item.NombreProducto</th>
                                                     </tr>
                                                     <tr style="width: 100%" @onclick="(()=>SeleccionarDetalle(item))">
                                                         <td scope="row">@item.Cantidad</td>
                                                         <td scope="row">@item.Precio.ToString("C2")</td>
+                                                        <td scope="row">@item.DescuentoPorcentaje %</td>
+                                                        <td scope="row">@item.Descuento.ToString("C2")</td>
                                                         <td scope="row">@item.Importe.ToString("C2")</td>
                                                     </tr>
                                         }
@@ -228,6 +272,17 @@ else
                                         <td></td>
                                         <td></td>
                                         <td><b>@Venta.SubTotal.ToString("C2")</b></td>
+                                    </tr>
+                                    <tr class="total">
+
+                                        <td><b>Impuesto:</b></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><b>@Venta.Impuesto.ToString("C2")</b></td>
                                     </tr>
                                     <tr class="total">
                                         <td><b>Descuento:</b></td>
@@ -267,17 +322,6 @@ else
                                     }
                                     <tr class="total">
 
-                                        <td><b>Impuesto:</b></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td><b>@Venta.Impuesto.ToString("C2")</b></td>
-                                    </tr>
-                                    <tr class="total">
-
                                         <td><b>Total:</b></td>
                                         <td></td>
                                         <td></td>
@@ -290,7 +334,7 @@ else
                                 </table>
                             </div>
                         </RadzenCard>
-                        <RadzenButton Style="margin-top: 10px; background-color:green" Text="Pagar" Icon="check_circle_outline" Click="(async()=>await AbrirFormaDePago())" />
+                        <MudButton Style="margin-top: 10px;" StartIcon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Variant="MudBlazor.Variant.Filled" FullWidth="true" OnClick="(async()=>await AbrirFormaDePago())" >Pagar</MudButton>
                     </RadzenCard>
                 </div>
             </div>
@@ -542,6 +586,8 @@ else
 
     public MudTextField<string> TextFieldCodigo { get; set; }
 
+    private int Vista {get; set;}
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -582,6 +628,7 @@ else
         {
             Empresa = result.Value;
             Venta.EmpresaId = Empresa.Id;
+            Vista = Empresa.VistaDeProductosPorDefectoEnPuntoDeVenta;
             StateHasChanged();
         }
     }
@@ -602,6 +649,8 @@ else
         IsBusy = true;
         using var DbContext = DbContextFactory.CreateDbContext();
         Productos = await DbContext.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.SubCategoria)
             .Include(p => p.Existencias)
             .Where(p => p.EmpresaId == Empresa.Id && p.Activo == true &&
             (string.IsNullOrWhiteSpace(CodigoProducto) || p.Codigo.Contains(CodigoProducto)) &&
@@ -619,7 +668,7 @@ else
     {
         Venta.SubTotal = Venta.VentaDetalles.Sum(ve => ve.Cantidad * ve.Precio);
         Venta.Descuento = Venta.VentaDetalles.Sum(ve => ve.Descuento);
-        Venta.Total = Venta.SubTotal - Venta.Descuento + Venta.Delivery + Venta.MontoManoObra + Venta.Impuesto;
+        Venta.Total = Venta.SubTotal + Venta.Impuesto - Venta.Descuento + Venta.Delivery + Venta.MontoManoObra;
         Venta.MontoDevuelta = Venta.MontoEfectivo - Venta.Total;
     }
 
@@ -813,8 +862,7 @@ else
         }
         CalcularTotales();
         CodigoProducto = string.Empty;
-        await TextFieldCodigo.Clear();
-        TextFieldCodigo.Reset();
+        await TextFieldCodigo.BlurAsync();
         await TextFieldCodigo.FocusAsync();
 
     }
@@ -827,6 +875,7 @@ else
     public void ConfirmarDatos()
     {
         ShowModalAgregarDatos = false;
+        CalcularTotales();
     }
 
     public void CerrarModalVentaDetalle()

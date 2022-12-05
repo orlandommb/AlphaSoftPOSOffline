@@ -1,0 +1,40 @@
+
+
+<MudItem>
+    <MudBadge Visible="@ExistenciaVisible" Content="@Existencia" Color="Color.Success" Overlap="true">
+        <MudPaper Class="producto-teja" Width="180px" Height="180px" @onclick="@OnClick">
+            <div class="producto-teja-content" style="background-image: url(@ImageSrc)">
+                <span class="nombre">@Nombre</span>
+                <span class="precio">@Precio</span>
+            </div>
+        </MudPaper>
+    </MudBadge>
+</MudItem>
+
+@code{
+
+    [Parameter]
+    public string ImageSrc { get; set; }
+    
+    [Parameter]
+    public string Nombre { get; set; }
+    
+    [Parameter]
+    public string Precio { get; set; }
+    
+    [Parameter]
+    public string Existencia { get; set; }
+    
+    [Parameter]
+    public bool ExistenciaVisible { get; set; }
+    
+    /// <summary>
+    /// Button click event.
+    /// </summary>
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    protected async Task OnClickHandler(MouseEventArgs ev)
+    {
+        await OnClick.InvokeAsync(ev);
+    }
+}

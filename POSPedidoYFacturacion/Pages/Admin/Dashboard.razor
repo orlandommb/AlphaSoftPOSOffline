@@ -3,97 +3,92 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ProtectedLocalStorage LocalStorage
 
-<MudPaper>
-    <MudToolBar>
-        <h3>Dashboard</h3>
-        <MudSpacer/>
-        
-    </MudToolBar>
-</MudPaper>
-<RadzenCard>
-    @if (IsBusy)
-    {
-        <div class="middle-box">
-            <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
-        </div>
-    }
-    else
-    {
-        <div class="row">
-            <div class="col-sm-12">
-                <MudToolBar>
-                    <MudDateRangePicker Label="Desde - Hasta" Editable="true" @bind-DateRange="Fecha" />
-                    <MudSpacer/>
-                    <MudTooltip Text="Generar Datos">
-                        <MudIconButton Icon="@Icons.Material.Filled.Search" OnClick="CargarDatos" />
-                    </MudTooltip>
-                </MudToolBar>
-            </div>
-        </div>
+<MudToolBar>
+    <h3>Dashboard</h3>
+    <MudSpacer/>
+</MudToolBar>
+<MudTabs>
+    <MudTabPanel Text="Dashboard">
         <RadzenCard>
-            <div class="row">
-                <div class="col-sm-4">
-                    <label style="font-size:18px">Ventas por Categorias</label>
-                    <RadzenChart>
-                        <RadzenPieSeries Data="@CategoriasData" Title="Ventas por Categorias" CategoryProperty="Nombre" ValueProperty="Valor" />
-                        <RadzenValueAxis Formatter="@FormatAsDOP">
-                            <RadzenGridLines Visible="true" />
-                            <RadzenAxisTitle Text="Ventas por Categorias" />
-                        </RadzenValueAxis>
-                    </RadzenChart>
+            @if (IsBusy)
+            {
+                <div class="middle-box">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
                 </div>
-                <div class="col-sm-4">
-                    <label style="font-size:18px">Ventas por Tipo de Venta</label>
-                    <RadzenChart>
-                        <RadzenPieSeries Data="@TipoFacturasVentasData" Title="Ventas por Tipo de Venta" CategoryProperty="Nombre" ValueProperty="Valor" />
-                        <RadzenValueAxis Formatter="@FormatAsDOP">
-                            <RadzenGridLines Visible="true" />
-                            <RadzenAxisTitle Text="Ventas por Tipo de Venta" />
-                        </RadzenValueAxis>
-                    </RadzenChart>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <MudToolBar>
+                            <MudDateRangePicker Label="Desde - Hasta" Editable="true" @bind-DateRange="Fecha" />
+                            <MudSpacer/>
+                            <MudTooltip Text="Generar Datos">
+                                <MudIconButton Icon="@Icons.Material.Filled.Search" OnClick="CargarDatos" />
+                            </MudTooltip>
+                        </MudToolBar>
+                    </div>
                 </div>
-                @* <div class="col-sm-4">
-                    <label style="font-size:18px">Cue</label>
-                    <RadzenChart>
-                        <RadzenPieSeries Data="@TipoFacturasVentasData" Title="Ventas por Tipo de Venta" CategoryProperty="Nombre" ValueProperty="Valor" />
-                        <RadzenValueAxis Formatter="@FormatAsDOP">
-                            <RadzenGridLines Visible="true" />
-                            <RadzenAxisTitle Text="Ventas por Tipo de Venta" />
-                        </RadzenValueAxis>
-                    </RadzenChart>
-                </div> *@
-            </div>
+                <RadzenCard>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <label style="font-size:18px">Ventas por Categorias</label>
+                            <RadzenChart>
+                                <RadzenPieSeries Data="@CategoriasData" Title="Ventas por Categorias" CategoryProperty="Nombre" ValueProperty="Valor" />
+                                <RadzenValueAxis Formatter="@FormatAsDOP">
+                                    <RadzenGridLines Visible="true" />
+                                    <RadzenAxisTitle Text="Ventas por Categorias" />
+                                </RadzenValueAxis>
+                            </RadzenChart>
+                        </div>
+                        <div class="col-sm-4">
+                            <label style="font-size:18px">Ventas por Tipo de Venta</label>
+                            <RadzenChart>
+                                <RadzenPieSeries Data="@TipoFacturasVentasData" Title="Ventas por Tipo de Venta" CategoryProperty="Nombre" ValueProperty="Valor" />
+                                <RadzenValueAxis Formatter="@FormatAsDOP">
+                                    <RadzenGridLines Visible="true" />
+                                    <RadzenAxisTitle Text="Ventas por Tipo de Venta" />
+                                </RadzenValueAxis>
+                            </RadzenChart>
+                        </div>
+                    </div>
+                </RadzenCard>
+                <RadzenCard>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <RadzenChart>
+                                <RadzenBarSeries Data="@VentasPorProductos" CategoryProperty="Nombre" LineType="LineType.Dashed" ValueProperty="Valor" />
+                                <RadzenValueAxis Formatter="@FormatAsDOP">
+                                    <RadzenGridLines Visible="true" />
+                                    <RadzenAxisTitle Text="Top 5 Productos Mas Vendidos" />
+                                </RadzenValueAxis>
+                            </RadzenChart>
+                        </div>
+                    </div>
+                </RadzenCard>
+                <RadzenCard>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <RadzenChart>
+                                <RadzenAreaSeries Smooth="false" Data="@BeneficiosTotales" CategoryProperty="Fecha" ValueProperty="Valor" RenderingOrder="1">
+                                </RadzenAreaSeries>
+                                <RadzenCategoryAxis FormatString="{0:MMM/yyyy}" />
+                                <RadzenValueAxis Formatter="@FormatAsDOP">
+                                    <RadzenGridLines Visible="true" />
+                                    <RadzenAxisTitle Text="Beneficios Ultimos 6 Meses" />
+                                </RadzenValueAxis>
+                            </RadzenChart>
+                        </div>
+                    </div>
+                </RadzenCard>
+            }
         </RadzenCard>
-        <RadzenCard>
-            <div class="row">
-                <div class="col-sm-12">
-                    <RadzenChart>
-                        <RadzenBarSeries Data="@VentasPorProductos" CategoryProperty="Nombre" LineType="LineType.Dashed" ValueProperty="Valor" />
-                        <RadzenValueAxis Formatter="@FormatAsDOP">
-                            <RadzenGridLines Visible="true" />
-                            <RadzenAxisTitle Text="Top 5 Productos Mas Vendidos" />
-                        </RadzenValueAxis>
-                    </RadzenChart>
-                </div>
-            </div>
-        </RadzenCard>
-        <RadzenCard>
-            <div class="row">
-                <div class="col-sm-12">
-                    <RadzenChart>
-                        <RadzenAreaSeries Smooth="false" Data="@BeneficiosTotales" CategoryProperty="Fecha" ValueProperty="Valor" RenderingOrder="1">
-                        </RadzenAreaSeries>
-                        <RadzenCategoryAxis FormatString="{0:MMM/yyyy}" />
-                        <RadzenValueAxis Formatter="@FormatAsDOP">
-                            <RadzenGridLines Visible="true" />
-                            <RadzenAxisTitle Text="Beneficios Ultimos 6 Meses" />
-                        </RadzenValueAxis>
-                    </RadzenChart>
-                </div>
-            </div>
-        </RadzenCard>
-    }
-</RadzenCard>
+    </MudTabPanel>
+    <MudTabPanel Text="Diario de Transacciones">
+
+    </MudTabPanel>
+</MudTabs>
+
 
 
 @code {
@@ -108,6 +103,14 @@
     {
         public DateTime Fecha { get; set; }
     }
+
+    public class Transaccion : DataDateItem
+    {
+        public string Origen { get; set; }
+        public string TipoTransaccion {get; set;}
+        public object TransaccionInfo { get; set; }
+    }
+    
     private Empresa Empresa { get; set; } = new Empresa();
     private Sucursal Sucursal { get; set; } = new Sucursal();
     public List<DataItem> TipoFacturasVentasData { get; set; } = new List<DataItem>();

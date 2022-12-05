@@ -24,6 +24,8 @@ namespace POSPedidoYFacturacion.Models
         [Precision(precision: 18, scale: 2)]
         public decimal Descuento { get; set; }
         [Precision(precision: 18, scale: 2)]
+        public decimal DescuentoPorcentaje { get; set; }
+        [Precision(precision: 18, scale: 2)]
         public decimal Precio { get; set; }
         [Precision(precision: 18, scale: 2)]
         public decimal Importe { get; set; }

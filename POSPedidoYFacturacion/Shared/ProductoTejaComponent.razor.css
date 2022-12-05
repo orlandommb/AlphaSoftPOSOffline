@@ -1,0 +1,46 @@
+.producto-teja{
+    transition: 0.1s ease-out;
+    border-radius: 0.5rem;
+    height:180px;
+    width:180px; 
+}
+    .producto-teja :hover {
+        transform: scale(1.02);
+        border-radius: 1rem;
+    }
+
+.producto-teja .producto-teja-content{
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 5px;
+    cursor: pointer;
+    line-height: 1.25rem;
+    background-size:100% 100%;
+}
+
+.producto-teja-content .nombre {
+    background: white;
+    color: black;
+    font-size: 0.8rem;
+    display: block;
+    margin: 0.2rem 0 0.4rem 0;
+    font-family: 'Bahnschrift', Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+    width: 100%;
+}
+
+.producto-teja-content .precio {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 1rem;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 1px;
+    border-radius: 4px;
+    background-color: #08af08;
+    color: white;
+    line-height: 1rem;
+}

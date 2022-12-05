@@ -62,6 +62,11 @@ else
             <AuthorizeView Roles="Admin,SuperAdmin,Cajero/a">
                 <MudNavGroup Title="Ventas" Icon="@Icons.Material.Filled.ShoppingBag">
                     <MudNavLink Icon="@Icons.Material.Filled.List" Href="/ventas">Lista de Ventas</MudNavLink>
+                    <AuthorizeView Context="context2" Roles="Admin,SuperAdmin">
+                        <MudNavGroup Title="Reportes" Icon="@Icons.Material.Filled.Report">
+                            <MudNavLink Icon="@Icons.Material.Filled.List" Href="/ventas/reportes/ventasporproductos">Reporte de Ventas por Productos</MudNavLink>
+                        </MudNavGroup>
+                    </AuthorizeView>
                 </MudNavGroup>
             </AuthorizeView>
             <AuthorizeView Roles="Admin,SuperAdmin">

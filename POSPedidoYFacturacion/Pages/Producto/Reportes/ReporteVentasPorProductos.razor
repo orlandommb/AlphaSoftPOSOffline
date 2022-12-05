@@ -1,0 +1,111 @@
+@page "/ventas/reportes/ventasporproductos"
+@attribute [Authorize]
+
+@inject IJSRuntime JSRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IMessage IMessage
+@inject NavigationManager NavManager
+@inject ProtectedLocalStorage LocalStorage
+@using Syncfusion.Blazor.Grids
+
+<MudToolBar>
+    <h5>Reporte de Ventas por Productos</h5>
+    <MudSpacer/>
+</MudToolBar>
+<MudToolBar>
+    <MudDateRangePicker Style="width:300px" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense" Label="Desde - Hasta" Editable="true" DateRange="FechaRango" DateRangeChanged="@(async args => await CargarProductos(args))" />
+    <MudSpacer/>
+</MudToolBar>
+<SfGrid DataSource="@Productos" Toolbar="@(new List<object>() {"Print"})" EnableVirtualization="true" Height="600px" AllowSorting="true" style="width: 100%;">
+    <GridColumns>
+        <GridColumn Field="Codigo" HeaderText="Codigo" Width="50px"></GridColumn>
+        <GridColumn Field="Nombre" HeaderText="Producto" Width="100px"></GridColumn>
+        <GridColumn Field="Categoria.Nombre" HeaderText="Categoria" Width="50px"></GridColumn>
+        <GridColumn Field="SubCategoria.Nombre" HeaderText="Cantidad" Width="50px" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right"></GridColumn>
+        <GridColumn HeaderText="Cantidad" Width="50px" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Center">
+            <Template>
+                @{
+                    var producto = (context as Producto);
+                    <label style="text-align: center; margin:auto;">@producto.VentaDetalles.Sum(vd=>vd.Cantidad)</label>
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Field="Precio" HeaderText="Precio" Width="50px" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Center"></GridColumn>
+        <GridColumn HeaderText="Importe" Width="50px" TextAlign="Syncfusion.Blazor.Grids.TextAlign.Right">
+            <Template>
+                @{
+                    var producto = (context as Producto);
+                    <label style="text-align: center; margin:auto;">@producto.VentaDetalles.Sum(vd=>vd.Cantidad * vd.Precio - vd.Descuento).ToString("C2")</label>
+                }
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+<MudOverlay Visible="IsBusy" DarkBackground="true">
+    <MudProgressCircular Indeterminate="true" Color="Color.Info" />
+</MudOverlay>
+@code{
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+
+    private List<Producto> Productos { get; set; } = new();
+
+    private bool IsBusy { get; set; } = false;
+
+    private DateRange FechaRango {get; set;} = new() { Start = DateTime.Today, End = DateTime.Today};
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarProductos(FechaRango);
+        }
+    }
+
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    public async Task CargarProductos(DateRange fecharango)
+    {
+        FechaRango = fecharango;
+        IsBusy = true;
+
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Productos = await DbContext.Productos
+            .Include(p => p.Categoria)
+            .Include(p => p.SubCategoria)
+            .Include(p => p.VentaDetalles.Where(vd=>vd.Venta.FechaFinalizado.Value.Date >= fecharango.Start.Value.Date && vd.Venta.FechaFinalizado.Value.Date <= fecharango.End.Value.Date))
+            .ThenInclude(p => p.Venta)
+            .Where(p => p.EmpresaId == Empresa.Id && 
+                    p.Activo == true && 
+                    p.VentaDetalles.Any(vd => vd.Venta.FechaFinalizado.Value.Date >= fecharango.Start.Value.Date && 
+                    vd.Venta.FechaFinalizado.Value.Date <= fecharango.End.Value.Date
+                    ))
+            .ToListAsync();
+
+
+        IsBusy = false;
+        StateHasChanged();
+    }
+}

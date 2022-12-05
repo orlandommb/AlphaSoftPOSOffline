@@ -62,5 +62,7 @@ namespace POSPedidoYFacturacion.Models
 
         public List<Existencia> Existencias { get; set; } = new List<Existencia>();
 
+        public List<VentaDetalle> VentaDetalles {get; set;} = new List<VentaDetalle>();
+
     }
 }
