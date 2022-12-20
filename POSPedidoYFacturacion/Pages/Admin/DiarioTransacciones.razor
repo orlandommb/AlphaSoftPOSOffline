@@ -1,0 +1,169 @@
+@page "/diariotransacciones"
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ProtectedLocalStorage LocalStorage
+
+<MudToolBar>
+    <MudCheckBox T="bool" LabelPosition="LabelPosition.Start" Label="Fecha" @bind-Checked="TomarFecha" CheckedIcon="@Icons.Material.Filled.CheckCircle" UncheckedIcon="@Icons.Material.Filled.Clear" UnCheckedColor="Color.Error" />
+    <MudDateRangePicker Disabled="@(!TomarFecha)" Label="Elija el rango de fecha" @bind-DateRange="@Fecha" Editable="true" Margin="Margin.Dense" />
+    <MudIconButton Icon="@Icons.Material.Filled.Check" OnClick="CargarTransacciones"/>
+    <MudSpacer/>
+</MudToolBar>
+
+<MudToolBar>
+    <MudTextField T="string" Style="color:red" Margin="Margin.Dense" Variant="MudBlazor.Variant.Outlined" Label="Gastos" Text="@(Transacciones.Sum(t=>t.Debito).ToString("C2"))"/>
+    <MudTextField T="string" Style="color:blue" Margin="Margin.Dense" Variant="MudBlazor.Variant.Outlined" Label="Ingresos" Text="@(Transacciones.Sum(t=>t.Credito).ToString("C2"))"/>
+    <MudTextField T="string" Style="color:green" Margin="Margin.Dense" Variant="MudBlazor.Variant.Outlined" Label="Balance" Text="@(Balance.ToString("C2"))"/>
+</MudToolBar>
+
+<MudTable Items="Transacciones.OrderBy(t=>t.Fecha)" FixedHeader="true" Height="500px" Loading="@IsBusy" LoadingProgressColor="Color.Info">
+    <LoadingContent>
+        <MudProgressCircular Indeterminate="true" Color="Color.Info"/>
+    </LoadingContent>
+    <HeaderContent>
+        <MudTh>Origen</MudTh>
+        <MudTh>Fecha</MudTh>
+        <MudTh>Concepto</MudTh>
+        <MudTh>Debito</MudTh>
+        <MudTh>Credito</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Origen</MudTd>
+        <MudTd>@context.Fecha</MudTd>
+        <MudTd>@context.Concepto</MudTd>
+        <MudTd Style="color: red">@context.Debito</MudTd>
+        <MudTd Style="color: blue">@context.Credito</MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code{
+
+    public class Transaccion {
+        public string Origen { get; set; }
+        public DateTime Fecha { get; set; }
+        public string Concepto { get; set; }
+        public decimal Debito { get; set; }
+        public decimal Credito { get; set; }
+
+    }
+
+    private Empresa Empresa { get; set; } = new Empresa();
+    private Sucursal Sucursal { get; set; } = new Sucursal();
+
+    private List<Transaccion> Transacciones = new();
+
+    private List<Cuadre> Cuadres {get; set;} = new();
+    private List<CXPTransaccion> Gastos {get; set;} = new();
+
+    private DateRange Fecha {get; set; } = new(){Start = DateTime.Today, End = DateTime.Today};
+    
+    private bool IsBusy {get; set;} = false;
+    private bool TomarFecha {get; set;} = false;
+    private decimal Balance {get; set;} 
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarEmpresa();
+            await CargarSucursal();
+            await CargarTransacciones();
+        }
+
+        StateHasChanged();
+    }
+    private async Task CargarEmpresa()
+    {
+        var result = await LocalStorage.GetAsync<Empresa>("Empresa");
+        if (result.Success)
+        {
+            Empresa = result.Value;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarSucursal()
+    {
+        var result = await LocalStorage.GetAsync<Sucursal>("Sucursal");
+        if (result.Success)
+        {
+            Sucursal = result.Value;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task CargarTransacciones()
+    {
+        IsBusy = true;
+        Transacciones.Clear();
+        using var DbContext = DbContextFactory.CreateDbContext();
+        
+        Gastos = await DbContext.CXPTransacciones.Include(C=>C.Suplidor).Where(c=>
+        c.EmpresaId == Empresa.Id && 
+        c.SucursalId == Sucursal.Id && 
+        c.CXPTransaccionTipoId == 3 &&
+        (TomarFecha == false || c.Fecha.Date >= Fecha.Start.Value.Date && c.Fecha.Date <= Fecha.End.Value.Date)
+        ).ToListAsync();
+
+        foreach (var gasto in Gastos)
+        {
+            Transacciones.Add(
+                new()
+                {
+                    Origen = "Gasto",
+                    Fecha = gasto.Fecha,
+                    Concepto = $"Gasto - Registro Pago a Suplidor {gasto.Suplidor.RazonSocial}",
+                    Debito = gasto.Monto,
+                    Credito = 0.00M
+                }
+            );
+        }
+        
+        var ComprasContado = await DbContext.Compras.Include(C=>C.Suplidor).Where(c=>
+        c.EmpresaId == Empresa.Id && 
+        c.SucursalId == Sucursal.Id &&
+        c.TipoFacturaId == 2 &&
+        (TomarFecha == false || c.FechaHoraFactura.Date >= Fecha.Start.Value.Date && c.FechaHoraFactura.Date <= Fecha.End.Value.Date)
+        ).ToListAsync();
+
+        foreach (var compra in ComprasContado)
+        {
+            Transacciones.Add(
+                new()
+                {
+                    Origen = "Gasto",
+                    Fecha = compra.FechaHoraFactura,
+                    Concepto = $"Gasto - Compra al Contado - Suplidor {compra.Suplidor.RazonSocial}",
+                    Debito = compra.Total,
+                    Credito = 0.00M
+                }
+            );
+        }
+
+        Cuadres = await DbContext.Cuadres.Where(c=>
+        c.EmpresaId == Empresa.Id && 
+        c.SucursalId == Sucursal.Id &&
+        (TomarFecha == false || c.FechaApertura.Date >= Fecha.Start.Value.Date && c.FechaApertura.Date <= Fecha.End.Value.Date)
+        ).ToListAsync();
+
+        foreach (var cuadre in Cuadres)
+        {
+            Transacciones.Add(
+                new()
+                {
+                    Origen = "Ingreso",
+                    Fecha = cuadre.FechaApertura,
+                    Concepto = "Ingreso por cuadre del dia",
+                    Debito = 0.00M,
+                    Credito = cuadre.MontoEfectivo - cuadre.FondoCaja
+                }
+            );
+        }
+
+        Balance = Transacciones.Sum(t => t.Credito - t.Debito );
+        
+        IsBusy = false;
+    }
+
+    
+}

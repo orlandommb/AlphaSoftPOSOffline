@@ -85,7 +85,7 @@
         </RadzenCard>
     </MudTabPanel>
     <MudTabPanel Text="Diario de Transacciones">
-
+        <DiarioTransacciones/>
     </MudTabPanel>
 </MudTabs>
 
@@ -136,7 +136,6 @@
         {
             await CargarEmpresa();
             await CargarSucursal();
-            await CargarDatos();
         }
 
         StateHasChanged();

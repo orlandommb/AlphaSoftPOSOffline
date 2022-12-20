@@ -135,9 +135,14 @@
         //StateHasChanged();
     }
 
-    void DrawerToggle()
+    public void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
+    }
+    
+    public void CloseDrawer()
+    {
+        _drawerOpen = false;
     }
 
     MudTheme MyCustomTheme = new MudTheme()
