@@ -78,6 +78,10 @@
 
     private void CantidadModalChange(dynamic value)
     {
+        if (value <= 0)
+        {
+            return;
+        }
         Detalle.Importe = Detalle.Precio * value;
     }
 

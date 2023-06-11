@@ -94,7 +94,10 @@ namespace POSPedidoYFacturacion
 
         public void AgregarOrden()
         {
-            
+            if (Detalle.Cantidad <= 0)
+                {
+                    return;
+                }
 
             if (Detalle.Importe < 0)
             {
@@ -104,10 +107,7 @@ namespace POSPedidoYFacturacion
             var Prod = Orden.OrdenDetalles.SingleOrDefault(p => p.ProductoId == Detalle.ProductoId);
             if (Prod == null)
             {
-                if (Detalle.Cantidad <= 0)
-                {
-                    return;
-                }
+                
                 Orden.OrdenDetalles.Add(Detalle);
                 Detalle = null;
             }
