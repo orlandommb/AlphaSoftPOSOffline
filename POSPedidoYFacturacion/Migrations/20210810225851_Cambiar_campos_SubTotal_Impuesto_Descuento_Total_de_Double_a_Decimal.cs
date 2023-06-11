@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Cambiar_campos_SubTotal_Impuesto_Descuento_Total_de_Double_a_Decimal : Migration
     {

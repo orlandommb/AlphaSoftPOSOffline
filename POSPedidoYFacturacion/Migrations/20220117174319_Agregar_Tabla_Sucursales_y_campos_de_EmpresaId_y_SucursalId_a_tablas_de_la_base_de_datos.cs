@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_Tabla_Sucursales_y_campos_de_EmpresaId_y_SucursalId_a_tablas_de_la_base_de_datos : Migration
     {

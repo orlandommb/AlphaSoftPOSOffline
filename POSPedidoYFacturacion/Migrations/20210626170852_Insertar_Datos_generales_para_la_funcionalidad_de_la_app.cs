@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Insertar_Datos_generales_para_la_funcionalidad_de_la_app : Migration
     {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_campo_direccion_Telefono_Email_y_WhatsApp_a_cliente : Migration
     {

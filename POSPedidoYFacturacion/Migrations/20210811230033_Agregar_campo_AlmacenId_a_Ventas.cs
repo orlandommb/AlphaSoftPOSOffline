@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_campo_AlmacenId_a_Ventas : Migration
     {

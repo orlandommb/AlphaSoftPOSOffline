@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace POSPedidoYFacturacion.Utilidades
+namespace AlphaSoftPOSOffline.Utilidades
 {
     public interface IMessage
     {

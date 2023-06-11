@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace POSPedidoYFacturacion.Models
+namespace AlphaSoftPOSOffline.Models
 {
     public class VentaDevolucion
     {

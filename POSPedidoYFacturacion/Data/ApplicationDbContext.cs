@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using POSPedidoYFacturacion.Models;
+using AlphaSoftPOSOffline.Models;
 
-namespace POSPedidoYFacturacion.Data
+namespace AlphaSoftPOSOffline.Data
 {
     public class ApplicationDbContext : IdentityDbContext<Usuario, Rol, string>
     {

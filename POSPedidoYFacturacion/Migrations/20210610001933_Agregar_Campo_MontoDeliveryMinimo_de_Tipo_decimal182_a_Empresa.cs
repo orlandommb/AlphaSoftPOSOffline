@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_Campo_MontoDeliveryMinimo_de_Tipo_decimal182_a_Empresa : Migration
     {

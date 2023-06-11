@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using POSPedidoYFacturacion.Data;
-using POSPedidoYFacturacion.Models;
+using AlphaSoftPOSOffline.Data;
+using AlphaSoftPOSOffline.Models;
 
-[assembly: HostingStartup(typeof(POSPedidoYFacturacion.Areas.Identity.IdentityHostingStartup))]
-namespace POSPedidoYFacturacion.Areas.Identity
+[assembly: HostingStartup(typeof(AlphaSoftPOSOffline.Areas.Identity.IdentityHostingStartup))]
+namespace AlphaSoftPOSOffline.Areas.Identity
 {
     public class IdentityHostingStartup : IHostingStartup
     {

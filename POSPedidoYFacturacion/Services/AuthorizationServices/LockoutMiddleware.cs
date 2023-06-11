@@ -8,10 +8,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using POSPedidoYFacturacion.Data;
-using POSPedidoYFacturacion.Models;
+using AlphaSoftPOSOffline.Data;
+using AlphaSoftPOSOffline.Models;
 
-namespace POSPedidoYFacturacion.Services.AuthorizationServices
+namespace AlphaSoftPOSOffline.Services.AuthorizationServices
 {
     public class LockoutMiddleware
     {

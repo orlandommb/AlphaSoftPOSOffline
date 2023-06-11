@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using POSPedidoYFacturacion.Data;
+using AlphaSoftPOSOffline.Data;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20210626170151_Insertar_Info_Del_Sistema")]
@@ -129,7 +129,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Categoria", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Categoria", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -144,7 +144,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Categorias");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Cuadre", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Cuadre", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -176,7 +176,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Cuadres");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Denominacion", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Denominacion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -196,7 +196,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Denominaciones");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Desglose", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Desglose", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -224,7 +224,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Desgloses");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Empresa", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Empresa", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -262,7 +262,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Empresa");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Orden", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Orden", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -328,7 +328,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Ordenes");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.OrdenDetalle", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.OrdenDetalle", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -365,7 +365,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("OrdenDetalles");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.OrdenVenta", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.OrdenVenta", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -387,7 +387,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("OrdenVentas");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Producto", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Producto", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -427,7 +427,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Productos");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Rol", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Rol", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -454,7 +454,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("AspNetRoles");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Sector", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Sector", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -472,7 +472,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Sectores");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.SubCategoria", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.SubCategoria", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -492,7 +492,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("SubCategorias");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.TipoDenominacion", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.TipoDenominacion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -507,7 +507,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("TipoDenominaciones");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.TipoOrden", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.TipoOrden", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -522,7 +522,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("TipoOrdenes");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Usuario", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Usuario", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -587,7 +587,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Venta", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Venta", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -661,7 +661,7 @@ namespace POSPedidoYFacturacion.Migrations
                     b.ToTable("Ventas");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.VentaDetalle", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.VentaDetalle", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -700,7 +700,7 @@ namespace POSPedidoYFacturacion.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Rol", null)
+                    b.HasOne("AlphaSoftPOSOffline.Models.Rol", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -709,7 +709,7 @@ namespace POSPedidoYFacturacion.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Usuario", null)
+                    b.HasOne("AlphaSoftPOSOffline.Models.Usuario", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -718,7 +718,7 @@ namespace POSPedidoYFacturacion.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Usuario", null)
+                    b.HasOne("AlphaSoftPOSOffline.Models.Usuario", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -727,13 +727,13 @@ namespace POSPedidoYFacturacion.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Rol", null)
+                    b.HasOne("AlphaSoftPOSOffline.Models.Rol", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Usuario", null)
+                    b.HasOne("AlphaSoftPOSOffline.Models.Usuario", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -742,25 +742,25 @@ namespace POSPedidoYFacturacion.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Usuario", null)
+                    b.HasOne("AlphaSoftPOSOffline.Models.Usuario", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Cuadre", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Cuadre", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Usuario", "Usuario")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId");
 
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Denominacion", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Denominacion", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.TipoDenominacion", "TipoMoneda")
+                    b.HasOne("AlphaSoftPOSOffline.Models.TipoDenominacion", "TipoMoneda")
                         .WithMany()
                         .HasForeignKey("TipoMonedaId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -769,15 +769,15 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("TipoMoneda");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Desglose", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Desglose", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Cuadre", "Cuadre")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Cuadre", "Cuadre")
                         .WithMany("Desgloses")
                         .HasForeignKey("CuadreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Denominacion", "Denominacion")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Denominacion", "Denominacion")
                         .WithMany()
                         .HasForeignKey("DenominacionId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -788,19 +788,19 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("Denominacion");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Orden", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Orden", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Sector", "Sector")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Sector", "Sector")
                         .WithMany()
                         .HasForeignKey("SectorId");
 
-                    b.HasOne("POSPedidoYFacturacion.Models.TipoOrden", "TipoOrden")
+                    b.HasOne("AlphaSoftPOSOffline.Models.TipoOrden", "TipoOrden")
                         .WithMany()
                         .HasForeignKey("TipoOrdenId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Usuario", "Usuario")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId");
 
@@ -811,15 +811,15 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.OrdenDetalle", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.OrdenDetalle", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Orden", "Orden")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Orden", "Orden")
                         .WithMany("OrdenDetalles")
                         .HasForeignKey("OrdenId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Producto", "Producto")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Producto", "Producto")
                         .WithMany()
                         .HasForeignKey("ProductoId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -830,15 +830,15 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("Producto");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.OrdenVenta", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.OrdenVenta", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Orden", "Orden")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Orden", "Orden")
                         .WithMany()
                         .HasForeignKey("OrdenId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Venta", "Venta")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Venta", "Venta")
                         .WithMany("OrdenVentas")
                         .HasForeignKey("VentaId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -849,15 +849,15 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("Venta");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Producto", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Producto", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Categoria", "Categoria")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Categoria", "Categoria")
                         .WithMany()
                         .HasForeignKey("CategoriaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.SubCategoria", "SubCategoria")
+                    b.HasOne("AlphaSoftPOSOffline.Models.SubCategoria", "SubCategoria")
                         .WithMany()
                         .HasForeignKey("SubCategoriaId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -868,9 +868,9 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("SubCategoria");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.SubCategoria", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.SubCategoria", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Categoria", "Categoria")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Categoria", "Categoria")
                         .WithMany()
                         .HasForeignKey("CategoriaId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -879,25 +879,25 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("Categoria");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Venta", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Venta", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Cuadre", "Cuadre")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Cuadre", "Cuadre")
                         .WithMany("Ventas")
                         .HasForeignKey("CuadreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Sector", "Sector")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Sector", "Sector")
                         .WithMany()
                         .HasForeignKey("SectorId");
 
-                    b.HasOne("POSPedidoYFacturacion.Models.TipoOrden", "TipoOrden")
+                    b.HasOne("AlphaSoftPOSOffline.Models.TipoOrden", "TipoOrden")
                         .WithMany("Ventas")
                         .HasForeignKey("TipoOrdenId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Usuario", "Usuario")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId");
 
@@ -910,15 +910,15 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.VentaDetalle", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.VentaDetalle", b =>
                 {
-                    b.HasOne("POSPedidoYFacturacion.Models.Producto", "Producto")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Producto", "Producto")
                         .WithMany()
                         .HasForeignKey("ProductoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("POSPedidoYFacturacion.Models.Venta", "Venta")
+                    b.HasOne("AlphaSoftPOSOffline.Models.Venta", "Venta")
                         .WithMany("VentaDetalles")
                         .HasForeignKey("VentaId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -929,24 +929,24 @@ namespace POSPedidoYFacturacion.Migrations
                     b.Navigation("Venta");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Cuadre", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Cuadre", b =>
                 {
                     b.Navigation("Desgloses");
 
                     b.Navigation("Ventas");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Orden", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Orden", b =>
                 {
                     b.Navigation("OrdenDetalles");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.TipoOrden", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.TipoOrden", b =>
                 {
                     b.Navigation("Ventas");
                 });
 
-            modelBuilder.Entity("POSPedidoYFacturacion.Models.Venta", b =>
+            modelBuilder.Entity("AlphaSoftPOSOffline.Models.Venta", b =>
                 {
                     b.Navigation("OrdenVentas");
 

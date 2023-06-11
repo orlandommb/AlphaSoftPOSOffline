@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Migrations;
-using POSPedidoYFacturacion.Models;
+using AlphaSoftPOSOffline.Models;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class CrearUsuarioSuperAdmin : Migration
     {

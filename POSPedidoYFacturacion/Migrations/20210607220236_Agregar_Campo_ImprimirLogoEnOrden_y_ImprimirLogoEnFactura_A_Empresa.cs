@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_Campo_ImprimirLogoEnOrden_y_ImprimirLogoEnFactura_A_Empresa : Migration
     {

@@ -3,11 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
-using POSPedidoYFacturacion.Data;
-using POSPedidoYFacturacion.Models;
-using POSPedidoYFacturacion.Utilidades;
+using AlphaSoftPOSOffline.Data;
+using AlphaSoftPOSOffline.Models;
+using AlphaSoftPOSOffline.Utilidades;
 
-namespace POSPedidoYFacturacion
+namespace AlphaSoftPOSOffline
 {
     public class EstadoOrden
     {

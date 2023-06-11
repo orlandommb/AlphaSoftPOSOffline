@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.AspNetCore.Identity;
 
-namespace POSPedidoYFacturacion.Models
+namespace AlphaSoftPOSOffline.Models
 {
     public class Rol : IdentityRole
     {

@@ -13,14 +13,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using POSPedidoYFacturacion.Areas.Identity;
-using POSPedidoYFacturacion.Data;
-using POSPedidoYFacturacion.Models;
-using POSPedidoYFacturacion.Utilidades;
+using AlphaSoftPOSOffline.Areas.Identity;
+using AlphaSoftPOSOffline.Data;
+using AlphaSoftPOSOffline.Models;
+using AlphaSoftPOSOffline.Utilidades;
 using Radzen;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
-using POSPedidoYFacturacion.Services.AuthorizationServices;
+using AlphaSoftPOSOffline.Services.AuthorizationServices;
 using MudBlazor.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -28,7 +28,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Syncfusion.Blazor;
 
-namespace POSPedidoYFacturacion
+namespace AlphaSoftPOSOffline
 {
     public class Startup
     {

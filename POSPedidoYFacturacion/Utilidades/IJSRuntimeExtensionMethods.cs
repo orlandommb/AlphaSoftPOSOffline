@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
-namespace POSPedidoYFacturacion.Utilidades
+namespace AlphaSoftPOSOffline.Utilidades
 {
     public static class IJSRuntimeExtensionMethods
     {

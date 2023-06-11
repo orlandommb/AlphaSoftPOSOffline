@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace  POSPedidoYFacturacion
+namespace  AlphaSoftPOSOffline
 {
     public class UserInfo
     {

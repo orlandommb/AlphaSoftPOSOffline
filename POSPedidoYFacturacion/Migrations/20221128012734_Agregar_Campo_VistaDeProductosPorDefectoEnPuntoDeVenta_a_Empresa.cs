@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_Campo_VistaDeProductosPorDefectoEnPuntoDeVenta_a_Empresa : Migration
     {

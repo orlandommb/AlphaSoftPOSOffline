@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_Campo_PorcentajeDescuento_a_VentaDetalle : Migration
     {

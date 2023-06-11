@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Cambiar_de_doble_a_decimal_Costo_e_Importe_en_AjusteInventarioDetalles : Migration
     {

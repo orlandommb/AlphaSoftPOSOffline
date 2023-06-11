@@ -3,7 +3,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace POSPedidoYFacturacion.Models
+namespace AlphaSoftPOSOffline.Models
 {
     public class Empresa
     {
@@ -32,6 +32,8 @@ namespace POSPedidoYFacturacion.Models
         
         public bool MostrarOrdenesParaLlevarDeliveryPorDefecto { get; set; }
         public int VistaDeProductosPorDefectoEnPuntoDeVenta { get; set; }
+
+        public int ImpuestoTipoProductos { get; set; }
 
 
     }

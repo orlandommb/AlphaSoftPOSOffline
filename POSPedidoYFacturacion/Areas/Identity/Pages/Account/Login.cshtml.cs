@@ -11,11 +11,11 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
-using POSPedidoYFacturacion.Models;
+using AlphaSoftPOSOffline.Models;
 using Microsoft.EntityFrameworkCore;
-using POSPedidoYFacturacion.Data;
+using AlphaSoftPOSOffline.Data;
 
-namespace POSPedidoYFacturacion.Areas.Identity.Pages.Account
+namespace AlphaSoftPOSOffline.Areas.Identity.Pages.Account
 {
     [AllowAnonymous]
     public class LoginModel : PageModel

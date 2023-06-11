@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_AjusteInventarioTipos_AjustesInventario_y_AjusteInventarioDetalles_a_la_BD : Migration
     {

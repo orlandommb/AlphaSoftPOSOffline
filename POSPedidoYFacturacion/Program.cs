@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Logging;
 
-namespace POSPedidoYFacturacion
+namespace AlphaSoftPOSOffline
 {
     public class Program
     {

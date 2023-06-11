@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_Impuestos_y_ImpuestoTipos_junto_con_Scripts_de_Insercion_a_la_BD : Migration
     {

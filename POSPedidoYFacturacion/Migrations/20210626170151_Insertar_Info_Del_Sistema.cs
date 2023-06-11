@@ -1,7 +1,7 @@
 ﻿
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Insertar_Info_Del_Sistema : Migration
     {

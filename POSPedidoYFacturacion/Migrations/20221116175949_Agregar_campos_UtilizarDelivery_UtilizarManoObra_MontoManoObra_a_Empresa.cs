@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_campos_UtilizarDelivery_UtilizarManoObra_MontoManoObra_a_Empresa : Migration
     {

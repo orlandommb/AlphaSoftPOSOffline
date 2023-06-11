@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 
-namespace POSPedidoYFacturacion.Models
+namespace AlphaSoftPOSOffline.Models
 {
     public class VentaDevolucionDetalle
     {

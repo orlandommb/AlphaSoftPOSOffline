@@ -190,6 +190,7 @@ else
                                     <div>
                                         <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary"
                                                       ButtonType="Radzen.ButtonType.Submit"
+                                              Disabled="@CompraInvalid"
                                                       Text="Registar" />
                                     </div>
                                 </div>
@@ -307,6 +308,7 @@ else
     private decimal Total { get; set; }
 
     private bool IsBusy { get; set; } = false;
+    private bool CompraInvalid { get; set; } = true;
 
     private bool MostrarModal { get; set; }
 
@@ -315,7 +317,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         Compra.CompraDetalles = new List<CompraDetalle>();
-        
+
 
         if (Id == 0)
         {
@@ -325,6 +327,7 @@ else
 
             Compra.UsuarioId = Usuario.Id;
             Compra.FechaHoraFactura = DateTime.Now;
+            Compra.TipoCompraId = 1;
 
         }
 
@@ -381,7 +384,7 @@ else
                 .Include(p => p.Almacen).SingleOrDefaultAsync(p => p.Id == Id);
 
 
-            CalcularTotales();
+            await CalcularTotales();
             IsBusy = false;
         }
     }
@@ -413,19 +416,21 @@ else
         IsBusy = false;
         StateHasChanged();
     }
-    
+
     public void OnChangeTipoCompra()
     {
         if(Compra.TipoCompraId == 1)
         {
             Compra.Concepto = "Compra de Mercancia";
+            CompraInvalid = true;
         }
         else
         {
             Compra.Concepto = "";
+            CompraInvalid = false;
         }
     }
-    
+
     public async Task CargarSuplidores()
     {
         IsBusy = true;
@@ -545,29 +550,29 @@ else
         switch (NuevoDetalle.Producto.ImpuestoTipoId)
         {
             case 1:
-            {
-                NuevoDetalle.ITBIS = 0;
-                break;
-            }
+                {
+                    NuevoDetalle.ITBIS = 0;
+                    break;
+                }
             case 2:
-            {
-                var porcentale = (NuevoDetalle.Producto.Impuesto.Valor / 100);
-                var itbis = porcentale * ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento);
-                NuevoDetalle.ITBIS = itbis;
-                break;
-            }
+                {
+                    var porcentale = (NuevoDetalle.Producto.Impuesto.Valor / 100);
+                    var itbis = porcentale * ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento);
+                    NuevoDetalle.ITBIS = itbis;
+                    break;
+                }
             case 3:
-            {
-                var porcentale = (NuevoDetalle.Producto.Impuesto.Valor / 100);
-                var CostoBase = ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento) / (porcentale + 1);
-                var ItbisIncluido = ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento) - CostoBase;
-                NuevoDetalle.ITBIS = ItbisIncluido;
-                break;
-            }
+                {
+                    var porcentale = (NuevoDetalle.Producto.Impuesto.Valor / 100);
+                    var CostoBase = ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento) / (porcentale + 1);
+                    var ItbisIncluido = ((NuevoDetalle.Costo * NuevoDetalle.Cantidad) - NuevoDetalle.Descuento) - CostoBase;
+                    NuevoDetalle.ITBIS = ItbisIncluido;
+                    break;
+                }
             default :
-            {
-                break;
-            }      
+                {
+                    break;
+                }      
         }
 
 
@@ -606,14 +611,14 @@ else
 
             Compra.CompraDetalles.Add(Nuevo);
         }
-        
-        CalcularTotales();
+
+        await CalcularTotales();
         NuevoDetalle = new CompraDetalle();
         await ProductoSelect.Clear();
         await ProductoSelect.BlurAsync();
         StateHasChanged();
         await ProductoSelect.FocusAsync();
-        
+
 
         StateHasChanged();
 
@@ -626,7 +631,7 @@ else
         NuevoDetalle = e;
     }
 
-    void BtnRemoverClick(CompraDetalle e)
+    async void BtnRemoverClick(CompraDetalle e)
     {
 
         if (e == null)
@@ -636,15 +641,60 @@ else
             return;
 
         Compra.CompraDetalles.Remove(e);
-        CalcularTotales();
+        await CalcularTotales();
     }
 
-    public void CalcularTotales()
+    public async Task CalcularTotales()
     {
         SubTotal = Compra.CompraDetalles.Sum(FCD => FCD.Cantidad * FCD.Costo);
         Descuentos = Compra.CompraDetalles.Sum(FCD => FCD.Descuento);
         Impuestos = Compra.CompraDetalles.Sum(FCD => FCD.ITBIS);
         Total = SubTotal - Descuentos + Impuestos;
+        CompraInvalid = await CheckTotales(false);
+    }
+
+    private async Task<bool> CheckTotales(bool MostrarMensajes)
+    {
+        if (Compra.TipoCompraId == 1)
+        {
+            if (Compra.SubTotal.ToString("C:2") != SubTotal.ToString("C:2"))
+            {
+                if (MostrarMensajes)
+                {
+                    await IMessage.Alert($"El monto de Sub total digitado {Compra.SubTotal.ToString("C:2")} y el total bruto calculado {SubTotal.ToString("C:2")} no coinciden!");
+                }
+                return true;
+            }
+
+            if (Compra.Descuento.ToString($"C:2") != Descuentos.ToString("C:2"))
+            {
+                if (MostrarMensajes)
+                {
+                    await IMessage.Alert($"El monto de Descuento digitado {Compra.Descuento.ToString($"C:2")} y el Descuento calculado {Descuentos.ToString("C:2")} no coinciden!");
+                }
+                return true;
+            }
+
+            if (Compra.Impuesto.ToString($"C:2") != Impuestos.ToString("C:2"))
+            {
+                if (MostrarMensajes)
+                {
+                    await IMessage.Alert($"El monto de Impuesto digitado {Compra.Impuesto.ToString("C:2")} y el Impuesto calculado {Impuestos.ToString("C:2")} no coinciden!");
+                }
+                return true;
+            }
+
+            if (Compra.Total.ToString("C:2") != Total.ToString("C:2"))
+            {
+                if (MostrarMensajes)
+                {
+                    await IMessage.Alert($"El monto de Total digitado {Compra.Total.ToString("C:2")} y el Total calculado {Total.ToString("C:2")} no coinciden!");
+                }
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
@@ -658,28 +708,9 @@ else
 
         if(Compra.TipoCompraId == 1)
         {
-            if (Compra.SubTotal != SubTotal)
+            CompraInvalid = await CheckTotales(true);
+            if (CompraInvalid)
             {
-                await IMessage.Alert("El monto de Sub total digitado y el total bruto calculado no coinciden!");
-                return;
-            }
-
-            if (Compra.Descuento != Descuentos)
-            {
-                await IMessage.Alert("El monto de Descuento digitado y el Descuento calculado no coinciden!");
-                return;
-            }
-
-            if (Compra.Impuesto != Impuestos)
-            {
-                await IMessage.Alert("El monto de Impuesto digitado y el Impuesto calculado no coinciden!");
-                return;
-            }
-
-            if (Compra.Total != Total)
-            {
-
-                await IMessage.Alert("El monto de Total digitado y el Total calculado no coinciden!");
                 return;
             }
         }
@@ -953,11 +984,17 @@ else
 
             await IMessage.Success("Modificacion Exitosa!");
             NavManager.NavigateTo($"compras/vista/{Id}");
+            
 
             IsBusy = false;
 
 
         }
+
+        Total = 0;
+        Descuentos = 0;
+        Impuestos = 0;
+        SubTotal = 0;
         IsBusy = false;
     }
 }

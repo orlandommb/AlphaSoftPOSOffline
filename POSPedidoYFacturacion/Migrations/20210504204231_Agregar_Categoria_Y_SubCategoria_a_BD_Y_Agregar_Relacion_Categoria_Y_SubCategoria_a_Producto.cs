@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_Categoria_Y_SubCategoria_a_BD_Y_Agregar_Relacion_Categoria_Y_SubCategoria_a_Producto : Migration
     {

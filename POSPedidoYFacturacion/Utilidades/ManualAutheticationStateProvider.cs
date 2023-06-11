@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace POSPedidoYFacturacion.Utilidades
+namespace AlphaSoftPOSOffline.Utilidades
 {
     public class ManualAutheticationStateProvider :AuthenticationStateProvider
     {

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace POSPedidoYFacturacion.Models
+namespace AlphaSoftPOSOffline.Models
 {
     public class AjusteInventarioTipo
     {

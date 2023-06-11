@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace POSPedidoYFacturacion.Migrations
+namespace AlphaSoftPOSOffline.Migrations
 {
     public partial class Agregar_CXPTransacciones_CXPtransanccionDetalles_CXPTransaccionTipos_y_CXPTransaccionTipoDocumentos_a_BD : Migration
     {

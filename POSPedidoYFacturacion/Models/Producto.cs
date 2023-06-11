@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace POSPedidoYFacturacion.Models
+namespace AlphaSoftPOSOffline.Models
 {
     public class Producto
     {
@@ -43,12 +43,8 @@ namespace POSPedidoYFacturacion.Models
         [ForeignKey(nameof(SubCategoriaId))]
         public SubCategoria SubCategoria { get; set; }
 
-        [Required(ErrorMessage = "El Tipo de Impuesto del producto es obligatorio")]
-        [Display(Name = "Tipo de Impuesto")]
-        public int ImpuestoTipoId { get; set; }
-
-        [ForeignKey("ImpuestoTipoId")]
-        public ImpuestoTipo ImpuestoTipo { get; set; }
+        public bool GravarImpuestoEnVentas { get; set; }
+        public bool GravarImpuestoEnCompras { get; set; }
 
         [Display(Name = "Impuesto")]
         public int? ImpuestoId { get; set; }

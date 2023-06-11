@@ -47,36 +47,36 @@
                 </div>
                 <div class="col-sm-4">
                     <div class="form-group">
-                        <MudSelect Label="Categoria" 
-                                    Margin="Margin.Dense"
-                                    Dense="true"
+                        <MudSelect Label="Categoria"
+                                   Margin="Margin.Dense"
+                                   Dense="true"
                                    Variant="MudBlazor.Variant.Outlined"
-                                    T="int"
-                                    Value="@Producto.CategoriaId"
-                                    ValueChanged="@(async args => await CargarSubCategorias(args))"
-                                    AnchorOrigin="Origin.BottomCenter"
-                                    TransformOrigin="Origin.TopCenter"
-                                    Text="Seleccione una Categoria">
-                                    @foreach (var item in Categorias)
-                                    {
-                                        <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
-                                    }
+                                   T="int"
+                                   Value="@Producto.CategoriaId"
+                                   ValueChanged="@(async args => await CargarSubCategorias(args))"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   TransformOrigin="Origin.TopCenter"
+                                   Text="Seleccione una Categoria">
+                            @foreach (var item in Categorias)
+                            {
+                                <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
+                            }
                         </MudSelect>
                     </div>
                     <div class="form-group">
-                        <MudSelect Label="Sub-Categoria" 
-                                    Margin="Margin.Dense"
-                                    Dense="true"
+                        <MudSelect Label="Sub-Categoria"
+                                   Margin="Margin.Dense"
+                                   Dense="true"
                                    Variant="MudBlazor.Variant.Outlined"
-                                    T="int" 
-                                    AnchorOrigin="Origin.BottomCenter"
-                                    TransformOrigin="Origin.TopCenter"
-                                    @bind-Value="@Producto.SubCategoriaId"
-                                    Text="Seleccione una Sub - Categoria">
-                                    @foreach (var item in SubCategorias)
-                                    {
-                                        <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
-                                    }
+                                   T="int"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   TransformOrigin="Origin.TopCenter"
+                                   @bind-Value="@Producto.SubCategoriaId"
+                                   Text="Seleccione una Sub - Categoria">
+                            @foreach (var item in SubCategorias)
+                            {
+                                <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
+                            }
                         </MudSelect>
                     </div>
 
@@ -97,44 +97,41 @@
                 </div>
                 <div class="col-sm-4">
                     <div class="form-group">
-                        <MudSelect Label="Tipo de Impuesto" 
-                                    Margin="Margin.Dense"
-                                    Dense="true"
-                                   Variant="MudBlazor.Variant.Outlined"
-                                    T="int"
-                                    Value="Producto.ImpuestoTipoId"
-                                    ValueChanged="@(async args => await CargarImpuestos(args))"
-                                    AnchorOrigin="Origin.BottomCenter"
-                                    TransformOrigin="Origin.TopCenter"
-                                    Text="Seleccione un Tipo de Impuesto">
-                                    @foreach (var item in ImpuestoTipos)
-                                    {
-                                        <MudSelectItem Value="@(item.Id)">@item.Nombre</MudSelectItem>
-                                    }
-                        </MudSelect>
+                        <div>Gravar Impuesto en Compras:</div>
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="Producto.GravarImpuestoEnCompras" />
+                            <ValidationMessage For="@(() => Producto.GravarImpuestoEnCompras)" />
+                        </div>
                     </div>
-                    @if(Producto.ImpuestoTipoId == 2 || Producto.ImpuestoTipoId == 3)
+                    <div class="form-group">
+                        <div>Gravar Impuesto en Ventas:</div>
+                        <div>
+                            <RadzenCheckBox class="form-control" @bind-Value="Producto.GravarImpuestoEnVentas" />
+                            <ValidationMessage For="@(() => Producto.GravarImpuestoEnVentas)" />
+                        </div>
+                    </div>
+                    @if (Producto.GravarImpuestoEnCompras || Producto.GravarImpuestoEnVentas)
                     {
                         <div class="form-group">
-                            <MudSelect Label="Impuesto" 
-                                        Margin="Margin.Dense"
-                                        Dense="true"
-                                        Variant="MudBlazor.Variant.Outlined"
-                                        Clearable="true"
-                                        T="int?" 
-                                        AnchorOrigin="Origin.BottomCenter"
-                                        TransformOrigin="Origin.TopCenter"
-                                        @bind-Value="Producto.ImpuestoId">
-                                        @foreach (var item in Impuestos)
-                                        {
-                                            <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
-                                        }
+                            <MudSelect Label="Impuesto"
+                                   Margin="Margin.Dense"
+                                   Dense="true"
+                                   Variant="MudBlazor.Variant.Outlined"
+                                   Clearable="true"
+                                   T="int?"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   TransformOrigin="Origin.TopCenter"
+                                   @bind-Value="Producto.ImpuestoId">
+                                @foreach (var item in Impuestos)
+                                {
+                                    <MudSelectItem Value="@((int?)item.Id)">@item.Nombre</MudSelectItem>
+                                }
                             </MudSelect>
                         </div>
                     }
                 </div>
             </div>
-            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success"/>
+            <RadzenButton Text="Registrar" ButtonType="Radzen.ButtonType.Submit" ButtonStyle="ButtonStyle.Success" />
         </EditForm>
     </RadzenCard>
 </RadzenCard>
@@ -163,7 +160,7 @@
             if (Id != null)
             {
                 await CargarProducto(Id);
-                await CargarImpuestos(Producto.ImpuestoTipoId);
+                await CargarImpuestos();
             }
             else
             {
@@ -205,14 +202,14 @@
     private async Task CargarCategorias()
     {
         using var DbContext = DbContextFactory.CreateDbContext();
-        Categorias = await DbContext.Categorias.Where(c=>c.EmpresaId == Empresa.Id).ToListAsync();
+        Categorias = await DbContext.Categorias.Where(c => c.EmpresaId == Empresa.Id).ToListAsync();
         StateHasChanged();
 
     }
 
     private async Task CargarSubCategorias(int? Id)
     {
-        if(Id == null)
+        if (Id == null)
         {
             SubCategorias = new List<SubCategoria>();
             return;
@@ -233,23 +230,12 @@
         ImpuestoTipos = await DbContext.ImpuestoTipos.ToListAsync();
         StateHasChanged();
     }
-    
-    private async Task CargarImpuestos(int Id)
+
+    private async Task CargarImpuestos()
     {
-        
-        Producto.ImpuestoTipoId = Id;
-        
-        if (Id != 1)
-        {
-            using var DbContext = DbContextFactory.CreateDbContext();
-            Impuestos = await DbContext.Impuestos.ToListAsync();
-            StateHasChanged();
-        }
-        else
-        {
-            Impuestos = new List<Impuesto>();
-            StateHasChanged();
-        }
+        using var DbContext = DbContextFactory.CreateDbContext();
+        Impuestos = await DbContext.Impuestos.ToListAsync();
+        StateHasChanged();
     }
 
     private async Task CrearProducto()
@@ -258,24 +244,24 @@
 
         using var DbContext = DbContextFactory.CreateDbContext();
 
-        if(Producto.ImpuestoTipoId == 1)
+        if (Producto.ImpuestoTipoId == 1)
         {
-            if(Producto.ImpuestoId != null)
+            if (Producto.ImpuestoId != null)
             {
                 await IMessage.Alert("El impuesto no puede ser seleccionado si el tipo de impuesto es Exento!");
                 return;
             }
         }
 
-        if(Producto.ImpuestoTipoId != 1)
+        if (Producto.ImpuestoTipoId != 1)
         {
-            if(Producto.ImpuestoId == null)
+            if (Producto.ImpuestoId == null)
             {
                 await IMessage.Alert("Debe seleccionar un Impuesto si el Tipo de Impuesto es diferente a Exento!");
                 return;
             }
         }
-        
+
 
 
         if (Producto.Id == 0)
@@ -314,7 +300,7 @@
             await DbContext.SaveChangesAsync();
 
             await IMessage.Success("Registro exitoso!");
-            
+
             Producto = new Producto();
 
 
