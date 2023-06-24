@@ -96,6 +96,7 @@ namespace POSPedidoYFacturacion
         {
             if (Detalle.Cantidad <= 0)
                 {
+                    Detalle.Cantidad = 1;
                     return;
                 }
 

@@ -23,7 +23,7 @@
                         <div class="form-group">
                             <div>Cantidad</div>
                             <div>
-                                <RadzenNumeric TValue="int" @bind-Value="Detalle.Cantidad" Change="@((args)=>CantidadModalChange(args))" />
+                                <RadzenNumeric TValue="int" Min="1" @bind-Value="Detalle.Cantidad" Change="@((args)=>CantidadModalChange(args))" />
                             </div>
                         </div>
 
